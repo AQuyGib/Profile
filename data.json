@@ -6,8 +6,14 @@
       "vietnameseName": "Vùng Đất Khởi Đầu",
       "icon": "Home",
       "color": "amber",
-      "coords": { "x": 150, "y": 150 },
-      "size": { "w": 120, "h": 100 },
+      "coords": {
+        "x": 150,
+        "y": 150
+      },
+      "size": {
+        "w": 120,
+        "h": 100
+      },
       "description_vi": "Nơi giới thiệu bản thân Nguyễn Anh Quý, định hướng Thực tập sinh Web Developer & UI-focused Full-stack Developer.",
       "description_en": "Introduction of Nguyen Anh Quy, aspiring Web Developer & UI-focused Full-stack Developer Intern.",
       "details_vi": {
@@ -15,8 +21,14 @@
         "role": "Thực tập sinh Web Developer & UI-focused Fullstack",
         "welcomeMessage": "Chào mừng bạn đến với Cyber-Oasis Workspace. Hãy dùng nhân vật ảo và di chuyển quanh các địa danh bằng phím, chuột hoặc d-pad để khám phá năng lực và hồ sơ cá nhân của tôi!",
         "basicInfo": [
-          { "label": "NƠI Ở", "value": "Thủ Đức, TP.HCM" },
-          { "label": "DẠNG LÀM VIỆC", "value": "Thực tập / Fulltime" }
+          {
+            "label": "NƠI Ở",
+            "value": "Thủ Đức, TP.HCM"
+          },
+          {
+            "label": "DẠNG LÀM VIỆC",
+            "value": "Thực tập / Fulltime"
+          }
         ],
         "promoMessage": "Được lấy cảm hứng từ các tựa game RPG cổ điển kết hợp phong cách Cyberpunk hiện đại, trang web này thể hiện trực quan tư duy thiết kế trải nghiệm Premium và kỹ năng phát triển Web của tôi."
       },
@@ -25,8 +37,14 @@
         "role": "UI-focused Fullstack & Web Developer Intern",
         "welcomeMessage": "Welcome to the Cyber-Oasis Workspace. Direct the virtual character and navigate around the destinations using the keyboard, mouse, or D-pad to explore my technical skills and professional portfolio!",
         "basicInfo": [
-          { "label": "LOCATION", "value": "Thu Duc, HCMC" },
-          { "label": "JOB TYPE", "value": "Intern / Full-time" }
+          {
+            "label": "LOCATION",
+            "value": "Thu Duc, HCMC"
+          },
+          {
+            "label": "JOB TYPE",
+            "value": "Intern / Full-time"
+          }
         ],
         "promoMessage": "Inspired by classic RPG games blended with modern Cyberpunk aesthetics, this workstation showcases my premium immersive user experience design mindset and professional web development crafts."
       }
@@ -37,8 +55,14 @@
       "vietnameseName": "Học Viện Công Nghệ TDC",
       "icon": "GraduationCap",
       "color": "emerald",
-      "coords": { "x": 550, "y": 150 },
-      "size": { "w": 130, "h": 100 },
+      "coords": {
+        "x": 550,
+        "y": 150
+      },
+      "size": {
+        "w": 130,
+        "h": 100
+      },
       "description_vi": "Nơi ghi nhận chặng đường học tập tại Trường Cao Đẳng Công Nghệ Thủ Đức chuyên ngành CNTT (GPA 3.1/4.0, Học bổng Học kỳ 1).",
       "description_en": "Education timeline at Thu Duc College of Technology majoring in IT (GPA 3.1/4.0, Semester 1 Scholarship).",
       "details_vi": {
@@ -68,8 +92,14 @@
       "vietnameseName": "Xưởng Kỹ Năng",
       "icon": "Cpu",
       "color": "blue",
-      "coords": { "x": 150, "y": 450 },
-      "size": { "w": 120, "h": 100 },
+      "coords": {
+        "x": 150,
+        "y": 450
+      },
+      "size": {
+        "w": 120,
+        "h": 100
+      },
       "description_vi": "Trung tâm đúc kết kỹ năng: Frontend (Tailwind, JS), Backend (PHP, MySQL), Mobile (Flutter), Bảo mật (2FA, WAF) và AI Assistance.",
       "description_en": "Skillforge core: Frontend (Tailwind, JS), Backend (PHP, MySQL), Mobile (Flutter), security protocols (2FA, WAF), and AI integration.",
       "details_vi": {
@@ -121,8 +151,14 @@
       "vietnameseName": "Bảo Tàng Dự Án",
       "icon": "Award",
       "color": "purple",
-      "coords": { "x": 550, "y": 450 },
-      "size": { "w": 130, "h": 100 },
+      "coords": {
+        "x": 550,
+        "y": 450
+      },
+      "size": {
+        "w": 130,
+        "h": 100
+      },
       "description_vi": "Nơi trưng bày dự án DIENMAYPRO siêu đẳng cấp. Hệ sinh thái kết hợp cả Backend PHP, Webhook PayOS, AI RAG Chatbot và Mobile Flutter.",
       "description_en": "Project showcase featuring DIENMAYPRO: an ecosystem combining PHP backend, PayOS webhooks, Gemini AI Chatbots, and Flutter mobile apps.",
       "details_vi": {
@@ -130,6 +166,8 @@
         "period": "03/2026 — 05/2026",
         "highlight": "Hệ thống quản lý cửa hàng đồ gia dụng thông minh tích hợp AI & Thanh toán tự động",
         "link": "https://dienmaypro.nguyenanhquy.id.vn",
+        "oldPortfolioTitle": "Portfolio Bản sử dụng (React/Render)",
+        "oldPortfolioLink": "https://profile-5nkq.onrender.com",
         "accomplishments": [
           {
             "title": "Mô hình Service - Repository & Bảo mật",
@@ -152,6 +190,8 @@
         "period": "03/2026 — 05/2026",
         "highlight": "Smart Home Appliance Store Ecosystem powered by Gemini AI and Instant PayOS Webhook Settlements",
         "link": "https://dienmaypro.nguyenanhquy.id.vn",
+        "oldPortfolioTitle": "Portfolio (React/Render)",
+        "oldPortfolioLink": "https://profile-5nkq.onrender.com",
         "accomplishments": [
           {
             "title": "Service-Repository & Security Blueprint",
@@ -176,8 +216,14 @@
       "vietnameseName": "Thư Viện Triết Lý",
       "icon": "BookOpen",
       "color": "indigo",
-      "coords": { "x": 350, "y": 300 },
-      "size": { "w": 140, "h": 100 },
+      "coords": {
+        "x": 350,
+        "y": 300
+      },
+      "size": {
+        "w": 140,
+        "h": 100
+      },
       "description_vi": "Nơi lưu hành triết lý lập trình AI-Augmented Developer, chú trọng tư duy hệ thống (System Thinking) và làm việc chuyên nghiệp.",
       "description_en": "Collection of programming codes, embracing AI-Augmented development, System Thinking, and extreme professionalism.",
       "details_vi": {
@@ -221,8 +267,14 @@
       "vietnameseName": "Trạm Liên Lạc",
       "icon": "Send",
       "color": "pink",
-      "coords": { "x": 370, "y": 550 },
-      "size": { "w": 100, "h": 90 },
+      "coords": {
+        "x": 370,
+        "y": 550
+      },
+      "size": {
+        "w": 100,
+        "h": 90
+      },
       "description_vi": "Điểm kết nối trực tiếp đến Nguyễn Anh Quý qua Số điện thoại, Email, Github hoặc gửi tin nhắn liên hệ.",
       "description_en": "Direct portal connecting to Nguyen Anh Quy via hotline, email, GitHub repositories, or quick messaging.",
       "details_vi": {

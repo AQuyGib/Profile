@@ -775,15 +775,29 @@ function updateUIForActiveZone() {
           ${details.highlight}
         </p>
 
-        <a 
-          href="${details.link}" 
-          target="_blank" 
-          rel="noreferrer" 
-          class="inline-flex items-center gap-2 text-xs font-mono text-purple-400 hover:text-white transition-colors bg-purple-500/10 hover:bg-purple-500/20 px-3.5 py-2 rounded-xl border border-purple-500/30"
-        >
-          ${state.language === 'vi' ? 'Trải Nghiệm Trực Tiếp' : 'Live Interactive Demo'} 
-          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
-        </a>
+        <div class="flex flex-wrap gap-2">
+          <a 
+            href="${details.link}" 
+            target="_blank" 
+            rel="noreferrer" 
+            class="inline-flex items-center gap-2 text-xs font-mono text-purple-400 hover:text-white transition-colors bg-purple-500/10 hover:bg-purple-500/20 px-3.5 py-2 rounded-xl border border-purple-500/30"
+          >
+            ${state.language === 'vi' ? 'Trải Nghiệm DIENMAYPRO' : 'Explore DIENMAYPRO'} 
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+          </a>
+
+          ${details.oldPortfolioLink ? `
+            <a 
+              href="${details.oldPortfolioLink}" 
+              target="_blank" 
+              rel="noreferrer" 
+              class="inline-flex items-center gap-2 text-xs font-mono text-indigo-400 hover:text-white transition-colors bg-indigo-500/10 hover:bg-indigo-500/20 px-3.5 py-2 rounded-xl border border-indigo-500/30"
+            >
+              ${details.oldPortfolioTitle} 
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+            </a>
+          ` : ''}
+        </div>
 
         <div class="space-y-3 text-xs max-h-[220px] overflow-y-auto pr-1">
           ${details.accomplishments.map(acc => `
