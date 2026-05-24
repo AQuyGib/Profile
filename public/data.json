@@ -1,0 +1,278 @@
+{
+  "zones": [
+    {
+      "id": "home",
+      "name": "Home",
+      "vietnameseName": "Vùng Đất Khởi Đầu",
+      "icon": "Home",
+      "color": "amber",
+      "coords": { "x": 150, "y": 150 },
+      "size": { "w": 120, "h": 100 },
+      "description_vi": "Nơi giới thiệu bản thân Nguyễn Anh Quý, định hướng Thực tập sinh Web Developer & UI-focused Full-stack Developer.",
+      "description_en": "Introduction of Nguyen Anh Quy, aspiring Web Developer & UI-focused Full-stack Developer Intern.",
+      "details_vi": {
+        "fullName": "NGUYỄN ANH QUÝ",
+        "role": "Thực tập sinh Web Developer & UI-focused Fullstack",
+        "welcomeMessage": "Chào mừng bạn đến với Cyber-Oasis Workspace. Hãy dùng nhân vật ảo và di chuyển quanh các địa danh bằng phím, chuột hoặc d-pad để khám phá năng lực và hồ sơ cá nhân của tôi!",
+        "basicInfo": [
+          { "label": "NƠI Ở", "value": "Thủ Đức, TP.HCM" },
+          { "label": "DẠNG LÀM VIỆC", "value": "Thực tập / Fulltime" }
+        ],
+        "promoMessage": "Được lấy cảm hứng từ các tựa game RPG cổ điển kết hợp phong cách Cyberpunk hiện đại, trang web này thể hiện trực quan tư duy thiết kế trải nghiệm Premium và kỹ năng phát triển Web của tôi."
+      },
+      "details_en": {
+        "fullName": "NGUYEN ANH QUY",
+        "role": "UI-focused Fullstack & Web Developer Intern",
+        "welcomeMessage": "Welcome to the Cyber-Oasis Workspace. Direct the virtual character and navigate around the destinations using the keyboard, mouse, or D-pad to explore my technical skills and professional portfolio!",
+        "basicInfo": [
+          { "label": "LOCATION", "value": "Thu Duc, HCMC" },
+          { "label": "JOB TYPE", "value": "Intern / Full-time" }
+        ],
+        "promoMessage": "Inspired by classic RPG games blended with modern Cyberpunk aesthetics, this workstation showcases my premium immersive user experience design mindset and professional web development crafts."
+      }
+    },
+    {
+      "id": "academy",
+      "name": "Academy",
+      "vietnameseName": "Học Viện Công Nghệ TDC",
+      "icon": "GraduationCap",
+      "color": "emerald",
+      "coords": { "x": 550, "y": 150 },
+      "size": { "w": 130, "h": 100 },
+      "description_vi": "Nơi ghi nhận chặng đường học tập tại Trường Cao Đẳng Công Nghệ Thủ Đức chuyên ngành CNTT (GPA 3.1/4.0, Học bổng Học kỳ 1).",
+      "description_en": "Education timeline at Thu Duc College of Technology majoring in IT (GPA 3.1/4.0, Semester 1 Scholarship).",
+      "details_vi": {
+        "institution": "Trường Cao Đẳng Công Nghệ Thủ Đức",
+        "period": "Niên khóa: 2024 — 2027",
+        "major": "Công nghệ Thông tin",
+        "majorDesc": "Định hướng chuyên sâu phát triển Web và kỹ thuật lập trình nâng cao.",
+        "gpa": "3.1 / 4.0",
+        "scholarship": "KHUYẾN KHÍCH HỌC TẬP",
+        "scholarshipSub": "Học kỳ 1 (2024-2025)",
+        "summary": "Tích cực tham gia các đồ án thực hành kỹ thuật, rèn luyện kỹ năng tự học cao và luôn tích lũy kiến thức qua việc triển khai các hệ thống thực tế ngoài chương trình."
+      },
+      "details_en": {
+        "institution": "Thu Duc College of Technology",
+        "period": "Class of 2024 — 2027",
+        "major": "Information Technology",
+        "majorDesc": "Deeply focused on web development, database architectures, and advanced engineering practices.",
+        "gpa": "3.1 / 4.0",
+        "scholarship": "ACADEMIC SCHOLARSHIP",
+        "scholarshipSub": "Semester 1 (2024-2025)",
+        "summary": "Actively participated in technical school projects, nurtured a high capacity for self-learning, and gained professional experience by deploying practical production solutions beyond the core school curriculum."
+      }
+    },
+    {
+      "id": "lab",
+      "name": "Lab",
+      "vietnameseName": "Xưởng Kỹ Năng",
+      "icon": "Cpu",
+      "color": "blue",
+      "coords": { "x": 150, "y": 450 },
+      "size": { "w": 120, "h": 100 },
+      "description_vi": "Trung tâm đúc kết kỹ năng: Frontend (Tailwind, JS), Backend (PHP, MySQL), Mobile (Flutter), Bảo mật (2FA, WAF) và AI Assistance.",
+      "description_en": "Skillforge core: Frontend (Tailwind, JS), Backend (PHP, MySQL), Mobile (Flutter), security protocols (2FA, WAF), and AI integration.",
+      "details_vi": {
+        "intro": "Tập trung mạnh mẽ vào nghiên cứu các khối công nghệ hiện đại và cấu trúc bảo mật vững chắc cho sản phẩm phần mềm.",
+        "skills": [
+          {
+            "category": "Frontend & UI/UX",
+            "desc": "HTML/CSS, TailwindCSS, JavaScript, Responsive Design. Thiết kế giao diện mang phong cách Premium thanh lịch, khoa học."
+          },
+          {
+            "category": "Backend & Kiến trúc",
+            "desc": "PHP (OOP), MySQL (PDO), trực tiếp thiết kế cấu trúc luồng mã nguồn tinh gọn an toàn với **Service-Repository Pattern**."
+          },
+          {
+            "category": "Mobile & Tích hợp API",
+            "desc": "Dart (Flutter, Riverpod, Clean Architecture), Thiết kế API nghỉ (RESTful), tích hợp Gemini AI và các hệ thống thanh toán như **PayOS/VietQR**."
+          },
+          {
+            "category": "Bảo mật hệ thống",
+            "desc": "Xác thực 2 lớp mã OTP (2FA TOTP), mã hóa mật khẩu đầu vào với Bcrypt, chống SQL Injection bằng Prepared Statements và vô hiệu hóa CSRF."
+          }
+        ]
+      },
+      "details_en": {
+        "intro": "Strongly focused on modern technology exploration, technical performance, and structural security compliance for software products.",
+        "skills": [
+          {
+            "category": "Frontend & UI/UX",
+            "desc": "HTML/CSS, TailwindCSS, JavaScript, Responsive Design. Elegant, geometric, clean aesthetic styled alongside smooth micro-flows."
+          },
+          {
+            "category": "Backend & Architectures",
+            "desc": "PHP (OOP), MySQL (PDO), hands-on structuring of clean runtime layers through the professional **Service-Repository Pattern**."
+          },
+          {
+            "category": "Mobile & API Integrations",
+            "desc": "Dart (Flutter, Riverpod, Clean Architecture), RESTful API engineering, Gemini AI integration, and third-party payment getaways like **PayOS/VietQR**."
+          },
+          {
+            "category": "Cyber Security & Auditing",
+            "desc": "Two-factor authentication (2FA TOTP), Bcrypt hash security, 100% Prepared Statements preventing SQL injection, and custom CSRF protection tokens."
+          }
+        ]
+      }
+    },
+    {
+      "id": "museum",
+      "name": "Museum",
+      "vietnameseName": "Bảo Tàng Dự Án",
+      "icon": "Award",
+      "color": "purple",
+      "coords": { "x": 550, "y": 450 },
+      "size": { "w": 130, "h": 100 },
+      "description_vi": "Nơi trưng bày dự án DIENMAYPRO siêu đẳng cấp. Hệ sinh thái kết hợp cả Backend PHP, Webhook PayOS, AI RAG Chatbot và Mobile Flutter.",
+      "description_en": "Project showcase featuring DIENMAYPRO: an ecosystem combining PHP backend, PayOS webhooks, Gemini AI Chatbots, and Flutter mobile apps.",
+      "details_vi": {
+        "title": "DIENMAYPRO",
+        "period": "03/2026 — 05/2026",
+        "highlight": "Hệ thống quản lý cửa hàng đồ gia dụng thông minh tích hợp AI & Thanh toán tự động",
+        "link": "https://dienmaypro.nguyenanhquy.id.vn",
+        "accomplishments": [
+          {
+            "title": "Mô hình Service - Repository & Bảo mật",
+            "desc": "Xác thực 2 lớp (2FA TOTP), đăng nhập Google OAuth2, bảo mật chống SQL Injection bằng 100% Prepared Statements."
+          },
+          {
+            "title": "Bộ Lọc dynamic SQL & Thanh toán",
+            "desc": "Bộ lọc đa chiều thời gian thực với phân trang AJAX, tích hợp thanh toán Webhook tự động qua PayOS/VietQR."
+          },
+          {
+            "title": "Tích hợp AI & App di động Flutter",
+            "desc": "Xây dựng luồng RAG kết nối dữ liệu cửa hàng với Google Gemini Chatbot. Xây dựng ứng dụng di động Flutter bằng Riverpod."
+          }
+        ],
+        "resultTitle": "KẾT QUẢ ĐẠT ĐƯỢC",
+        "resultDesc": "Đạt điểm 8.0/10 đồ án xuất sắc, bàn giao 100% tiến độ và triển khai thực tế Docker/Apache lên máy chủ Internet."
+      },
+      "details_en": {
+        "title": "DIENMAYPRO",
+        "period": "03/2026 — 05/2026",
+        "highlight": "Smart Home Appliance Store Ecosystem powered by Gemini AI and Instant PayOS Webhook Settlements",
+        "link": "https://dienmaypro.nguyenanhquy.id.vn",
+        "accomplishments": [
+          {
+            "title": "Service-Repository & Security Blueprint",
+            "desc": "Built secure structures using PHP OOP, configured dual OTP 2FA protection, Google OAuth2, and implemented secure database scopes using PDO Prepared Statements."
+          },
+          {
+            "title": "Multi-dimensional Filters & Instant Webhooks",
+            "desc": "Architected AJAX multi-functional real-time search filters, and unified banking settlements powered by PayOS/VietQR webhooks."
+          },
+          {
+            "title": "GenAI Assistance & Cross-platform Mobile Client",
+            "desc": "Engineered customized retail context RAG layers connected with Google Gemini API, and delivered a responsive Flutter mobile commerce application powered by Riverpod."
+          }
+        ],
+        "resultTitle": "PROJECT DELIVERABLES",
+        "resultDesc": "Earned an outstanding score of 8.0/10, completed 100% of pipeline scope, and deployed to live production with Docker & Apache servers."
+      }
+    },
+    {
+      "id": "library",
+      "name": "Library",
+      "vietnameseName": "Thư Viện Triết Lý",
+      "icon": "BookOpen",
+      "color": "indigo",
+      "coords": { "x": 350, "y": 300 },
+      "size": { "w": 140, "h": 100 },
+      "description_vi": "Nơi lưu hành triết lý lập trình AI-Augmented Developer, chú trọng tư duy hệ thống (System Thinking) và làm việc chuyên nghiệp.",
+      "description_en": "Collection of programming codes, embracing AI-Augmented development, System Thinking, and extreme professionalism.",
+      "details_vi": {
+        "filename": "MINIMAL_CODE_PHILOSOPHY.md",
+        "philosophies": [
+          {
+            "title": "AI-Augmented Developer",
+            "desc": "Sử dụng sức mạnh các công cụ AI như Cursor, GitHub Copilot một cách tối đa để tăng tốc tốc độ triển khai (Vibe Coding)."
+          },
+          {
+            "title": "Làm Chủ Mã Nguồn",
+            "desc": "Tự đọc hiểu hiểu sâu cấu trúc lõi hệ thống, trực tiếp debug, tối ưu thuật toán và quản lý gắt kao bảo mật chứ không ỷ lại AI."
+          },
+          {
+            "title": "Tư Duy Hệ Thống",
+            "desc": "Thiết kế trước sơ đồ kiến trúc dữ liệu và SRS, đảm bảo mã nguồn dễ bảo trì trước khi thực sự triển khai code."
+          }
+        ]
+      },
+      "details_en": {
+        "filename": "MINIMAL_CODE_PHILOSOPHY.md",
+        "philosophies": [
+          {
+            "title": "AI-Augmented Developer",
+            "desc": "Unleash state-of-the-art AI systems like Cursor, v0, and Gemini models to amplify software drafting speed (Vibe Coding)."
+          },
+          {
+            "title": "Complete Code Ownership",
+            "desc": "Retain absolute command over the core system codebase: debug manually, analyze runtime profiles, optimize, and maintain strict security borders."
+          },
+          {
+            "title": "System Pre-architecture",
+            "desc": "Map database relations, functional specifications, and architectural diagrams before writing any actual lines of code, ensuring easy future refactoring."
+          }
+        ]
+      }
+    },
+    {
+      "id": "portal",
+      "name": "Portal",
+      "vietnameseName": "Trạm Liên Lạc",
+      "icon": "Send",
+      "color": "pink",
+      "coords": { "x": 370, "y": 550 },
+      "size": { "w": 100, "h": 90 },
+      "description_vi": "Điểm kết nối trực tiếp đến Nguyễn Anh Quý qua Số điện thoại, Email, Github hoặc gửi tin nhắn liên hệ.",
+      "description_en": "Direct portal connecting to Nguyen Anh Quy via hotline, email, GitHub repositories, or quick messaging.",
+      "details_vi": {
+        "intro": "Nguyễn Anh Quý luôn sẵn sàng tiếp nhận cơ hội thực tập và hợp tác phát triển dự án. Hãy liên kết qua:",
+        "contacts": [
+          {
+            "type": "Phone",
+            "label": "Hotline SĐT",
+            "value": "0338 740 475",
+            "url": "tele:0338740475"
+          },
+          {
+            "type": "Mail",
+            "label": "Hộp Thư Email",
+            "value": "nguyquy67@gmail.com",
+            "url": "mailto:nguyquy67@gmail.com"
+          },
+          {
+            "type": "Github",
+            "label": "Kho Lưu Trữ GitHub",
+            "value": "github.com/AQuyGib",
+            "url": "https://github.com/AQuyGib"
+          }
+        ],
+        "notice": "Địa chỉ của em đặt tại Thủ Đức, TP.HCM. Rất thuận tiện để tham gia làm việc trực tiếp (On-site) tại các khu vực lân cận hoặc làm từ xa (Remote)."
+      },
+      "details_en": {
+        "intro": "Nguyen Anh Quy is highly and actively seeking tech internships and collaborative web projects. Connect via:",
+        "contacts": [
+          {
+            "type": "Phone",
+            "label": "Hotline Direct Dial",
+            "value": "0338 740 475",
+            "url": "tele:0338740475"
+          },
+          {
+            "type": "Mail",
+            "label": "Official Email Inbox",
+            "value": "nguyquy67@gmail.com",
+            "url": "mailto:nguyquy67@gmail.com"
+          },
+          {
+            "type": "Github",
+            "label": "Active GitHub Repos",
+            "value": "github.com/AQuyGib",
+            "url": "https://github.com/AQuyGib"
+          }
+        ],
+        "notice": "Located in Thu Duc city, Ho Chi Minh City. Perfectly suited to join physical on-site teams within nearby areas, or collaborate remotely globally."
+      }
+    }
+  ]
+}
