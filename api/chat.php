@@ -1,38 +1,71 @@
-import express from "express";
-import path from "path";
-import dotenv from "dotenv";
-import { createServer as createViteServer } from "vite";
-import { GoogleGenAI } from "@google/genai";
+<?php
+header("Access-Control-Allow-Origin: *");
+header("Access-Control-Allow-Headers: Content-Type, Authorization");
+header("Access-Control-Allow-Methods: POST, OPTIONS");
+header("Content-Type: application/json");
 
-dotenv.config();
-
-const app = express();
-app.use(express.json());
-
-const PORT = process.env.PORT || 3000;
-
-// Lazy initialization of Gemini client to prevent startup crashes when API key is not yet set
-let aiClient: GoogleGenAI | null = null;
-function getGeminiClient(): GoogleGenAI {
-  if (!aiClient) {
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      throw new Error("GEMINI_API_KEY environment variable is required. Please set it in Settings > Secrets.");
-    }
-    aiClient = new GoogleGenAI({
-      apiKey,
-      httpOptions: {
-        headers: {
-          "User-Agent": "aistudio-build",
-        }
-      }
-    });
-  }
-  return aiClient;
+// Handle preflight requests
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    exit(0);
 }
 
-// Information about Nguyễn Anh Quý for Gemini system instructions
-const QUY_BIO = `
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    http_response_code(405);
+    echo json_encode(["error" => "Method not allowed"]);
+    exit;
+}
+
+// Simple function to load .env file
+function loadEnv($path) {
+    if (file_exists($path)) {
+        $lines = file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+        foreach ($lines as $line) {
+            $line = trim($line);
+            if (empty($line) || strpos($line, '#') === 0) {
+                continue;
+            }
+            if (strpos($line, '=') !== false) {
+                list($name, $value) = explode('=', $line, 2);
+                $name = trim($name);
+                $value = trim($value);
+                // Strip quotes if they exist
+                $value = trim($value, '"\'');
+                putenv("$name=$value");
+                $_ENV[$name] = $value;
+                $_SERVER[$name] = $value;
+            }
+        }
+    }
+}
+
+// Load env from the root directory
+loadEnv(__DIR__ . '/../.env');
+
+// Get GEMINI_API_KEY from environment
+$apiKey = getenv('GEMINI_API_KEY') ?: ($_ENV['GEMINI_API_KEY'] ?? '');
+
+if (empty($apiKey)) {
+    http_response_code(500);
+    echo json_encode([
+        "error" => "GEMINI_API_KEY environment variable is required. Please configure it in your environment or .env file.",
+        "isKeyMissing" => true
+    ]);
+    exit;
+}
+
+// Get POST input
+$input = json_decode(file_get_contents('php://input'), true);
+$message = $input['message'] ?? '';
+$history = $input['history'] ?? [];
+
+if (empty($message)) {
+    http_response_code(400);
+    echo json_encode(["error" => "Message is required"]);
+    exit;
+}
+
+// Bio info
+$QUY_BIO = <<<TEXT
 Họ và tên: Nguyễn Anh Quý
 Vị trí ứng tuyển: Thực tập sinh Web Developer / UI-focused Full-stack Developer
 Số điện thoại: 0338 740 475
@@ -72,71 +105,80 @@ Dự Án Tiêu Biểu: DIENMAYPRO (Hệ thống quản lý cửa hàng đồ gia
 
 Tư Duy Làm Việc & Định Hướng (Working Philosophy):
 "Là một Kỹ sư phần mềm ứng dụng AI (AI-Augmented Developer), tôi chú trọng vào tư duy hệ thống (System Thinking) và thiết kế kiến trúc phần mềm trước khi bắt tay vào viết mã. Tôi sử dụng hiệu quả các công cụ AI để gia tăng tốc độ lập trình (Vibe Coding), đồng thời luôn làm chủ mã nguồn thông qua kỹ năng tự đọc hiểu, debug và tối ưu hóa hệ thống để đảm bảo chất lượng và tính bảo mật của sản phẩm cuối cùng."
-`;
+TEXT;
 
-// API routes
-app.post("/api/chat", async (req, res) => {
-  try {
-    const { message, history } = req.body;
-    if (!message) {
-      return res.status(400).json({ error: "Message is required" });
-    }
-
-    const client = getGeminiClient();
-    
-    // Format history for Gemini SDK
-    // The history of chat in Gemini SDK should be an array of Content objects: { role: 'user' | 'model', parts: [{ text: string }] }
-    const chatHistory = history?.map((msg: any) => ({
-      role: msg.role === "user" ? "user" : "model",
-      parts: [{ text: msg.text }]
-    })) || [];
-
-    // Initialize chat session
-    const chat = client.chats.create({
-      model: "gemini-3.5-flash",
-      config: {
-        systemInstruction: `Bạn là trợ lý ảo AI đại diện cho Nguyễn Anh Quý - một lập trình viên xuất sắc đang ứng tuyển ở vị trí Thực tập sinh Web Developer (Full-stack Web Intern Candidate).
+$systemInstruction = <<<TEXT
+Bạn là trợ lý ảo AI đại diện cho Nguyễn Anh Quý - một lập trình viên xuất sắc đang ứng tuyển ở vị trí Thực tập sinh Web Developer (Full-stack Web Intern Candidate).
 Hãy trả lời câu hỏi của nhà tuyển dụng hoặc khách truy cập dựa trên thông tin tiểu sử của Quý dưới đây. Hãy trả lời thân thiện, lịch sự, cực kỳ chuyên nghiệp, tự tin nhưng khiêm tốn học hỏi, ngắn gọn và mạch lạc.
 Khi giao tiếp, hãy giữ vững tâm thế của một ứng viên Thực tập sinh nhiệt huyết, có khả năng học hỏi cực nhanh qua thực tế, am hiểu sâu sắc mô hình kiến trúc Service-Repository và ứng dụng AI (AI-Augmented Developer).
 
 Nếu khách hỏi về kỹ năng, dự án DIENMAYPRO hoặc học vấn tại trường TDC, hãy nêu chi tiết một cách tự hào và đầy đủ số liệu thuyết phục. Nếu họ hỏi những câu hỏi mở rộng ngoài thông tin trong tiểu sử có sẵn, hãy khéo léo trả lời đại diện cho Quý, ví dụ: "Em rất mong có cơ hội được tham gia phỏng vấn trực tiếp để trao đổi chi tiết hơn về vấn đề này và chứng minh khả năng đóng góp của mình ạ."
 
 Thông tin của Nguyễn Anh Quý:
-${QUY_BIO}`,
-      },
-      history: chatHistory
-    });
+{$QUY_BIO}
+TEXT;
 
-    const response = await chat.sendMessage({ message });
-    res.json({ response: response.text });
-  } catch (error: any) {
-    console.error("Gemini API Error:", error);
-    res.status(500).json({ 
-      error: error.message || "An error occurred while talking to the AI double.",
-      isKeyMissing: !process.env.GEMINI_API_KEY
-    });
-  }
-});
-
-// Vite or production static setup
-async function setupServer() {
-  if (process.env.NODE_ENV !== "production") {
-    const vite = await createViteServer({
-      server: { middlewareMode: true },
-      appType: "spa",
-    });
-    app.use(vite.middlewares);
-  } else {
-    const distPath = path.join(process.cwd(), "dist");
-    app.use(express.static(distPath));
-    app.get("*", (req, res) => {
-      res.sendFile(path.join(distPath, "index.html"));
-    });
-  }
-
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-  });
+// Format history for Gemini API
+$contents = [];
+foreach ($history as $msg) {
+    $contents[] = [
+        "role" => ($msg['role'] === 'user') ? 'user' : 'model',
+        "parts" => [
+            ["text" => $msg['text'] ?? '']
+        ]
+    ];
 }
 
-setupServer();
+// Add the current user message
+$contents[] = [
+    "role" => "user",
+    "parts" => [
+        ["text" => $message]
+    ]
+];
+
+// Payload matching Gemini API spec
+$payload = [
+    "contents" => $contents,
+    "systemInstruction" => [
+        "parts" => [
+            ["text" => $systemInstruction]
+        ]
+    ]
+];
+
+// Call Gemini API (using stable gemini-1.5-flash as the fallback)
+$url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" . $apiKey;
+
+$ch = curl_init($url);
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+curl_setopt($ch, CURLOPT_POST, true);
+curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
+curl_setopt($ch, CURLOPT_HTTPHEADER, [
+    'Content-Type: application/json'
+]);
+
+$response = curl_exec($ch);
+if (curl_errno($ch)) {
+    http_response_code(500);
+    echo json_encode(["error" => curl_error($ch)]);
+    exit;
+}
+
+$httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+curl_close($ch);
+
+if ($httpCode !== 200) {
+    http_response_code($httpCode);
+    $errorData = json_decode($response, true);
+    echo json_encode([
+        "error" => $errorData['error']['message'] ?? "Error calling Gemini API",
+        "raw_response" => $errorData
+    ]);
+    exit;
+}
+
+$resData = json_decode($response, true);
+$replyText = $resData['candidates'][0]['content']['parts'][0]['text'] ?? 'Xin lỗi, tôi gặp khó khăn khi xử lý yêu cầu của bạn.';
+
+echo json_encode(["response" => $replyText]);

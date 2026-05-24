@@ -1,0 +1,105 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@500;600;700&display=swap');
+
+:root {
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --font-display: 'Space Grotesk', sans-serif;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: #09090b;
+}
+
+/* Custom Scrollbar for Glassmorphic Panels */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(9, 9, 11, 0.3);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(63, 63, 70, 0.4);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(16, 185, 129, 0.3);
+}
+
+/* Glassmorphism Styles */
+.glass-panel {
+  background: rgba(24, 24, 27, 0.4);
+  border: 1px solid rgba(63, 63, 70, 0.4);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.glass-panel-active {
+  border-color: rgba(16, 185, 129, 0.3);
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.05);
+}
+
+/* Typography Utility */
+.font-display {
+  font-family: var(--font-display);
+}
+
+.font-mono {
+  font-family: var(--font-mono);
+}
+
+/* Neon Glow Effect */
+.glow-emerald {
+  box-shadow: 0 0 25px rgba(16, 185, 129, 0.25);
+  border-color: rgba(16, 185, 129, 0.4);
+}
+
+.glow-purple {
+  box-shadow: 0 0 25px rgba(168, 85, 247, 0.25);
+  border-color: rgba(168, 85, 247, 0.4);
+}
+
+/* Loading animations */
+@keyframes cyber-pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(0.98);
+  }
+}
+
+.animate-cyber-pulse {
+  animation: cyber-pulse 2s infinite ease-in-out;
+}
+
+/* Selection styles */
+::selection {
+  background-color: rgba(63, 63, 70, 0.8);
+  color: #f4f4f5;
+}
+
+/* Hide control utilities */
+.hidden-panel {
+  display: none !important;
+}
+
+/* Micro-interactions */
+.btn-cyber {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-cyber:hover {
+  transform: translateY(-1px);
+}
+
+.btn-cyber:active {
+  transform: translateY(0);
+}
