@@ -96,6 +96,31 @@ function playNewZoneSound() {
   }
 }
 
+function playProximityAlert() {
+  try {
+    const ctx = getAudioContext();
+    if (!ctx) return;
+
+    const osc = ctx.createOscillator();
+    const gainNode = ctx.createGain();
+
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(800, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(1200, ctx.currentTime + 0.07);
+
+    gainNode.gain.setValueAtTime(0.015, ctx.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.07);
+
+    osc.connect(gainNode);
+    gainNode.connect(ctx.destination);
+
+    osc.start();
+    osc.stop(ctx.currentTime + 0.07);
+  } catch (e) {
+    console.warn("Audio failure:", e);
+  }
+}
+
 function playTeleportSound() {
   try {
     const ctx = getAudioContext();
@@ -196,6 +221,19 @@ function initGameEngine() {
     btnExit3D.addEventListener('click', () => {
       playClickSound();
       exit3DMode();
+    });
+  }
+
+  // Manual Dimension Toggle Button Event
+  const btnManualToggle = document.getElementById('btn_manual_dimension_toggle');
+  if (btnManualToggle) {
+    btnManualToggle.addEventListener('click', () => {
+      playClickSound();
+      if (state.is3DActive) {
+        exit3DMode();
+      } else {
+        enter3DMode();
+      }
     });
   }
 
@@ -1278,6 +1316,17 @@ function switchLanguage(lang) {
   initQuickTeleportButtons();
   updateUIForActiveZone();
   resetChatbotHistory(false);
+  updateDimensionToggleBtnText();
+}
+
+function updateDimensionToggleBtnText() {
+  const btnText = document.getElementById('lbl_dimension_toggle_text');
+  if (!btnText) return;
+  if (state.language === 'vi') {
+    btnText.textContent = state.is3DActive ? 'VỀ BẢN ĐỒ 2D' : 'XEM KHÔNG GIAN 3D';
+  } else {
+    btnText.textContent = state.is3DActive ? 'GO TO 2D MAP' : 'VIEW 3D SPACE';
+  }
 }
 
 // -------------------------------------------------------------
@@ -1407,7 +1456,8 @@ function startLoadingSequence() {
 // -------------------------------------------------------------
 // 3D WebGL Three.js Sub-Dimension Logic
 // -------------------------------------------------------------
-let threeScene, threeCamera, threeRenderer, threeControls;
+let threeScene, threeCamera, threeRenderer, threeControls, threeComposer;
+let isCameraUserInteracting = false;
 let threePlayerMesh = null;
 let threeAssets = [];
 let threeAnimId = null;
@@ -1421,6 +1471,9 @@ let spaceParticles = null;
 let animatedCogs = [];
 let animatedCrafts = [];
 let physicsBoxes = [];
+let emissiveMaterials = [];
+let zoneBoxes = [];
+let activeHotspots = [];
 
 const roverPhysics = {
   speed: 0,
@@ -1510,23 +1563,36 @@ function loadScript(src) {
       return resolve();
     }
     const script = document.createElement('script');
+    script.crossOrigin = 'anonymous'; // Support detailed cross-origin error reporting
     script.src = src;
     script.onload = resolve;
-    script.onerror = reject;
+    script.onerror = (err) => {
+      console.error(`Script load failed for: ${src}`, err);
+      reject(err);
+    };
     document.head.appendChild(script);
   });
 }
 
 async function loadThreeJS() {
-  if (window.THREE) return;
+  if (window.THREE && window.THREE.OrbitControls && window.THREE.GLTFLoader && window.THREE.EffectComposer) return;
   try {
-    // 1. Load Three.js core
-    await loadScript("https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js");
-    // 2. Load auxiliary controls and model loader scripts
+    // 1. Load Three.js core with a pinned, reliable unpkg CDN version
+    await loadScript("https://unpkg.com/three@0.128.0/build/three.min.js");
+    
+    // 2. Load auxiliary controls & loaders
     await Promise.all([
-      loadScript("https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/js/controls/OrbitControls.js"),
-      loadScript("https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/js/loaders/GLTFLoader.js")
+      loadScript("https://unpkg.com/three@0.128.0/examples/js/controls/OrbitControls.js"),
+      loadScript("https://unpkg.com/three@0.128.0/examples/js/loaders/GLTFLoader.js")
     ]);
+
+    // 3. Load Postprocessing core dependencies sequentially to avoid order-of-execution race conditions
+    await loadScript("https://unpkg.com/three@0.128.0/examples/js/shaders/CopyShader.js");
+    await loadScript("https://unpkg.com/three@0.128.0/examples/js/postprocessing/ShaderPass.js");
+    await loadScript("https://unpkg.com/three@0.128.0/examples/js/postprocessing/RenderPass.js");
+    await loadScript("https://unpkg.com/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js");
+    await loadScript("https://unpkg.com/three@0.128.0/examples/js/postprocessing/EffectComposer.js");
+    await loadScript("https://unpkg.com/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js");
   } catch (err) {
     console.error("Three.js load error:", err);
     throw err;
@@ -1544,6 +1610,15 @@ function initThreeJS() {
   threeScene.background = new THREE.Color('#09090b');
   threeScene.fog = new THREE.FogExp2('#09090b', 0.025);
 
+  // Initialize precise THREE.Box3 boundaries for island interactions
+  zoneBoxes = ZONES_3D.map(zone => ({
+    id: zone.id,
+    box: new THREE.Box3(
+      new THREE.Vector3(zone.x - zone.radius, -1.0, zone.z - zone.radius),
+      new THREE.Vector3(zone.x + zone.radius, 10.0, zone.z + zone.radius)
+    )
+  }));
+
   // Camera setup (Top-down view)
   threeCamera = new THREE.PerspectiveCamera(50, container.clientWidth / container.clientHeight, 0.1, 1000);
   threeCamera.position.set(0, 16, 20);
@@ -1556,6 +1631,20 @@ function initThreeJS() {
   threeRenderer.shadowMap.type = THREE.PCFSoftShadowMap;
   container.appendChild(threeRenderer.domElement);
 
+  // Post-Processing Cybernetic Pipeline (EffectComposer + UnrealBloomPass for expensive high-contrast neon glows)
+  if (THREE.EffectComposer && THREE.RenderPass && THREE.UnrealBloomPass) {
+    const renderScene = new THREE.RenderPass(threeScene, threeCamera);
+    const bloomPass = new THREE.UnrealBloomPass(
+      new THREE.Vector2(container.clientWidth, container.clientHeight),
+      1.25,  // Glow intensity strength
+      0.38,  // Bloom dispersion radius
+      0.15   // Luminosity threshold
+    );
+    threeComposer = new THREE.EffectComposer(threeRenderer);
+    threeComposer.addPass(renderScene);
+    threeComposer.addPass(bloomPass);
+  }
+
   // Controls setup (Top-down view constraints)
   threeControls = new THREE.OrbitControls(threeCamera, threeRenderer.domElement);
   threeControls.enableDamping = true;
@@ -1563,6 +1652,11 @@ function initThreeJS() {
   threeControls.maxPolarAngle = Math.PI / 2.2;
   threeControls.minDistance = 10;
   threeControls.maxDistance = 45;
+
+  // Track manual camera interactions to prevent fight back
+  isCameraUserInteracting = false;
+  threeControls.addEventListener('start', () => { isCameraUserInteracting = true; });
+  threeControls.addEventListener('end', () => { isCameraUserInteracting = false; });
 
   // Camera Toggle Button Event
   const btnToggleCamera = document.getElementById('btn_toggle_camera_view');
@@ -1599,10 +1693,115 @@ function initThreeJS() {
   dirLight.shadow.bias = -0.0005;
   threeScene.add(dirLight);
 
-  // Neon Grid Helper
-  const gridHelper = new THREE.GridHelper(120, 60, '#10b981', '#27272a');
-  gridHelper.position.y = -0.01;
-  threeScene.add(gridHelper);
+  // === ADVANCED STRATIFIED CYBER GROUND SYSTEM ===
+  const groundSystemGroup = new THREE.Group();
+  threeScene.add(groundSystemGroup);
+
+  // 1. Core Emerald Surface Stratum (Y = -0.05)
+  // Solid, polished tactical metallic floor that absorbs deep blackness and receives shadow cascades
+  const mainFloorGeo = new THREE.PlaneGeometry(160, 160);
+  const mainFloorMat = new THREE.MeshStandardMaterial({
+    color: '#080c14',        // Deep tactical space navy
+    roughness: 0.28,
+    metalness: 0.88,
+    side: THREE.DoubleSide,
+    transparent: true,
+    opacity: 0.90
+  });
+  const mainFloorMesh = new THREE.Mesh(mainFloorGeo, mainFloorMat);
+  mainFloorMesh.rotation.x = -Math.PI / 2;
+  mainFloorMesh.position.y = -0.08;
+  mainFloorMesh.receiveShadow = true;
+  groundSystemGroup.add(mainFloorMesh);
+
+  // Surface tactical emerald grid lines to define physical cyber coordinates, placed beautifully flat on top of the solid grounds
+  const emeraldGrid = new THREE.GridHelper(160, 80, '#10b981', '#064e43');
+  emeraldGrid.position.y = 0.205;
+  emeraldGrid.material.transparent = true;
+  emeraldGrid.material.opacity = 0.55;
+  groundSystemGroup.add(emeraldGrid);
+
+  // 2. Sub-Ground Deep Blue Stratum / The Abyss Grid (Y = -12.0)
+  // Deep space base floor preventing see-through to complete black void voids
+  const deepBlueFloorGeo = new THREE.PlaneGeometry(240, 240);
+  const deepBlueFloorMat = new THREE.MeshBasicMaterial({
+    color: '#020617', // Deep midnight cyber-abyss blue
+    transparent: true,
+    opacity: 0.65,
+    side: THREE.DoubleSide
+  });
+  const deepBlueFloorMesh = new THREE.Mesh(deepBlueFloorGeo, deepBlueFloorMat);
+  deepBlueFloorMesh.rotation.x = -Math.PI / 2;
+  deepBlueFloorMesh.position.y = -12.0;
+  groundSystemGroup.add(deepBlueFloorMesh);
+
+  const abyssBlueGrid = new THREE.GridHelper(240, 60, '#3b82f6', '#1d4ed8');
+  abyssBlueGrid.position.y = -11.95;
+  abyssBlueGrid.material.transparent = true;
+  abyssBlueGrid.material.opacity = 0.40;
+  groundSystemGroup.add(abyssBlueGrid);
+
+  // 3. Catwalk Amber Stratum (Y = 4.5)
+  // Floating energy scaffold grids at higher modular action zones
+  const catwalkAmberGrid = new THREE.GridHelper(100, 25, '#f59e0b', '#78350f');
+  catwalkAmberGrid.position.y = 4.5;
+  catwalkAmberGrid.material.transparent = true;
+  catwalkAmberGrid.material.opacity = 0.25;
+  groundSystemGroup.add(catwalkAmberGrid);
+
+  // 4. Background Towering Cosmic Magenta Stratum (Y = 12.0)
+  // Distant sky high tactical scanning grid planes
+  const backgroundMagentaGrid = new THREE.GridHelper(180, 45, '#d946ef', '#701a75');
+  backgroundMagentaGrid.position.y = 12.0;
+  backgroundMagentaGrid.material.transparent = true;
+  backgroundMagentaGrid.material.opacity = 0.15;
+  groundSystemGroup.add(backgroundMagentaGrid);
+
+  // 5. Vertical Laser Stratification Coordinate Columns
+  // Links deep space abyss, surface systems and high catwalks together on vertical coordinate axes
+  const laserPillarGeo = new THREE.CylinderGeometry(0.04, 0.04, 28, 4);
+  const laserPillarMat = new THREE.MeshBasicMaterial({
+    color: '#06b6d4', // Neon Cyan laser guide
+    transparent: true,
+    opacity: 0.45,
+    blending: THREE.AdditiveBlending
+  });
+
+  const stratificationNodes = [
+    { x: 0, z: 0 },       // Center Hub
+    { x: -20, z: -14 },   // Home Area
+    { x: 20, z: -14 },    // Academy Area
+    { x: -20, z: 14 },    // Skill Lab Area
+    { x: 20, z: 14 },     // Museum Hangar Area
+    { x: 0, z: 24 }       // Portal Area
+  ];
+
+  stratificationNodes.forEach(node => {
+    // Draw vertical laser guide
+    const pillar = new THREE.Mesh(laserPillarGeo, laserPillarMat);
+    pillar.position.set(node.x, -2, node.z);
+    groundSystemGroup.add(pillar);
+
+    // Glowing coordinate rings at different height coordinates to anchor the stratification
+    const ringGeo = new THREE.RingGeometry(1.6, 1.8, 16);
+    const ringMat = new THREE.MeshBasicMaterial({
+      color: '#06b6d4',
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.65,
+      blending: THREE.AdditiveBlending
+    });
+
+    const ringTop = new THREE.Mesh(ringGeo, ringMat);
+    ringTop.rotation.x = Math.PI / 2;
+    ringTop.position.set(node.x, 0.01, node.z);
+    groundSystemGroup.add(ringTop);
+
+    const ringBottom = new THREE.Mesh(ringGeo, ringMat);
+    ringBottom.rotation.x = Math.PI / 2;
+    ringBottom.position.set(node.x, -11.9, node.z);
+    groundSystemGroup.add(ringBottom);
+  });
 
   // Cyberpunk Neon PointLights on active island hubs
   const pointLightHome = new THREE.PointLight('#f59e0b', 2.5, 15);
@@ -1699,6 +1898,9 @@ function load3DModels() {
   const SS = '3d/spacestation/GLB format/';
   const FC = '3d/factory/GLB format/';
 
+  const modelCache = {};
+  const pendingCallbacks = {};
+
   // 1. Load Main Character Astronaut GLB with animations
   loader.load('3d/character/3d_cute_astronaut_made_in_blender.glb', (gltf) => {
     threePlayerMesh = gltf.scene;
@@ -1730,22 +1932,207 @@ function load3DModels() {
     threeAssets.push(threePlayerMesh);
   }, undefined, (err) => console.error("Astronaut GLB load error:", err));
 
-  // Helper method to download and inject static environments
+  // Helper method to scan loaded models and apply auto-emissive setup for lights/panels
+  const scanAndApplyGlow = (mesh) => {
+    mesh.traverse((child) => {
+      if (child.isMesh) {
+        child.castShadow = true;
+        child.receiveShadow = true;
+        
+        // Match names containing 'screen', 'light', 'panel', 'neon', 'glow', 'emissive'
+        if (child.material) {
+          const matName = (child.material.name || '').toLowerCase();
+          const meshName = (child.name || '').toLowerCase();
+          if (
+            matName.includes('neon') || matName.includes('glow') || matName.includes('emissive') || matName.includes('screen') || matName.includes('light') || matName.includes('panel') ||
+            meshName.includes('glass') || meshName.includes('glow') || meshName.includes('neon') || meshName.includes('light') || meshName.includes('panel') || meshName.includes('screen')
+          ) {
+            if (!child.material.emissive) {
+              child.material.emissive = new THREE.Color(child.material.color || '#10b981');
+            }
+            child.material.emissiveIntensity = 2.0;
+            child.material.needsUpdate = true;
+            if (!emissiveMaterials.includes(child.material)) {
+              emissiveMaterials.push(child.material);
+            }
+          }
+        }
+      }
+    });
+  };
+
+  // Helper method to download and inject static environments (uses fast cloning & async caching)
   const addStaticAsset = (path, x, y, z, scale = 1, rotY = 0) => {
-    loader.load(path, (gltf) => {
-      const mesh = gltf.scene;
+    const applyToScene = (sourceScene) => {
+      const mesh = sourceScene.clone();
       mesh.position.set(x, y, z);
       mesh.scale.set(scale, scale, scale);
       mesh.rotation.y = rotY;
-      mesh.traverse((child) => {
-        if (child.isMesh) {
-          child.castShadow = true;
-          child.receiveShadow = true;
-        }
-      });
+      scanAndApplyGlow(mesh);
       threeScene.add(mesh);
       threeAssets.push(mesh);
-    }, undefined, (err) => console.warn(`Error loading model ${path}:`, err));
+
+      // Distinguish structural vs. interactive candidates
+      const file = path.toLowerCase();
+      const isStaticStructural = file.includes('platform') || 
+                                 file.includes('floor') || 
+                                 file.includes('wall') || 
+                                 file.includes('rock') || 
+                                 file.includes('meteor') ||
+                                 file.includes('gate') ||
+                                 file.includes('balcony') ||
+                                 file.includes('structure') ||
+                                 file.includes('track') ||
+                                 file.includes('pipe') ||
+                                 file.includes('rail') ||
+                                 file.includes('bed') ||
+                                 file.includes('hangar') ||
+                                 file.includes('conveyor') ||
+                                 file.includes('door');
+
+      if (!isStaticStructural) {
+        // Find if this mesh is spawned inside or near one of the central ZONES_3D
+        let assignedZoneId = null;
+        let minDistance = 9999;
+        ZONES_3D.forEach(zone => {
+          const dx = x - zone.x;
+          const dz = z - zone.z;
+          const dist = Math.sqrt(dx * dx + dz * dz);
+          if (dist < minDistance && dist <= zone.radius + 3.0) {
+            minDistance = dist;
+            assignedZoneId = zone.id;
+          }
+        });
+
+        // Collect all materials so that we can transform their colors when the player is close
+        const materialsToPulse = [];
+        mesh.traverse(child => {
+          if (child.isMesh && child.material) {
+            const mats = Array.isArray(child.material) ? child.material : [child.material];
+            mats.forEach(mat => {
+              if (!materialsToPulse.some(entry => entry.material === mat)) {
+                materialsToPulse.push({
+                  material: mat,
+                  originalColor: mat.color ? mat.color.clone() : new THREE.Color(),
+                  originalEmissive: mat.emissive ? mat.emissive.clone() : new THREE.Color(0,0,0),
+                  originalEmissiveIntensity: mat.emissiveIntensity !== undefined ? mat.emissiveIntensity : 1.0
+                });
+              }
+            });
+          }
+        });
+
+        activeHotspots.push({
+          id: Math.random().toString(36).substring(2, 9),
+          zoneId: assignedZoneId,
+          mesh: mesh,
+          path: path,
+          baseY: y,
+          baseX: x,
+          baseZ: z,
+          originalRotationY: rotY,
+          materials: materialsToPulse,
+          isHoveredByPlayer: false
+        });
+      }
+    };
+
+    if (modelCache[path]) {
+      applyToScene(modelCache[path]);
+      return;
+    }
+
+    if (pendingCallbacks[path]) {
+      pendingCallbacks[path].push(applyToScene);
+      return;
+    }
+
+    pendingCallbacks[path] = [applyToScene];
+
+    loader.load(path, (gltf) => {
+      modelCache[path] = gltf.scene;
+      const callbacks = pendingCallbacks[path];
+      delete pendingCallbacks[path];
+      if (callbacks) {
+        callbacks.forEach(cb => cb(gltf.scene));
+      }
+    }, undefined, (err) => {
+      console.warn(`Error loading model ${path}:`, err);
+      delete pendingCallbacks[path];
+    });
+  };
+
+  // Performance Optimization: InstancedMesh generator for repetitive static props (Pipes, Rails, Crates)
+  const createInstancedPropsFromGLB = (modelPath, instances) => {
+    loader.load(modelPath, (gltf) => {
+      let sourceMesh = null;
+      gltf.scene.traverse((child) => {
+        if (child.isMesh && !sourceMesh) {
+          sourceMesh = child;
+        }
+      });
+      if (!sourceMesh) return;
+
+      const geometry = sourceMesh.geometry.clone();
+      const material = sourceMesh.material.clone(); // Clone material per batch for isolated neon tuning
+      const instancedMesh = new THREE.InstancedMesh(geometry, material, instances.length);
+
+      const dummy = new THREE.Object3D();
+      instances.forEach((data, i) => {
+        dummy.position.set(data.x, data.y, data.z);
+        if (data.rotation) {
+          dummy.rotation.set(data.rotation.x || 0, data.rotation.y || 0, data.rotation.z || 0);
+        } else if (data.rotY) {
+          dummy.rotation.y = data.rotY;
+        }
+        const s = typeof data.scale === 'number' ? data.scale : 1.0;
+        dummy.scale.set(s, s, s);
+        dummy.updateMatrix();
+        instancedMesh.setMatrixAt(i, dummy.matrix);
+
+        if (data.color) {
+          instancedMesh.setColorAt(i, new THREE.Color(data.color));
+        }
+      });
+
+      instancedMesh.instanceMatrix.needsUpdate = true;
+      instancedMesh.castShadow = true;
+      instancedMesh.receiveShadow = true;
+
+      // Register the cloned material for neon atmospheric pulsing
+      const matName = (material.name || '').toLowerCase();
+      if (matName.includes('neon') || matName.includes('glow') || matName.includes('emissive') || matName.includes('screen') || matName.includes('light')) {
+        material.emissive = new THREE.Color(material.color || '#00ffcc');
+        material.emissiveIntensity = 2.0;
+        emissiveMaterials.push(material);
+      }
+
+      threeScene.add(instancedMesh);
+      threeAssets.push(instancedMesh);
+    }, undefined, (err) => console.warn(`Error building InstancedMesh for ${modelPath}:`, err));
+  };
+
+  // Reusable function to optimize repeating props using InstancedMesh
+  const createInstancedProps = (modelPath, positionArray) => {
+    createInstancedPropsFromGLB(modelPath, positionArray);
+  };
+
+  // Modern Grid System for vertical depth and tidy asset zones
+  const GRID_SIZE = 4.0; // 3D units per grid cell
+  const TIERS = {
+    GROUND: 0.2,       // Flat ground coordinates
+    CATWALK: 4.5,      // Raised structures, industrial catwalks, or scaffolds
+    BACKGROUND: 12.0   // Distant visual backdrops and massive structural components
+  };
+
+  /**
+   * Helper function to place props with grid alignment and vertical tier heights.
+   */
+  const spawnAssetInGrid = (modelPath, gridX, gridZ, tier = 'GROUND', scale = 1.0, rotationY = 0) => {
+    const actualX = gridX * GRID_SIZE;
+    const actualY = TIERS[tier] !== undefined ? TIERS[tier] : TIERS.GROUND;
+    const actualZ = gridZ * GRID_SIZE;
+    addStaticAsset(modelPath, actualX, actualY, actualZ, scale, rotationY);
   };
 
   // Helper method to load cogs rotating below islands
@@ -1781,6 +2168,16 @@ function load3DModels() {
         if (child.isMesh) {
           child.castShadow = true;
           child.receiveShadow = true;
+          
+          // Apply emissive neon look to spaceship engines/glow stripes
+          if (child.material) {
+            const matName = (child.material.name || '').toLowerCase();
+            if (matName.includes('neon') || matName.includes('glow') || matName.includes('engine')) {
+              child.material.emissive = new THREE.Color('#ec4899');
+              child.material.emissiveIntensity = 2.5;
+              emissiveMaterials.push(child.material);
+            }
+          }
         }
       });
       threeScene.add(mesh);
@@ -1831,156 +2228,143 @@ function load3DModels() {
     }, undefined, (err) => console.warn("Error loading destructible box:", err));
   };
 
-  // === CENTER HUB — Command Center ===
-  addStaticAsset(SK+'platform_large.glb', 0, 0, 0, 1.8);
-  addStaticAsset(FC+'floor-large.glb', 0, 0.15, 0, 1.4);
-  addStaticAsset(SS+'wall-window.glb', 0, 0.2, -4, 0.85, Math.PI);
-  addStaticAsset(SS+'wall.glb', -3, 0.2, -3.5, 0.85, Math.PI/2);
-  addStaticAsset(SS+'wall.glb', 3, 0.2, -3.5, 0.85, -Math.PI/2);
-  addStaticAsset(SS+'wall-door.glb', 0, 0.2, 3.5, 0.85);
-  addStaticAsset(SS+'display-wall-wide.glb', 0, 0.2, -3.2, 0.75, Math.PI);
-  addStaticAsset(SK+'desk_computer.glb', -2, 0.2, -1.5, 0.85, Math.PI);
-  addStaticAsset(SK+'desk_computer.glb', 2, 0.2, -1.5, 0.85, Math.PI);
-  addStaticAsset(SK+'desk_chair.glb', -2, 0.2, -0.5, 0.85, Math.PI);
-  addStaticAsset(SK+'desk_chair.glb', 2, 0.2, -0.5, 0.85, Math.PI);
-  addStaticAsset(SS+'computer-screen.glb', 0, 0.2, -2, 0.7, Math.PI);
-  addStaticAsset(FC+'screen-flat.glb', -1.5, 1.5, -3.6, 0.6, Math.PI);
-  addStaticAsset(FC+'screen-flat.glb', 1.5, 1.5, -3.6, 0.6, Math.PI);
-  addStaticAsset(SS+'chair-cushion.glb', -1, 0.2, 1.5, 0.8, Math.PI/2);
-  addStaticAsset(SS+'chair-cushion.glb', 1, 0.2, 1.5, 0.8, -Math.PI/2);
-  addStaticAsset(SK+'machine_wireless.glb', 3.5, 0.2, 0, 0.85);
+  // === MODULAR TIERS: GROUND LEVEL SYSTEM ===
+  // Core platforms and low-level island objects are spawned utilizing grid-bound coordinate slots
+  spawnAssetInGrid(SK + 'platform_large.glb', 0, 0, 'GROUND', 1.8);
+
+  // Batch Spawn Floor models across the entire defined central grid area (from -5 to 5) to make the map solid
+  for (let gx = -5; gx <= 5; gx++) {
+    for (let gz = -5; gz <= 5; gz++) {
+      spawnAssetInGrid(FC + 'floor-large.glb', gx, gz, 'GROUND', 1.43);
+    }
+  }
+
+  spawnAssetInGrid(SS + 'wall-window.glb', 0, -1.0, 'GROUND', 0.85, Math.PI);
+  spawnAssetInGrid(SS + 'wall.glb', -0.75, -0.875, 'GROUND', 0.85, Math.PI / 2);
+  spawnAssetInGrid(SS + 'wall.glb', 0.75, -0.875, 'GROUND', 0.85, -Math.PI / 2);
+  spawnAssetInGrid(SS + 'wall-door.glb', 0, 0.875, 'GROUND', 0.85);
+  spawnAssetInGrid(SS + 'display-wall-wide.glb', 0, -0.8, 'GROUND', 0.75, Math.PI);
+  spawnAssetInGrid(SS + 'computer-screen.glb', 0, -0.5, 'GROUND', 0.7, Math.PI);
+  spawnAssetInGrid(SK + 'machine_wireless.glb', 0.875, 0, 'GROUND', 0.85);
 
   // === ISLAND 1: HOME — Living Quarters ===
-  addStaticAsset(SK+'platform_large.glb', -20, 0, -14, 1.8);
-  addStaticAsset(FC+'floor-large.glb', -20, 0.15, -14, 1.3);
-  addStaticAsset(SS+'wall.glb', -20, 0.2, -17.5, 0.8, 0);
-  addStaticAsset(SS+'wall-window.glb', -23, 0.2, -14, 0.8, Math.PI/2);
-  addStaticAsset(SS+'wall-corner.glb', -23, 0.2, -17, 0.8, Math.PI);
-  addStaticAsset(SS+'wall-door.glb', -17, 0.2, -14, 0.8, -Math.PI/2);
-  addStaticAsset(SS+'bed-single-cover.glb', -21.5, 0.2, -15.5, 0.85, Math.PI/2);
-  addStaticAsset(SS+'table.glb', -19, 0.2, -16, 0.8);
-  addStaticAsset(SS+'chair-armrest-headrest.glb', -19, 0.2, -15, 0.8, Math.PI);
-  addStaticAsset(SS+'container.glb', -22, 0.2, -12.5, 0.85);
-  addStaticAsset(SS+'container-tall.glb', -22.5, 0.2, -11, 0.8);
-  addStaticAsset(SS+'display-wall.glb', -20.5, 0.2, -17, 0.7, Math.PI);
-  addStaticAsset(SK+'machine_wireless.glb', -17.5, 0.2, -16.5, 0.85);
-  addStaticAsset(SK+'rocket_baseA.glb', -17, 0.2, -11, 0.9);
-  addStaticAsset(SK+'rocket_sidesA.glb', -17, 0.7, -11, 0.9);
-  addStaticAsset(SK+'rocket_finsA.glb', -17, 1.2, -11, 0.9);
-  addStaticAsset(SK+'rocket_topA.glb', -17, 1.8, -11, 0.9);
-  addStaticAsset(SS+'balcony-rail.glb', -18.5, 0.2, -11, 0.75);
+  spawnAssetInGrid(SK + 'platform_large.glb', -5, -3.5, 'GROUND', 1.8);
+  spawnAssetInGrid(FC + 'floor-large.glb', -5, -3.5, 'GROUND', 1.3);
+  spawnAssetInGrid(SS + 'wall.glb', -5, -4.375, 'GROUND', 0.8, 0);
+  spawnAssetInGrid(SS + 'wall-window.glb', -5.75, -3.5, 'GROUND', 0.8, Math.PI / 2);
+  spawnAssetInGrid(SS + 'wall-corner.glb', -5.75, -4.25, 'GROUND', 0.8, Math.PI);
+  spawnAssetInGrid(SS + 'wall-door.glb', -4.25, -3.5, 'GROUND', 0.8, -Math.PI / 2);
+  spawnAssetInGrid(SS + 'bed-single-cover.glb', -5.375, -3.875, 'GROUND', 0.85, Math.PI / 2);
+  spawnAssetInGrid(SS + 'table.glb', -4.75, -4.0, 'GROUND', 0.8);
+  spawnAssetInGrid(SS + 'chair-armrest-headrest.glb', -4.75, -3.75, 'GROUND', 0.8, Math.PI);
+  spawnAssetInGrid(SS + 'container.glb', -5.5, -3.125, 'GROUND', 0.85);
+  spawnAssetInGrid(SS + 'container-tall.glb', -5.625, -2.75, 'GROUND', 0.8);
+  spawnAssetInGrid(SS + 'display-wall.glb', -5.125, -4.25, 'GROUND', 0.7, Math.PI);
+  spawnAssetInGrid(SK + 'machine_wireless.glb', -4.375, -4.125, 'GROUND', 0.85);
+  
+  // Rocket A (Home Area Backdrop Structural Tier)
+  spawnAssetInGrid(SK + 'rocket_baseA.glb', -4.25, -2.75, 'BACKGROUND', 0.9);
+  spawnAssetInGrid(SK + 'rocket_sidesA.glb', -4.25, -2.75, 'BACKGROUND', 0.9);
+  spawnAssetInGrid(SK + 'rocket_finsA.glb', -4.25, -2.75, 'BACKGROUND', 0.9);
+  spawnAssetInGrid(SK + 'rocket_topA.glb', -4.25, -2.75, 'BACKGROUND', 0.9);
 
   // === ISLAND 2: ACADEMY — Classroom ===
-  addStaticAsset(SK+'platform_large.glb', 20, 0, -14, 1.8);
-  addStaticAsset(FC+'floor-large.glb', 20, 0.15, -14, 1.3);
-  addStaticAsset(SS+'wall-window.glb', 20, 0.2, -17.5, 0.8, 0);
-  addStaticAsset(SS+'wall.glb', 17, 0.2, -14, 0.8, Math.PI/2);
-  addStaticAsset(SS+'wall-window.glb', 23, 0.2, -14, 0.8, -Math.PI/2);
-  addStaticAsset(SS+'wall-door.glb', 20, 0.2, -10.5, 0.8, Math.PI);
-  addStaticAsset(SS+'computer-wide.glb', 20, 0.2, -16.5, 0.85, Math.PI);
-  addStaticAsset(SS+'chair-headrest.glb', 20, 0.2, -15.5, 0.85, Math.PI);
-  addStaticAsset(FC+'screen-wide.glb', 20, 1.5, -17, 0.65, Math.PI);
-  addStaticAsset(SK+'desk_computerScreen.glb', 18.5, 0.2, -13.5, 0.75, Math.PI);
-  addStaticAsset(SK+'desk_computerScreen.glb', 21.5, 0.2, -13.5, 0.75, Math.PI);
-  addStaticAsset(SK+'desk_chairArms.glb', 18.5, 0.2, -12.5, 0.75, Math.PI);
-  addStaticAsset(SK+'desk_chairArms.glb', 21.5, 0.2, -12.5, 0.75, Math.PI);
-  addStaticAsset(SK+'desk_computer.glb', 18.5, 0.2, -11.5, 0.75, Math.PI);
-  addStaticAsset(SK+'desk_computer.glb', 21.5, 0.2, -11.5, 0.75, Math.PI);
-  addStaticAsset(SS+'container-tall.glb', 17.5, 0.2, -16, 0.75);
-  addStaticAsset(SK+'barrel.glb', 22.5, 0.2, -16, 0.85);
+  spawnAssetInGrid(SK + 'platform_large.glb', 5, -3.5, 'GROUND', 1.8);
+  spawnAssetInGrid(FC + 'floor-large.glb', 5, -3.5, 'GROUND', 1.3);
+  spawnAssetInGrid(SS + 'wall-window.glb', 5, -4.375, 'GROUND', 0.8, 0);
+  spawnAssetInGrid(SS + 'wall.glb', 4.25, -3.5, 'GROUND', 0.8, Math.PI / 2);
+  spawnAssetInGrid(SS + 'wall-window.glb', 5.75, -3.5, 'GROUND', 0.8, -Math.PI / 2);
+  spawnAssetInGrid(SS + 'wall-door.glb', 5, -2.625, 'GROUND', 0.8, Math.PI);
+  spawnAssetInGrid(SS + 'computer-wide.glb', 5, -4.125, 'GROUND', 0.85, Math.PI);
+  spawnAssetInGrid(SS + 'chair-headrest.glb', 5, -3.875, 'GROUND', 0.85, Math.PI);
+  spawnAssetInGrid(SS + 'container-tall.glb', 4.375, -4.0, 'GROUND', 0.75);
+  spawnAssetInGrid(SK + 'barrel.glb', 5.625, -4.0, 'GROUND', 0.85);
+
+  // Elevated Holographic Learning Monitor
+  spawnAssetInGrid(FC + 'screen-wide.glb', 5.0, -4.25, 'CATWALK', 0.65, Math.PI);
 
   // === ISLAND 3: SKILL LAB — Factory Workshop ===
-  addStaticAsset(SK+'platform_large.glb', -20, 0, 14, 1.8);
-  addStaticAsset(FC+'floor-large.glb', -20, 0.15, 14, 1.3);
-  addStaticAsset(FC+'structure-wall.glb', -20, 0.2, 11, 0.8, 0);
-  addStaticAsset(FC+'structure-window.glb', -23.5, 0.2, 14, 0.7, Math.PI/2);
-  addStaticAsset(FC+'structure-doorway.glb', -16.5, 0.2, 14, 0.8, -Math.PI/2);
-  addStaticAsset(FC+'conveyor.glb', -21, 0.2, 13, 0.75, 0);
-  addStaticAsset(FC+'conveyor.glb', -21, 0.2, 14.5, 0.75, 0);
-  addStaticAsset(FC+'conveyor-corner.glb', -21, 0.2, 16, 0.75, Math.PI/2);
-  addStaticAsset(FC+'machine.glb', -19, 0.2, 12, 0.7);
-  addStaticAsset(FC+'robot-arm-a.glb', -22.5, 0.2, 13.5, 0.7, -Math.PI/3);
-  addStaticAsset(FC+'robot-arm-b.glb', -22.5, 0.2, 15, 0.7, Math.PI/4);
-  addStaticAsset(FC+'piston-round.glb', -18, 0.2, 16, 0.6);
-  addStaticAsset(FC+'crane-magnet.glb', -19, 0.2, 16.5, 0.55);
-  addStaticAsset(FC+'pipe-large.glb', -23, 0.2, 11.5, 0.6, Math.PI/2);
-  addStaticAsset(FC+'pipe-large-bend.glb', -23, 0.2, 12.5, 0.5);
-  addStaticAsset(FC+'hopper-round.glb', -17.5, 0.2, 11.5, 0.6);
-  addStaticAsset(FC+'screen-panel-wide.glb', -18, 1.0, 11.2, 0.55, Math.PI);
-  addStaticAsset(FC+'screen-hanging-wide.glb', -20, 2.0, 12, 0.5, Math.PI);
-  addStaticAsset(FC+'warning-traffic.glb', -17, 0.2, 13, 0.7);
-  addStaticAsset(FC+'cone.glb', -17, 0.2, 15, 0.7);
-  addStaticAsset(SK+'barrels.glb', -23, 0.2, 16.5, 0.8);
-  addStaticAsset(FC+'box-large.glb', -23, 0.2, 12, 0.7);
-  addStaticAsset(FC+'box-small.glb', -23, 0.7, 12, 0.65);
+  spawnAssetInGrid(SK + 'platform_large.glb', -5, 3.5, 'GROUND', 1.8);
+  spawnAssetInGrid(FC + 'floor-large.glb', -5, 3.5, 'GROUND', 1.3);
+  spawnAssetInGrid(FC + 'structure-wall.glb', -5, 2.75, 'GROUND', 0.8, 0);
+  spawnAssetInGrid(FC + 'structure-window.glb', -5.875, 3.5, 'GROUND', 0.7, Math.PI / 2);
+  spawnAssetInGrid(FC + 'structure-doorway.glb', -4.125, 3.5, 'GROUND', 0.8, -Math.PI / 2);
+  spawnAssetInGrid(FC + 'conveyor.glb', -5.25, 3.25, 'GROUND', 0.75, 0);
+  spawnAssetInGrid(FC + 'conveyor.glb', -5.25, 3.625, 'GROUND', 0.75, 0);
+  spawnAssetInGrid(FC + 'conveyor-corner.glb', -5.25, 4.0, 'GROUND', 0.75, Math.PI / 2);
+  spawnAssetInGrid(FC + 'machine.glb', -4.75, 3.0, 'GROUND', 0.7);
+  spawnAssetInGrid(FC + 'robot-arm-a.glb', -5.625, 3.375, 'GROUND', 0.7, -Math.PI / 3);
+  spawnAssetInGrid(FC + 'robot-arm-b.glb', -5.625, 3.75, 'GROUND', 0.7, Math.PI / 4);
+  spawnAssetInGrid(FC + 'piston-round.glb', -4.5, 4.0, 'GROUND', 0.6);
+  spawnAssetInGrid(FC + 'crane-magnet.glb', -4.75, 4.125, 'GROUND', 0.55);
+  spawnAssetInGrid(FC + 'pipe-large.glb', -5.75, 2.875, 'GROUND', 0.6, Math.PI / 2);
+  spawnAssetInGrid(FC + 'pipe-large-bend.glb', -5.75, 3.125, 'GROUND', 0.5);
+  spawnAssetInGrid(FC + 'hopper-round.glb', -4.375, 2.875, 'GROUND', 0.6);
+  spawnAssetInGrid(FC + 'warning-traffic.glb', -4.25, 3.25, 'GROUND', 0.7);
+  spawnAssetInGrid(FC + 'cone.glb', -4.25, 3.75, 'GROUND', 0.7);
+  spawnAssetInGrid(SK + 'barrels.glb', -5.75, 4.125, 'GROUND', 0.8);
+  spawnAssetInGrid(FC + 'box-large.glb', -5.75, 3.0, 'GROUND', 0.7);
+  spawnAssetInGrid(FC + 'box-small.glb', -5.75, 3.0, 'GROUND', 0.65);
+
+  // Raised Industrial Interactive Monitors
+  spawnAssetInGrid(FC + 'screen-panel-wide.glb', -4.5, 2.8, 'CATWALK', 0.55, Math.PI);
+  spawnAssetInGrid(FC + 'screen-hanging-wide.glb', -5.0, 3.0, 'CATWALK', 0.5, Math.PI);
 
   // === ISLAND 4: MUSEUM — Hangar Gallery ===
-  addStaticAsset(SK+'platform_large.glb', 20, 0, 14, 1.8);
-  addStaticAsset(FC+'floor-large.glb', 20, 0.15, 14, 1.3);
-  addStaticAsset(SK+'hangar_largeA.glb', 20, 0.2, 14, 0.65);
-  addStaticAsset(SS+'table-display-planet.glb', 18.5, 0.2, 13, 0.9);
-  addStaticAsset(SS+'table-display.glb', 21.5, 0.2, 13, 0.9);
-  addStaticAsset(SS+'table-display-small.glb', 20, 0.2, 16, 0.85);
-  addStaticAsset(SK+'rail.glb', 18, 0.2, 12, 0.8);
-  addStaticAsset(SK+'rail.glb', 22, 0.2, 12, 0.8);
-  addStaticAsset(SS+'balcony-rail.glb', 20, 0.2, 17, 0.8);
-  loader.load(SK+'craft_racer.glb', (gltf) => {
-    const mesh = gltf.scene; mesh.position.set(20, 1.7, 14); mesh.scale.set(0.85, 0.85, 0.85);
-    mesh.traverse(c => { if(c.isMesh){c.castShadow=true;c.receiveShadow=true;} });
-    threeScene.add(mesh); threeAssets.push(mesh); threeAssets.racerCraft = mesh;
+  spawnAssetInGrid(SK + 'platform_large.glb', 5, 3.5, 'GROUND', 1.8);
+  spawnAssetInGrid(FC + 'floor-large.glb', 5, 3.5, 'GROUND', 1.3);
+  spawnAssetInGrid(SS + 'table-display-planet.glb', 4.625, 3.25, 'GROUND', 0.9);
+  spawnAssetInGrid(SS + 'table-display.glb', 5.375, 3.25, 'GROUND', 0.9);
+  spawnAssetInGrid(SS + 'table-display-small.glb', 5, 4.0, 'GROUND', 0.85);
+
+  // Massive Gallery Hangar (Background Tier)
+  spawnAssetInGrid(SK + 'hangar_largeA.glb', 5.0, 3.5, 'BACKGROUND', 0.65);
+
+  loader.load(SK + 'craft_racer.glb', (gltf) => {
+    const mesh = gltf.scene;
+    mesh.position.set(20, 1.7, 14);
+    mesh.scale.set(0.85, 0.85, 0.85);
+    mesh.traverse(c => {
+      if (c.isMesh) {
+        c.castShadow = true;
+        c.receiveShadow = true;
+      }
+    });
+    scanAndApplyGlow(mesh);
+    threeScene.add(mesh);
+    threeAssets.push(mesh);
+    threeAssets.racerCraft = mesh;
   });
-  addStaticAsset(SK+'craft_speederC.glb', 18, 1.5, 15.5, 0.65, Math.PI/3);
-  addStaticAsset(SK+'craft_speederD.glb', 22, 1.5, 15.5, 0.65, -Math.PI/3);
-  addStaticAsset(SK+'turret_single.glb', 23, 0.2, 11.5, 0.6, -Math.PI/4);
+  spawnAssetInGrid(SK + 'craft_speederC.glb', 4.5, 3.875, 'GROUND', 0.65, Math.PI / 3);
+  spawnAssetInGrid(SK + 'craft_speederD.glb', 5.5, 3.875, 'GROUND', 0.65, -Math.PI / 3);
+  spawnAssetInGrid(SK + 'turret_single.glb', 5.75, 2.875, 'GROUND', 0.6, -Math.PI / 4);
 
   // === ISLAND 5: PORTAL ===
-  addStaticAsset(SK+'platform_large.glb', 0, 0, 24, 1.3);
-  addStaticAsset(SK+'gate_complex.glb', 0, 0.2, 24, 0.95, Math.PI);
-  addStaticAsset(SS+'door-double.glb', 0, 0.2, 24.5, 1.1, Math.PI);
-  addStaticAsset(SK+'structure_detailed.glb', -2, 0.2, 23, 0.75);
-  addStaticAsset(SK+'structure_detailed.glb', 2, 0.2, 23, 0.75);
+  spawnAssetInGrid(SK + 'platform_large.glb', 0, 6.0, 'GROUND', 1.3);
+  spawnAssetInGrid(SK + 'gate_complex.glb', 0, 6.0, 'GROUND', 0.95, Math.PI);
+  spawnAssetInGrid(SS + 'door-double.glb', 0, 6.125, 'GROUND', 1.1, Math.PI);
+  spawnAssetInGrid(SK + 'structure_detailed.glb', -0.5, 5.75, 'GROUND', 0.75);
+  spawnAssetInGrid(SK + 'structure_detailed.glb', 0.5, 5.75, 'GROUND', 0.75);
 
-  // === MONORAIL CONNECTIONS ===
-  addStaticAsset(SK+'monorail_trackStraight.glb', -10, 0.1, -7, 0.9, Math.PI/4);
-  addStaticAsset(SK+'monorail_trackStraight.glb', -13, 0.1, -9, 0.9, Math.PI/4);
-  addStaticAsset(SK+'monorail_trackSupport.glb', -10, -0.8, -7, 0.85);
-  addStaticAsset(SK+'monorail_trackStraight.glb', 10, 0.1, -7, 0.9, -Math.PI/4);
-  addStaticAsset(SK+'monorail_trackStraight.glb', 13, 0.1, -9, 0.9, -Math.PI/4);
-  addStaticAsset(SK+'monorail_trackSupport.glb', 10, -0.8, -7, 0.85);
-  addStaticAsset(SK+'monorail_trackStraight.glb', -10, 0.1, 7, 0.9, -Math.PI/4+Math.PI);
-  addStaticAsset(SK+'monorail_trackSupport.glb', -10, -0.8, 7, 0.85);
-  addStaticAsset(SK+'monorail_trackStraight.glb', 10, 0.1, 7, 0.9, Math.PI/4+Math.PI);
-  addStaticAsset(SK+'monorail_trackSupport.glb', 10, -0.8, 7, 0.85);
-  addStaticAsset(SK+'monorail_trackStraight.glb', 0, 0.1, 10, 0.9, Math.PI);
-  addStaticAsset(SK+'monorail_trackStraight.glb', 0, 0.1, 16, 0.9, Math.PI);
-  addStaticAsset(SK+'monorail_trackStraight.glb', 0, 0.1, 20, 0.9, Math.PI);
-  addStaticAsset(SK+'monorail_trackSupport.glb', 0, -0.8, 14, 0.85);
+  // === MONORAIL CONNECTIONS & PERIPHERALS ===
+  // Outer perimeter defense turrets, satellite tracking dishes, and warning high structures (BACKGROUND Tier)
+  spawnAssetInGrid(SK + 'satelliteDish_large.glb', -7.0, -6.5, 'BACKGROUND', 1.4, Math.PI / 6);
+  spawnAssetInGrid(SK + 'satelliteDish_detailed.glb', 7.0, -6.5, 'BACKGROUND', 1.2, -Math.PI / 6);
+  spawnAssetInGrid(SK + 'turret_double.glb', -7.0, 6.5, 'BACKGROUND', 0.7, Math.PI / 4);
+  spawnAssetInGrid(SK + 'turret_single.glb', 7.0, 6.5, 'BACKGROUND', 0.7, -Math.PI / 4);
 
-  // === PERIPHERALS ===
-  addStaticAsset(SK+'satelliteDish_large.glb', -28, 0.2, -26, 1.4, Math.PI/6);
-  addStaticAsset(SK+'satelliteDish_detailed.glb', 28, 0.2, -26, 1.2, -Math.PI/6);
-  addStaticAsset(SK+'turret_double.glb', -28, 0.2, 26, 0.7, Math.PI/4);
-  addStaticAsset(SK+'turret_single.glb', 28, 0.2, 26, 0.7, -Math.PI/4);
-  addStaticAsset(SS+'structure-barrier-high.glb', 16, 0.2, -12, 0.7);
-  addStaticAsset(SS+'structure-barrier-high.glb', -16, 0.2, -12, 0.7);
-  addStaticAsset(SS+'structure-barrier.glb', -16, 0.2, 12, 0.7);
-  addStaticAsset(SS+'structure-barrier.glb', 16, 0.2, 12, 0.7);
-  addStaticAsset(SK+'pipe_straight.glb', -28, 0.2, 0, 1.0, Math.PI/2);
-  addStaticAsset(SK+'pipe_straight.glb', 28, 0.2, 0, 1.0, Math.PI/2);
-
-  // === ROCKET PAD (background) ===
-  addStaticAsset(SK+'platform_large.glb', 0, 0, -24, 1.0);
-  addStaticAsset(SK+'rocket_baseB.glb', 0, 0.2, -24, 1.1);
-  addStaticAsset(SK+'rocket_sidesB.glb', 0, 0.9, -24, 1.1);
-  addStaticAsset(SK+'rocket_finsB.glb', 0, 1.7, -24, 1.1);
-  addStaticAsset(SK+'rocket_topB.glb', 0, 2.5, -24, 1.1);
-  addStaticAsset(SS+'balcony-rail.glb', 0, 0.2, -22, 0.8);
+  // === ROCKET PAD B (BACKGROUND) ===
+  spawnAssetInGrid(SK + 'platform_large.glb', 0, -6.0, 'BACKGROUND', 1.0);
+  spawnAssetInGrid(SK + 'rocket_baseB.glb', 0, -6.0, 'BACKGROUND', 1.1);
+  spawnAssetInGrid(SK + 'rocket_sidesB.glb', 0, -6.0, 'BACKGROUND', 1.1);
+  spawnAssetInGrid(SK + 'rocket_finsB.glb', 0, -6.0, 'BACKGROUND', 1.1);
+  spawnAssetInGrid(SK + 'rocket_topB.glb', 0, -6.0, 'BACKGROUND', 1.1);
 
   // === NPC ASTRONAUTS ===
-  addStaticAsset(SK+'astronautA.glb', -19, 0.2, -12, 0.85, Math.PI/3);
-  addStaticAsset(SK+'astronautB.glb', 21, 0.2, -12, 0.85, -Math.PI/6);
-  addStaticAsset(SK+'astronautA.glb', -18, 0.2, 16, 0.85, Math.PI);
-  addStaticAsset(SK+'alien.glb', 22, 0.2, 16, 0.85, -Math.PI/2);
+  addStaticAsset(SK + 'astronautA.glb', -19, 0.2, -12, 0.85, Math.PI / 3);
+  addStaticAsset(SK + 'astronautB.glb', 21, 0.2, -12, 0.85, -Math.PI / 6);
+  addStaticAsset(SK + 'astronautA.glb', -18, 0.2, 16, 0.85, Math.PI);
+  addStaticAsset(SK + 'alien.glb', 22, 0.2, 16, 0.85, -Math.PI / 2);
 
   // === COGWHEELS ===
   addCogAsset(FC+'cog-a.glb', -20, -6, -14, 4.5, 0.007);
@@ -1996,29 +2380,138 @@ function load3DModels() {
   addCraftAsset(SK+'craft_cargoA.glb', -27, 3.8, 8, 0.9, 0, 0.65, 0.0013);
   addCraftAsset(SK+'craft_cargoB.glb', 0, 4.5, -30, 1.0, Math.PI, 0.8, 0.001);
 
-  // === STEPPING ROCKS ===
-  addStaticAsset(SK+'rock.glb', -10, -0.6, -7, 1.1);
-  addStaticAsset(SK+'rock_crystalsLargeA.glb', -8, 0.6, -6, 0.7, Math.PI/4);
-  addStaticAsset(SK+'rock_largeA.glb', -14, -0.4, -10, 0.9);
-  addStaticAsset(SK+'rock.glb', 10, -0.6, -7, 1.1);
-  addStaticAsset(SK+'rock_crystalsLargeB.glb', 8, 0.6, -6, 0.7, -Math.PI/4);
-  addStaticAsset(SK+'rock_largeB.glb', 14, -0.4, -10, 0.9);
-  addStaticAsset(SK+'rock.glb', -10, -0.6, 7, 1.1);
-  addStaticAsset(SK+'rock.glb', 10, -0.6, 7, 1.1);
-  addStaticAsset(SK+'rock.glb', 0, -0.6, 12, 1.2);
-  addStaticAsset(SK+'rock.glb', 0, -0.6, 18, 1.25);
-  addStaticAsset(SK+'rock.glb', -15, -0.5, -4, 0.9);
-  addStaticAsset(SK+'rock.glb', 15, -0.5, 4, 0.95);
-  addStaticAsset(SK+'rocks_smallA.glb', -5, -0.3, -3, 0.8);
-  addStaticAsset(SK+'rocks_smallB.glb', 5, -0.3, 3, 0.8);
+  // === BATCHED/INSTANCED STRUCTURES & HARDWARE (60FPS PERFORMANCE BOOST) ===
+  createInstancedProps(SK + 'pipe_straight.glb', [
+    { x: -28, y: 0.2, z: 0, scale: 1.0, rotY: Math.PI / 2 },
+    { x: 28, y: 0.2, z: 0, scale: 1.0, rotY: Math.PI / 2 },
+    { x: -28, y: 0.2, z: -10, scale: 1.0, rotY: Math.PI / 2 },
+    { x: 28, y: 0.2, z: -10, scale: 1.0, rotY: Math.PI / 2 },
+    { x: -28, y: 0.2, z: 10, scale: 1.0, rotY: Math.PI / 2 },
+    { x: 28, y: 0.2, z: 10, scale: 1.0, rotY: Math.PI / 2 },
+    { x: -28, y: 0.2, z: -20, scale: 1.0, rotY: Math.PI / 2 },
+    { x: 28, y: 0.2, z: -20, scale: 1.0, rotY: Math.PI / 2 },
+    { x: -28, y: 0.2, z: 20, scale: 1.0, rotY: Math.PI / 2 },
+    { x: 28, y: 0.2, z: 20, scale: 1.0, rotY: Math.PI / 2 }
+  ]);
+
+  createInstancedProps(SK + 'desk_computer.glb', [
+    { x: -2, y: 0.2, z: -1.5, scale: 0.85, rotY: Math.PI },
+    { x: 2, y: 0.2, z: -1.5, scale: 0.85, rotY: Math.PI },
+    { x: 18.5, y: 0.2, z: -11.5, scale: 0.75, rotY: Math.PI },
+    { x: 21.5, y: 0.2, z: -11.5, scale: 0.75, rotY: Math.PI }
+  ]);
+
+  createInstancedProps(SK + 'desk_chair.glb', [
+    { x: -2, y: 0.2, z: -0.5, scale: 0.85, rotY: Math.PI },
+    { x: 2, y: 0.2, z: -0.5, scale: 0.85, rotY: Math.PI }
+  ]);
+
+  createInstancedProps(SK + 'desk_computerScreen.glb', [
+    { x: 18.5, y: 0.2, z: -13.5, scale: 0.75, rotY: Math.PI },
+    { x: 21.5, y: 0.2, z: -13.5, scale: 0.75, rotY: Math.PI }
+  ]);
+
+  createInstancedProps(SK + 'desk_chairArms.glb', [
+    { x: 18.5, y: 0.2, z: -12.5, scale: 0.75, rotY: Math.PI },
+    { x: 21.5, y: 0.2, z: -12.5, scale: 0.75, rotY: Math.PI }
+  ]);
+
+  createInstancedProps(SK + 'rail.glb', [
+    { x: 18, y: 0.2, z: 12, scale: 0.8 },
+    { x: 22, y: 0.2, z: 12, scale: 0.8 }
+  ]);
+
+  createInstancedProps(SS + 'balcony-rail.glb', [
+    { x: -18.5, y: 0.2, z: -11, scale: 0.75 },
+    { x: 20, y: 0.2, z: 17, scale: 0.8 },
+    { x: 0, y: 0.2, z: -22, scale: 0.8 }
+  ]);
+
+  createInstancedProps(SS + 'structure-barrier-high.glb', [
+    { x: 16, y: 0.2, z: -12, scale: 0.7 },
+    { x: -16, y: 0.2, z: -12, scale: 0.7 }
+  ]);
+
+  createInstancedProps(SS + 'structure-barrier.glb', [
+    { x: -16, y: 0.2, z: 12, scale: 0.7 },
+    { x: 16, y: 0.2, z: 12, scale: 0.7 }
+  ]);
+
+  createInstancedProps(SK + 'monorail_trackStraight.glb', [
+    { x: -10, y: 0.1, z: -7, scale: 0.9, rotY: Math.PI / 4 },
+    { x: -13, y: 0.1, z: -9, scale: 0.9, rotY: Math.PI / 4 },
+    { x: 10, y: 0.1, z: -7, scale: 0.9, rotY: -Math.PI / 4 },
+    { x: 13, y: 0.1, z: -9, scale: 0.9, rotY: -Math.PI / 4 },
+    { x: -10, y: 0.1, z: 7, scale: 0.9, rotY: -Math.PI / 4 + Math.PI },
+    { x: 10, y: 0.1, z: 7, scale: 0.9, rotY: Math.PI / 4 + Math.PI },
+    { x: 0, y: 0.1, z: 10, scale: 0.9, rotY: Math.PI },
+    { x: 0, y: 0.1, z: 16, scale: 0.9, rotY: Math.PI },
+    { x: 0, y: 0.1, z: 20, scale: 0.9, rotY: Math.PI }
+  ]);
+
+  createInstancedProps(SK + 'monorail_trackSupport.glb', [
+    { x: -10, y: -0.8, z: -7, scale: 0.85 },
+    { x: 10, y: -0.8, z: -7, scale: 0.85 },
+    { x: -10, y: -0.8, z: 7, scale: 0.85 },
+    { x: 10, y: -0.8, z: 7, scale: 0.85 },
+    { x: 0, y: -0.8, z: 14, scale: 0.85 }
+  ]);
+
+  createInstancedProps(SK + 'rock.glb', [
+    { x: -10, y: -0.6, z: -7, scale: 1.1 },
+    { x: 10, y: -0.6, z: -7, scale: 1.1 },
+    { x: -10, y: -0.6, z: 7, scale: 1.1 },
+    { x: 10, y: -0.6, z: 7, scale: 1.1 },
+    { x: 0, y: -0.6, z: 12, scale: 1.2 },
+    { x: 0, y: -0.6, z: 18, scale: 1.25 },
+    { x: -15, y: -0.5, z: -4, scale: 0.9 },
+    { x: 15, y: -0.5, z: 4, scale: 0.95 }
+  ]);
+
+  // === DUST CRYSTALS & STATIC ROCK PILES ===
+  addStaticAsset(SK + 'rock_crystalsLargeA.glb', -8, 0.6, -6, 0.7, Math.PI / 4);
+  addStaticAsset(SK + 'rock_largeA.glb', -14, -0.4, -10, 0.9);
+  addStaticAsset(SK + 'rock_crystalsLargeB.glb', 8, 0.6, -6, 0.7, -Math.PI / 4);
+  addStaticAsset(SK + 'rock_largeB.glb', 14, -0.4, -10, 0.9);
+  addStaticAsset(SK + 'rocks_smallA.glb', -5, -0.3, -3, 0.8);
+  addStaticAsset(SK + 'rocks_smallB.glb', 5, -0.3, 3, 0.8);
+
+  // === MONORAIL INTERACTIVE TRAIN CARS ===
+  // Resting beautifully on the straight monorail track structure
+  addStaticAsset(SK + 'monorail_trainFront.glb', 0, 1.15, 19.5, 0.85, Math.PI);
+  addStaticAsset(SK + 'monorail_trainPassenger.glb', 0, 1.15, 15.5, 0.85, Math.PI);
+  addStaticAsset(SK + 'monorail_trainEnd.glb', 0, 1.15, 11.5, 0.85, Math.PI);
+
+  // === SURFACE MOUNTED LUNAR ROVERS (SPACE VEHICLES) ===
+  addStaticAsset(SK + 'rover.glb', 19.0, 0.2, -18.0, 0.95, -Math.PI / 4);
+  addStaticAsset(SK + 'rover.glb', -21.0, 0.2, -18.0, 0.95, Math.PI / 3);
+
+  // === PLANETARY GEOLOGY: CRATERS ===
+  addStaticAsset(SK + 'crater.glb', -24, -0.25, -24, 1.4, Math.PI / 2);
+  addStaticAsset(SK + 'craterLarge.glb', 24, -0.25, -24, 1.6, 0);
+  addStaticAsset(SK + 'crater.glb', -24, -0.25, 24, 1.4, -Math.PI / 4);
+  addStaticAsset(SK + 'craterLarge.glb', 24, -0.25, 24, 1.6, Math.PI / 6);
+
+  // === RUNWAY LIGHTS & WORKPLACE DIRECTIONAL NEONS ===
+  addStaticAsset(FC + 'indicator-special-lines.glb', 0, 0.22, -4, 0.9, 0);
+  addStaticAsset(FC + 'indicator-special-lines.glb', 0, 0.22, 4, 0.9, 0);
+  addStaticAsset(FC + 'warning-orange.glb', -1, 0.2, 3, 0.85);
+  addStaticAsset(FC + 'warning-orange.glb', 1, 0.2, 3, 0.85);
+  addStaticAsset(FC + 'cone.glb', -1, 0.2, -3, 0.8);
+  addStaticAsset(FC + 'cone.glb', 1, 0.2, -3, 0.8);
+
+  // === HIGHER-ALTITUDE INDUSTRIAL ORBITAL PATROL SHIPS ===
+  addCraftAsset(SK + 'craft_miner.glb', -25, 6.5, -25, 1.15, Math.PI / 4, 0.9, 0.0017);
+  addCraftAsset(SK + 'craft_cargoB.glb', 25, 7.5, -23, 1.25, -Math.PI / 3, 1.0, 0.0013);
+  addCraftAsset(SK + 'craft_speederC.glb', 22, 5.5, 22, 1.05, -Math.PI, 0.7, 0.0028);
 
   // === SKY DEBRIS ===
-  addStaticAsset(SK+'meteor_detailed.glb', -14, 6, -28, 1.8);
-  addStaticAsset(SK+'meteor.glb', 15, 8, 30, 2.1);
-  addStaticAsset(SK+'meteor_half.glb', -25, 5, 20, 1.5);
-  addStaticAsset(SK+'rock_crystalsLargeA.glb', -28, -1, 0, 1.2);
-  addStaticAsset(SK+'rock_crystalsLargeB.glb', 28, -1, 0, 1.2);
-  addStaticAsset(SK+'rock_crystals.glb', 0, 5, -30, 1.0);
+  spawnAssetInGrid(SK + 'meteor_detailed.glb', -3.5, -7.0, 'BACKGROUND', 1.8);
+  spawnAssetInGrid(SK + 'meteor.glb', 3.75, 7.5, 'BACKGROUND', 2.1);
+  spawnAssetInGrid(SK + 'meteor_half.glb', -6.25, 5.0, 'BACKGROUND', 1.5);
+  spawnAssetInGrid(SK + 'rock_crystalsLargeA.glb', -7.0, 0, 'BACKGROUND', 1.2);
+  spawnAssetInGrid(SK + 'rock_crystalsLargeB.glb', 7.0, 0, 'BACKGROUND', 1.2);
+  spawnAssetInGrid(SK + 'rock_crystals.glb', 0, -7.5, 'BACKGROUND', 1.0);
 
   // === DESTRUCTIBLE BOXES ===
   addDestructibleBox(0, 0.4, 5, 1.0);
@@ -2038,6 +2531,8 @@ function load3DModels() {
 
 function animate3D() {
   threeAnimId = requestAnimationFrame(animate3D);
+
+  const now = Date.now();
 
   // 1. Controls update
   if (threeControls) threeControls.update();
@@ -2140,16 +2635,34 @@ function animate3D() {
       }
     });
 
-    // 4. Camera follow
-    const camH = isCinematicView ? 25 : 14;
-    const camD = isCinematicView ? 30 : 16;
-    const camS = isCinematicView ? -10 : 0;
-    const targetCamPos = new THREE.Vector3(
-      threePlayerMesh.position.x + camS, camH,
-      threePlayerMesh.position.z + camD
-    );
-    threeCamera.position.lerp(targetCamPos, 0.07);
-    threeControls.target.lerp(threePlayerMesh.position, 0.15);
+    // 4. AAA Camera follow (Buttery smooth tracking, alignment alignment, and manual drag support)
+    const idealTargetPos = threePlayerMesh.position.clone();
+
+    // Store previous target position to compute real-time shift delta for orbital translation
+    const prevControlsTarget = threeControls.target.clone();
+
+    // Lerp the focal target point towards the player's 3D coordinates
+    threeControls.target.lerp(idealTargetPos, 0.08); // Springy follow lerp
+
+    // Compute frame displacement vector of the target
+    const targetMovementDelta = threeControls.target.clone().sub(prevControlsTarget);
+
+    // Slide visual viewport matching target delta shift to preserve customized angle/zoom ratio during movement
+    threeCamera.position.add(targetMovementDelta);
+
+    // If traveler is not dragging, gently decay back to default cinematic parameters
+    if (!isCameraUserInteracting) {
+      const hoverWave = Math.sin(now * 0.0012) * 0.12; // Premium space breathing swell
+      const camHeight = (isCinematicView ? 24 : 14) + hoverWave;
+      const camDistance = isCinematicView ? 28 : 16;
+      const camSideOffset = isCinematicView ? -8 : 0;
+
+      const defaultLocalOffset = new THREE.Vector3(camSideOffset, camHeight, camDistance);
+      const targetCameraPosition = threeControls.target.clone().add(defaultLocalOffset);
+
+      // Lerping camera translation
+      threeCamera.position.lerp(targetCameraPosition, 0.05);
+    }
 
     // 5. Zone collision
     detect3DZoneCollision();
@@ -2169,10 +2682,75 @@ function animate3D() {
   });
 
   // Patrol spaceships hovering animations
-  const now = Date.now();
   animatedCrafts.forEach(craft => {
     craft.mesh.position.y = craft.baseY + Math.sin(now * craft.hoverSpeed + craft.offset) * craft.hoverRange;
   });
+
+  // Pulse Cyberpunk Emissive Neon Materials (Heartbeat Effect) over time
+  // This achieves the dynamic heartbeat atmosphere required by task 2
+  const heartbeatPulse = 1.25 + Math.sin(now * 0.004) * 0.55;
+  emissiveMaterials.forEach(material => {
+    if (material) {
+      material.emissiveIntensity = heartbeatPulse;
+    }
+  });
+
+  // Dynamic Hotspot Micro-Interactions based on player proximity
+  if (threePlayerMesh) {
+    const px = threePlayerMesh.position.x;
+    const pz = threePlayerMesh.position.z;
+
+    activeHotspots.forEach(hotspot => {
+      const dx = hotspot.mesh.position.x - px;
+      const dz = hotspot.mesh.position.z - pz;
+      const dist = Math.sqrt(dx * dx + dz * dz);
+
+      // Approaching threshold (approx 2.8 3D grid units)
+      const isClose = dist < 2.8;
+
+      if (isClose) {
+        if (!hotspot.isHoveredByPlayer) {
+          hotspot.isHoveredByPlayer = true;
+          playProximityAlert();
+        }
+
+        // 1. Color Shift to vibrant Active state (glowing neon cyan-emerald)
+        const pulseRatio = Math.sin(now * 0.015) * 0.5 + 0.5;
+        hotspot.materials.forEach(m => {
+          if (m.material) {
+            if (m.material.emissive) {
+              m.material.emissive.setRGB(0.10 + pulseRatio * 0.15, 0.75 + pulseRatio * 0.20, 0.55 + pulseRatio * 0.35);
+              m.material.emissiveIntensity = 4.0 + pulseRatio * 2.5;
+            }
+          }
+        });
+
+        // 2. Micro-interactions: Gracefully rotate back and forth and float up slightly
+        hotspot.mesh.rotation.y = hotspot.originalRotationY + Math.sin(now * 0.005) * 0.32;
+        hotspot.mesh.position.y = hotspot.baseY + 0.14 + Math.sin(now * 0.004) * 0.06;
+
+      } else {
+        if (hotspot.isHoveredByPlayer) {
+          hotspot.isHoveredByPlayer = false;
+          // Restore original transformations smoothly
+          hotspot.mesh.rotation.y = hotspot.originalRotationY;
+          hotspot.mesh.position.y = hotspot.baseY;
+
+          hotspot.materials.forEach(m => {
+            if (m.material) {
+              if (m.originalEmissive) {
+                m.material.emissive.copy(m.originalEmissive);
+                m.material.color.copy(m.originalColor);
+                m.material.emissiveIntensity = m.originalEmissiveIntensity;
+              } else {
+                if (m.material.emissive) m.material.emissive.setHex(0x000000);
+              }
+            }
+          });
+        }
+      }
+    });
+  }
 
   // Display models rotating animations
   if (threeAssets.racerCraft) {
@@ -2180,23 +2758,27 @@ function animate3D() {
     threeAssets.racerCraft.position.y = 1.6 + Math.sin(now * 0.002) * 0.07;
   }
 
-  // Render pipeline
+  // Render pipeline using premium glowing EffectComposer or immediate WebGL fallback
   if (threeRenderer && threeScene && threeCamera) {
-    threeRenderer.render(threeScene, threeCamera);
+    if (threeComposer) {
+      threeComposer.render();
+    } else {
+      threeRenderer.render(threeScene, threeCamera);
+    }
   }
 }
 
 function detect3DZoneCollision() {
   if (!threePlayerMesh) return;
 
-  const px = threePlayerMesh.position.x;
-  const pz = threePlayerMesh.position.z;
+  // 1. Create a dynamic 3D bounds box around the player's custom model geometry
+  const playerBox = new THREE.Box3().setFromObject(threePlayerMesh);
   let detectedZoneId = null;
 
-  for (const zone of ZONES_3D) {
-    const dist = Math.sqrt((px - zone.x) ** 2 + (pz - zone.z) ** 2);
-    if (dist < zone.radius) {
-      detectedZoneId = zone.id;
+  // 2. Perform a highly accurate 3D spatial intersection search using THREE.Box3
+  for (const item of zoneBoxes) {
+    if (item.box.intersectsBox(playerBox)) {
+      detectedZoneId = item.id;
       break;
     }
   }
@@ -2234,6 +2816,9 @@ function handle3DResize() {
   threeCamera.aspect = container.clientWidth / container.clientHeight;
   threeCamera.updateProjectionMatrix();
   threeRenderer.setSize(container.clientWidth, container.clientHeight);
+  if (threeComposer) {
+    threeComposer.setSize(container.clientWidth, container.clientHeight);
+  }
 }
 
 function disposeThreeJS() {
@@ -2278,6 +2863,9 @@ function disposeThreeJS() {
   });
   threeAssets = [];
   physicsBoxes = [];
+  emissiveMaterials = [];
+  zoneBoxes = [];
+  activeHotspots = [];
   threePlayerMesh = null;
   threeAssets.racerCraft = null;
 
@@ -2292,6 +2880,7 @@ function disposeThreeJS() {
     if (container) container.innerHTML = '';
     threeRenderer = null;
   }
+  threeComposer = null;
 
   threeScene = null;
   threeCamera = null;
@@ -2387,6 +2976,7 @@ async function enter3DMode() {
     document.getElementById('radar_minimap_container').classList.remove('hidden');
 
     initThreeJS();
+    updateDimensionToggleBtnText();
 
   } catch (err) {
     console.error(err);
@@ -2431,6 +3021,7 @@ function exit3DMode() {
 
   // Resume 2D GameLoop loop
   gameLoop();
+  updateDimensionToggleBtnText();
 
   setTimeout(() => {
     container.classList.remove('transition-dimension');
