@@ -12,7 +12,9 @@ const state = {
   zones: [],
   isLoadingAI: false,
   chatHistory: [],
-  isChatOpen: false
+  isChatOpen: false,
+  is3DActive: false,
+  threeInstance: null
 };
 
 // Web Audio API Synthesizer
@@ -137,9 +139,9 @@ const player = {
   dirY: 0,
   facing: 'down',
   isMoving: false,
-  speed: 4.5,
-  accel: 0.22,
-  friction: 0.78
+  speed: 2.8,
+  accel: 0.28,
+  friction: 0.72
 };
 
 const keysPressed = {};
@@ -187,6 +189,15 @@ function initGameEngine() {
       btnToggleDpad.querySelector('span').textContent = 'HIỆN ĐIỀU KHIỂN';
     }
   });
+
+  // Exit 3D Button Event
+  const btnExit3D = document.getElementById('btn_exit_3d');
+  if (btnExit3D) {
+    btnExit3D.addEventListener('click', () => {
+      playClickSound();
+      exit3DMode();
+    });
+  }
 
   // Start Loop
   gameLoop();
@@ -331,6 +342,14 @@ function gameLoop() {
     updateUIForActiveZone();
   }
 
+  // Kích hoạt Cổng Dịch Chuyển 3D Chuyên Biệt (Phía trên cùng chính giữa)
+  const portalCenterX = 415;
+  const portalCenterY = 80;
+  const distToPortal = Math.sqrt((player.x - portalCenterX) ** 2 + (player.y - portalCenterY) ** 2);
+  if (distToPortal < 28 && !state.is3DActive) {
+    enter3DMode();
+  }
+
   // 6. Draw everything
   drawScene();
 
@@ -374,13 +393,59 @@ function drawScene() {
   ctx.moveTo(415, 350);
   ctx.lineTo(615, 450);   // Museum
   ctx.moveTo(210, 450);
-  ctx.lineTo(420, 595);   // Portal
+  ctx.lineTo(420, 595);   // Portal (Trạm Liên Lạc)
   ctx.lineTo(615, 450);
+  
+  // Nhánh kết nối dọc lên Cổng Space 3D chuyên biệt ở trên cùng chính giữa
+  ctx.moveTo(415, 200);
+  ctx.lineTo(415, 80);
   ctx.stroke();
 
   ctx.strokeStyle = 'rgba(16, 185, 129, 0.2)';
   ctx.lineWidth = 2;
   ctx.stroke();
+
+  // Vẽ Cổng Dịch Chuyển 3D chuyên biệt (Dimensional Portal Vortex - Phía trên cùng chính giữa)
+  const portalX = 415;
+  const portalY = 80;
+  const portalRadius = 24 + Math.sin(localFrame * 0.1) * 3;
+
+  ctx.save();
+  ctx.shadowBlur = 15 + Math.sin(localFrame * 0.15) * 5;
+  ctx.shadowColor = '#ec4899';
+
+  const grad = ctx.createRadialGradient(portalX, portalY, 2, portalX, portalY, portalRadius + 10);
+  grad.addColorStop(0, 'rgba(236, 72, 153, 0.6)');
+  grad.addColorStop(0.5, 'rgba(168, 85, 247, 0.3)');
+  grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.arc(portalX, portalY, portalRadius + 10, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.strokeStyle = '#ec4899';
+  ctx.lineWidth = 3;
+  ctx.setLineDash([12, 18]);
+  ctx.lineDashOffset = localFrame * 0.5;
+  ctx.beginPath();
+  ctx.arc(portalX, portalY, portalRadius, 0, Math.PI * 2);
+  ctx.stroke();
+
+  ctx.strokeStyle = '#a855f7';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([8, 12]);
+  ctx.lineDashOffset = -localFrame * 0.3;
+  ctx.beginPath();
+  ctx.arc(portalX, portalY, portalRadius - 6, 0, Math.PI * 2);
+  ctx.stroke();
+
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = '#f4f4f5';
+  ctx.font = 'bold 8px "Space Grotesk", sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText("CỔNG SPACE 3D", portalX, portalY - portalRadius - 8);
+
+  ctx.restore();
 
   // Draw Zones
   state.zones.forEach((zone) => {
@@ -908,9 +973,17 @@ function initQuickTeleportButtons() {
   state.zones.forEach((z) => {
     document.getElementById(`quick_teleport_${z.id}`).addEventListener('click', () => {
       playClickSound();
-      const targetX = z.coords.x + z.size.w / 2;
-      const targetY = z.coords.y + z.size.h / 2;
-      teleportPlayer(targetX, targetY);
+      if (threePlayerMesh) {
+        const zone3D = ZONES_3D.find(item => item.id === z.id);
+        if (zone3D) {
+          threePlayerMesh.position.set(zone3D.x, 0.5, zone3D.z);
+          roverPhysics.speed = 0;
+          roverPhysics.velocityY = 0;
+          playTeleportSound();
+          state.activeZoneId = z.id;
+          updateUIForActiveZone();
+        }
+      }
     });
   });
 }
@@ -1172,27 +1245,33 @@ function switchLanguage(lang) {
     btnEn.className = 'px-2.5 py-1 rounded-md text-[10px] font-bold transition-all cursor-pointer text-zinc-500 hover:text-zinc-300';
     
     document.getElementById('lbl_job_title').textContent = 'Ứng viên Thực tập sinh Web Developer (Full-stack Web Intern)';
-    document.getElementById('lbl_heading_map').textContent = 'Bản Đồ Tương Tác (Game Map)';
-    document.getElementById('lbl_desc_map').textContent = 'Sử dụng chuột click, phím WASD điều hướng hoặc phím mũi tên';
+    document.getElementById('lbl_heading_map').textContent = 'Không Gian Vũ Trụ 3D (3D Space Map)';
+    document.getElementById('lbl_desc_map').textContent = 'Di chuyển phi hành gia bằng WASD / Mũi tên. Kéo chuột để xoay camera.';
     document.getElementById('lbl_heading_details').textContent = 'Chi Tiết Hồ Sơ';
     document.getElementById('lbl_desc_details').textContent = 'Nạp thông tin chi tiết một cách tự động khi nhân vật đi vào khu vực';
     document.getElementById('lbl_footer_text').innerHTML = `© ${new Date().getFullYear()} Nguyễn Anh Quý. Bảo trì & bảo mật dưới mô hình AI-Augmented.`;
     document.getElementById('lbl_footer_school').textContent = 'Cao Đẳng Công Nghệ Thủ Đức';
     document.getElementById('chatbot_title_text').textContent = 'AI Trợ Lý Nguyễn Anh Quý';
     document.getElementById('chatbot_message_input').placeholder = 'Hỏi về Quý (Ví dụ: Dự án của Quý)...';
+    
+    const btnExit3DText = document.getElementById('lbl_exit_3d_text');
+    if (btnExit3DText) btnExit3DText.textContent = 'KHÔNG GIAN 3D';
   } else {
     btnVi.className = 'px-2.5 py-1 rounded-md text-[10px] font-bold transition-all cursor-pointer text-zinc-500 hover:text-zinc-300';
     btnEn.className = 'px-2.5 py-1 rounded-md text-[10px] font-bold transition-all cursor-pointer bg-emerald-500 text-zinc-950 font-extrabold shadow-md';
     
     document.getElementById('lbl_job_title').textContent = 'Full-stack Web Intern Candidate & IT Specialist';
-    document.getElementById('lbl_heading_map').textContent = 'Interactive Destination Map';
-    document.getElementById('lbl_desc_map').textContent = 'Use click-to-move, arrow/WASD keyboard controls, or D-pad';
+    document.getElementById('lbl_heading_map').textContent = '3D Galaxy Space Map';
+    document.getElementById('lbl_desc_map').textContent = 'Move astronaut with WASD / Arrows. Click & drag to rotate camera.';
     document.getElementById('lbl_heading_details').textContent = 'Profile Manifest Intel';
     document.getElementById('lbl_desc_details').textContent = 'Loads details dynamically once character steps on fields';
     document.getElementById('lbl_footer_text').innerHTML = `© ${new Date().getFullYear()} Nguyen Anh Quy. Structured & styled under the AI-Augmented architecture.`;
     document.getElementById('lbl_footer_school').textContent = 'Thu Duc College of Tech';
     document.getElementById('chatbot_title_text').textContent = "AI Double Agent (Quy's Clone)";
     document.getElementById('chatbot_message_input').placeholder = "Ask about Quy (e.g., Tech stack)...";
+    
+    const btnExit3DText = document.getElementById('lbl_exit_3d_text');
+    if (btnExit3DText) btnExit3DText.textContent = '3D SPACE MODE';
   }
 
   // Update dynamic elements
@@ -1311,7 +1390,7 @@ function startLoadingSequence() {
           loaderScreen.remove();
           // Initialize Interactive components
           initQuickTeleportButtons();
-          initGameEngine();
+          enter3DMode();
           initChatbot();
           updateUIForActiveZone();
         }, 400);
@@ -1325,6 +1404,1039 @@ function startLoadingSequence() {
 // -------------------------------------------------------------
 // DOM Content Loaded Main Entry Point
 // -------------------------------------------------------------
+// -------------------------------------------------------------
+// 3D WebGL Three.js Sub-Dimension Logic
+// -------------------------------------------------------------
+let threeScene, threeCamera, threeRenderer, threeControls;
+let threePlayerMesh = null;
+let threeAssets = [];
+let threeAnimId = null;
+let active3DZoneId = null;
+const threeKeys = {};
+let threeMixer = null;
+let threeClips = {};
+let activeAction = null;
+let isCinematicView = false;
+let spaceParticles = null;
+let animatedCogs = [];
+let animatedCrafts = [];
+let physicsBoxes = [];
+
+const roverPhysics = {
+  speed: 0,
+  maxSpeed: 0.42,
+  maxReverseSpeed: -0.18,
+  acceleration: 0.0095,
+  deceleration: 0.015,
+  friction: 0.955,
+  steerAngle: 0,
+  maxSteerAngle: 0.048,
+  yaw: 0,
+  velocityY: 0,
+  gravity: -0.016,
+  onGround: true
+};
+
+const STEPPING_ROCKS = [
+  { x: -10, z: -7, y: -0.2, r: 2.2 },
+  { x: -8, z: -6, y: 0.3, r: 2.0 },
+  { x: 10, z: -7, y: -0.2, r: 2.2 },
+  { x: 8, z: -6, y: 0.3, r: 2.0 },
+  { x: -10, z: 7, y: -0.2, r: 2.2 },
+  { x: -8, z: 6, y: 0.3, r: 2.0 },
+  { x: 10, z: 7, y: -0.2, r: 2.2 },
+  { x: 8, z: 6, y: 0.3, r: 2.0 },
+  { x: 0, z: 12, y: -0.2, r: 2.3 },
+  { x: 0, z: 18, y: -0.2, r: 2.4 },
+  { x: -15, z: -4, y: -0.2, r: 2.0 },
+  { x: 15, z: 4, y: -0.2, r: 2.1 },
+  { x: 0, z: -18, y: -0.2, r: 2.6 }
+];
+
+function getGroundHeight(x, z) {
+  // Center hub
+  const distCenter = Math.sqrt(x*x + z*z);
+  if (distCenter < 7.5) return 0.2;
+  
+  // Home island
+  const distHome = Math.sqrt((x + 20)**2 + (z + 14)**2);
+  if (distHome < 8.2) return 0.2;
+  
+  // Academy island
+  const distAcademy = Math.sqrt((x - 20)**2 + (z + 14)**2);
+  if (distAcademy < 8.2) return 0.2;
+  
+  // Skill Lab island
+  const distLab = Math.sqrt((x + 20)**2 + (z - 14)**2);
+  if (distLab < 8.2) return 0.2;
+  
+  // Museum island
+  const distMuseum = Math.sqrt((x - 20)**2 + (z - 14)**2);
+  if (distMuseum < 8.2) return 0.2;
+  
+  // Escape Portal island
+  const distPortal = Math.sqrt(x*x + (z - 24)**2);
+  if (distPortal < 6.0) return 0.2;
+  
+  // Portal Ramp bridge
+  if (z > 7.5 && z < 18 && Math.abs(x) < 2) {
+    const progress = (z - 7.5) / 10.5;
+    return 0.2 + progress * 1.5;
+  }
+  
+  // Check stepping rocks
+  for (const rock of STEPPING_ROCKS) {
+    const distRock = Math.sqrt((x - rock.x)**2 + (z - rock.z)**2);
+    if (distRock < rock.r) return rock.y;
+  }
+  
+  return -100;
+}
+
+// 3D Islands Coordinates representation
+const ZONES_3D = [
+  { id: 'home', x: -20, z: -14, radius: 5.5 },
+  { id: 'academy', x: 20, z: -14, radius: 5.5 },
+  { id: 'lab', x: -20, z: 14, radius: 5.5 },
+  { id: 'museum', x: 20, z: 14, radius: 5.5 },
+  { id: 'portal', x: 0, z: 24, radius: 4.5 }
+];
+
+function loadScript(src) {
+  return new Promise((resolve, reject) => {
+    // Check if script already loaded
+    const scripts = Array.from(document.querySelectorAll('script'));
+    if (scripts.some(s => s.src === src)) {
+      return resolve();
+    }
+    const script = document.createElement('script');
+    script.src = src;
+    script.onload = resolve;
+    script.onerror = reject;
+    document.head.appendChild(script);
+  });
+}
+
+async function loadThreeJS() {
+  if (window.THREE) return;
+  try {
+    // 1. Load Three.js core
+    await loadScript("https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js");
+    // 2. Load auxiliary controls and model loader scripts
+    await Promise.all([
+      loadScript("https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/js/controls/OrbitControls.js"),
+      loadScript("https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/js/loaders/GLTFLoader.js")
+    ]);
+  } catch (err) {
+    console.error("Three.js load error:", err);
+    throw err;
+  }
+}
+
+function initThreeJS() {
+  const container = document.getElementById('threejs_3d_viewport');
+  if (!container) return;
+
+  container.innerHTML = '';
+
+  // Scene setup
+  threeScene = new THREE.Scene();
+  threeScene.background = new THREE.Color('#09090b');
+  threeScene.fog = new THREE.FogExp2('#09090b', 0.025);
+
+  // Camera setup (Top-down view)
+  threeCamera = new THREE.PerspectiveCamera(50, container.clientWidth / container.clientHeight, 0.1, 1000);
+  threeCamera.position.set(0, 16, 20);
+
+  // Renderer setup
+  threeRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+  threeRenderer.setSize(container.clientWidth, container.clientHeight);
+  threeRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  threeRenderer.shadowMap.enabled = true;
+  threeRenderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  container.appendChild(threeRenderer.domElement);
+
+  // Controls setup (Top-down view constraints)
+  threeControls = new THREE.OrbitControls(threeCamera, threeRenderer.domElement);
+  threeControls.enableDamping = true;
+  threeControls.dampingFactor = 0.05;
+  threeControls.maxPolarAngle = Math.PI / 2.2;
+  threeControls.minDistance = 10;
+  threeControls.maxDistance = 45;
+
+  // Camera Toggle Button Event
+  const btnToggleCamera = document.getElementById('btn_toggle_camera_view');
+  if (btnToggleCamera) {
+    // Reset view state
+    isCinematicView = false;
+    btnToggleCamera.querySelector('span').textContent = "GÓC TOÀN CẢNH";
+    btnToggleCamera.classList.remove('bg-indigo-950/90', 'border-indigo-500', 'text-indigo-200');
+    btnToggleCamera.classList.add('bg-purple-950/90', 'border-purple-800', 'text-purple-300');
+
+    btnToggleCamera.onclick = () => {
+      playClickSound();
+      isCinematicView = !isCinematicView;
+      btnToggleCamera.querySelector('span').textContent = isCinematicView ? "GÓC CẬN CẢNH" : "GÓC TOÀN CẢNH";
+      if (isCinematicView) {
+        btnToggleCamera.classList.remove('bg-purple-950/90', 'border-purple-800', 'text-purple-300');
+        btnToggleCamera.classList.add('bg-indigo-950/90', 'border-indigo-500', 'text-indigo-200');
+      } else {
+        btnToggleCamera.classList.add('bg-purple-950/90', 'border-purple-800', 'text-purple-300');
+        btnToggleCamera.classList.remove('bg-indigo-950/90', 'border-indigo-500', 'text-indigo-200');
+      }
+    };
+  }
+
+  // Cyberpunk Lighting Setup
+  const ambientLight = new THREE.AmbientLight('#18181b', 1.6);
+  threeScene.add(ambientLight);
+
+  const dirLight = new THREE.DirectionalLight('#ffffff', 0.95);
+  dirLight.position.set(25, 40, 25);
+  dirLight.castShadow = true;
+  dirLight.shadow.mapSize.width = 2048;
+  dirLight.shadow.mapSize.height = 2048;
+  dirLight.shadow.bias = -0.0005;
+  threeScene.add(dirLight);
+
+  // Neon Grid Helper
+  const gridHelper = new THREE.GridHelper(120, 60, '#10b981', '#27272a');
+  gridHelper.position.y = -0.01;
+  threeScene.add(gridHelper);
+
+  // Cyberpunk Neon PointLights on active island hubs
+  const pointLightHome = new THREE.PointLight('#f59e0b', 2.5, 15);
+  pointLightHome.position.set(-20, 2.5, -14);
+  threeScene.add(pointLightHome);
+
+  const pointLightAcademy = new THREE.PointLight('#10b981', 2.5, 15);
+  pointLightAcademy.position.set(20, 2.5, -14);
+  threeScene.add(pointLightAcademy);
+
+  const pointLightLab = new THREE.PointLight('#3b82f6', 2.5, 15);
+  pointLightLab.position.set(-20, 2.5, 14);
+  threeScene.add(pointLightLab);
+
+  const pointLightMuseum = new THREE.PointLight('#a855f7', 2.5, 15);
+  pointLightMuseum.position.set(20, 2.5, 14);
+  threeScene.add(pointLightMuseum);
+
+  const pointLightPortal = new THREE.PointLight('#ec4899', 2.5, 15);
+  pointLightPortal.position.set(0, 2.5, 24);
+  threeScene.add(pointLightPortal);
+
+  // Space Dust Particles Setup (Nebula stars)
+  const particleCount = 1500;
+  const particlesGeo = new THREE.BufferGeometry();
+  const positions = new Float32Array(particleCount * 3);
+  const colors = new Float32Array(particleCount * 3);
+
+  const colorPink = new THREE.Color('#ec4899');
+  const colorTeal = new THREE.Color('#10b981');
+  const colorPurple = new THREE.Color('#a855f7');
+
+  for (let i = 0; i < particleCount; i++) {
+    positions[i * 3] = (Math.random() - 0.5) * 85;
+    positions[i * 3 + 1] = (Math.random() * 25) - 5;
+    positions[i * 3 + 2] = (Math.random() - 0.5) * 85;
+
+    const rand = Math.random();
+    let mixedColor;
+    if (rand < 0.33) mixedColor = colorPink;
+    else if (rand < 0.66) mixedColor = colorTeal;
+    else mixedColor = colorPurple;
+
+    colors[i * 3] = mixedColor.r;
+    colors[i * 3 + 1] = mixedColor.g;
+    colors[i * 3 + 2] = mixedColor.b;
+  }
+
+  particlesGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  particlesGeo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+  const pCanvas = document.createElement('canvas');
+  pCanvas.width = 16;
+  pCanvas.height = 16;
+  const pCtx = pCanvas.getContext('2d');
+  const pGrad = pCtx.createRadialGradient(8, 8, 0, 8, 8, 8);
+  pGrad.addColorStop(0, 'rgba(255, 255, 255, 1)');
+  pGrad.addColorStop(0.3, 'rgba(255, 255, 255, 0.8)');
+  pGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+  pCtx.fillStyle = pGrad;
+  pCtx.fillRect(0, 0, 16, 16);
+  const pTexture = new THREE.CanvasTexture(pCanvas);
+
+  const particlesMat = new THREE.PointsMaterial({
+    size: 0.35,
+    vertexColors: true,
+    transparent: true,
+    opacity: 0.9,
+    map: pTexture,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false
+  });
+
+  spaceParticles = new THREE.Points(particlesGeo, particlesMat);
+  threeScene.add(spaceParticles);
+
+  // Keyboard Event Listeners for 3D navigation
+  window.addEventListener('keydown', handle3DKeyDown);
+  window.addEventListener('keyup', handle3DKeyUp);
+
+  // Load GLB Assets
+  load3DModels();
+
+  // Run 3D Animation loop
+  animate3D();
+
+  // Listen for window resize
+  window.addEventListener('resize', handle3DResize);
+}
+
+function load3DModels() {
+  const loader = new THREE.GLTFLoader();
+  const SK = '3d/spacekit/GLTF format/';
+  const SS = '3d/spacestation/GLB format/';
+  const FC = '3d/factory/GLB format/';
+
+  // 1. Load Main Character Astronaut GLB with animations
+  loader.load('3d/character/3d_cute_astronaut_made_in_blender.glb', (gltf) => {
+    threePlayerMesh = gltf.scene;
+    threePlayerMesh.position.set(0, 0.5, 0);
+    threePlayerMesh.scale.set(0.65, 0.65, 0.65);
+    
+    threePlayerMesh.traverse((child) => {
+      if (child.isMesh) {
+        child.castShadow = true;
+        child.receiveShadow = true;
+      }
+    });
+
+    // Extract skeletal animations
+    if (gltf.animations && gltf.animations.length > 0) {
+      threeMixer = new THREE.AnimationMixer(threePlayerMesh);
+      gltf.animations.forEach((clip) => {
+        const clipName = clip.name.toLowerCase();
+        threeClips[clipName] = threeMixer.clipAction(clip);
+      });
+      const defaultClip = threeClips['idle'] || threeClips['float'] || threeClips['walk'] || Object.values(threeClips)[0];
+      if (defaultClip) {
+        activeAction = defaultClip;
+        activeAction.play();
+      }
+    }
+
+    threeScene.add(threePlayerMesh);
+    threeAssets.push(threePlayerMesh);
+  }, undefined, (err) => console.error("Astronaut GLB load error:", err));
+
+  // Helper method to download and inject static environments
+  const addStaticAsset = (path, x, y, z, scale = 1, rotY = 0) => {
+    loader.load(path, (gltf) => {
+      const mesh = gltf.scene;
+      mesh.position.set(x, y, z);
+      mesh.scale.set(scale, scale, scale);
+      mesh.rotation.y = rotY;
+      mesh.traverse((child) => {
+        if (child.isMesh) {
+          child.castShadow = true;
+          child.receiveShadow = true;
+        }
+      });
+      threeScene.add(mesh);
+      threeAssets.push(mesh);
+    }, undefined, (err) => console.warn(`Error loading model ${path}:`, err));
+  };
+
+  // Helper method to load cogs rotating below islands
+  const addCogAsset = (path, x, y, z, scale = 1, speed = 0.01) => {
+    loader.load(path, (gltf) => {
+      const mesh = gltf.scene;
+      mesh.position.set(x, y, z);
+      mesh.scale.set(scale, scale, scale);
+      mesh.traverse((child) => {
+        if (child.isMesh) {
+          child.castShadow = true;
+          child.receiveShadow = true;
+          if (child.material) {
+            child.material.roughness = 0.15;
+            child.material.metalness = 0.85;
+          }
+        }
+      });
+      threeScene.add(mesh);
+      threeAssets.push(mesh);
+      animatedCogs.push({ mesh, speed });
+    }, undefined, (err) => console.warn(`Error loading cog ${path}:`, err));
+  };
+
+  // Helper method to load floating speeders & spacecrafts
+  const addCraftAsset = (path, x, y, z, scale = 1, rotY = 0, hoverRange = 0.4, hoverSpeed = 0.002) => {
+    loader.load(path, (gltf) => {
+      const mesh = gltf.scene;
+      mesh.position.set(x, y, z);
+      mesh.scale.set(scale, scale, scale);
+      mesh.rotation.y = rotY;
+      mesh.traverse((child) => {
+        if (child.isMesh) {
+          child.castShadow = true;
+          child.receiveShadow = true;
+        }
+      });
+      threeScene.add(mesh);
+      threeAssets.push(mesh);
+      animatedCrafts.push({
+        mesh,
+        baseY: y,
+        hoverRange,
+        hoverSpeed,
+        offset: Math.random() * Math.PI * 2
+      });
+    }, undefined, (err) => console.warn(`Error loading craft ${path}:`, err));
+  };
+
+  // Helper method to load and register destructible physics boxes (HTML/CSS/JS boxes)
+  const addDestructibleBox = (x, y, z, scale = 1.0) => {
+    loader.load('3d/factory/GLB format/box-small.glb', (gltf) => {
+      const mesh = gltf.scene;
+      mesh.position.set(x, y, z);
+      mesh.scale.set(scale * 1.1, scale * 1.1, scale * 1.1);
+      mesh.traverse((child) => {
+        if (child.isMesh) {
+          child.castShadow = true;
+          child.receiveShadow = true;
+          if (child.material) {
+            child.material.roughness = 0.2;
+            child.material.metalness = 0.8;
+          }
+        }
+      });
+      threeScene.add(mesh);
+      threeAssets.push(mesh);
+      
+      physicsBoxes.push({
+        mesh: mesh,
+        vx: 0,
+        vy: 0,
+        vz: 0,
+        rx: 0,
+        ry: 0,
+        rz: 0,
+        x: x,
+        y: y,
+        z: z,
+        size: 0.9 * scale,
+        onGround: true
+      });
+    }, undefined, (err) => console.warn("Error loading destructible box:", err));
+  };
+
+  // === CENTER HUB — Command Center ===
+  addStaticAsset(SK+'platform_large.glb', 0, 0, 0, 1.8);
+  addStaticAsset(FC+'floor-large.glb', 0, 0.15, 0, 1.4);
+  addStaticAsset(SS+'wall-window.glb', 0, 0.2, -4, 0.85, Math.PI);
+  addStaticAsset(SS+'wall.glb', -3, 0.2, -3.5, 0.85, Math.PI/2);
+  addStaticAsset(SS+'wall.glb', 3, 0.2, -3.5, 0.85, -Math.PI/2);
+  addStaticAsset(SS+'wall-door.glb', 0, 0.2, 3.5, 0.85);
+  addStaticAsset(SS+'display-wall-wide.glb', 0, 0.2, -3.2, 0.75, Math.PI);
+  addStaticAsset(SK+'desk_computer.glb', -2, 0.2, -1.5, 0.85, Math.PI);
+  addStaticAsset(SK+'desk_computer.glb', 2, 0.2, -1.5, 0.85, Math.PI);
+  addStaticAsset(SK+'desk_chair.glb', -2, 0.2, -0.5, 0.85, Math.PI);
+  addStaticAsset(SK+'desk_chair.glb', 2, 0.2, -0.5, 0.85, Math.PI);
+  addStaticAsset(SS+'computer-screen.glb', 0, 0.2, -2, 0.7, Math.PI);
+  addStaticAsset(FC+'screen-flat.glb', -1.5, 1.5, -3.6, 0.6, Math.PI);
+  addStaticAsset(FC+'screen-flat.glb', 1.5, 1.5, -3.6, 0.6, Math.PI);
+  addStaticAsset(SS+'chair-cushion.glb', -1, 0.2, 1.5, 0.8, Math.PI/2);
+  addStaticAsset(SS+'chair-cushion.glb', 1, 0.2, 1.5, 0.8, -Math.PI/2);
+  addStaticAsset(SK+'machine_wireless.glb', 3.5, 0.2, 0, 0.85);
+
+  // === ISLAND 1: HOME — Living Quarters ===
+  addStaticAsset(SK+'platform_large.glb', -20, 0, -14, 1.8);
+  addStaticAsset(FC+'floor-large.glb', -20, 0.15, -14, 1.3);
+  addStaticAsset(SS+'wall.glb', -20, 0.2, -17.5, 0.8, 0);
+  addStaticAsset(SS+'wall-window.glb', -23, 0.2, -14, 0.8, Math.PI/2);
+  addStaticAsset(SS+'wall-corner.glb', -23, 0.2, -17, 0.8, Math.PI);
+  addStaticAsset(SS+'wall-door.glb', -17, 0.2, -14, 0.8, -Math.PI/2);
+  addStaticAsset(SS+'bed-single-cover.glb', -21.5, 0.2, -15.5, 0.85, Math.PI/2);
+  addStaticAsset(SS+'table.glb', -19, 0.2, -16, 0.8);
+  addStaticAsset(SS+'chair-armrest-headrest.glb', -19, 0.2, -15, 0.8, Math.PI);
+  addStaticAsset(SS+'container.glb', -22, 0.2, -12.5, 0.85);
+  addStaticAsset(SS+'container-tall.glb', -22.5, 0.2, -11, 0.8);
+  addStaticAsset(SS+'display-wall.glb', -20.5, 0.2, -17, 0.7, Math.PI);
+  addStaticAsset(SK+'machine_wireless.glb', -17.5, 0.2, -16.5, 0.85);
+  addStaticAsset(SK+'rocket_baseA.glb', -17, 0.2, -11, 0.9);
+  addStaticAsset(SK+'rocket_sidesA.glb', -17, 0.7, -11, 0.9);
+  addStaticAsset(SK+'rocket_finsA.glb', -17, 1.2, -11, 0.9);
+  addStaticAsset(SK+'rocket_topA.glb', -17, 1.8, -11, 0.9);
+  addStaticAsset(SS+'balcony-rail.glb', -18.5, 0.2, -11, 0.75);
+
+  // === ISLAND 2: ACADEMY — Classroom ===
+  addStaticAsset(SK+'platform_large.glb', 20, 0, -14, 1.8);
+  addStaticAsset(FC+'floor-large.glb', 20, 0.15, -14, 1.3);
+  addStaticAsset(SS+'wall-window.glb', 20, 0.2, -17.5, 0.8, 0);
+  addStaticAsset(SS+'wall.glb', 17, 0.2, -14, 0.8, Math.PI/2);
+  addStaticAsset(SS+'wall-window.glb', 23, 0.2, -14, 0.8, -Math.PI/2);
+  addStaticAsset(SS+'wall-door.glb', 20, 0.2, -10.5, 0.8, Math.PI);
+  addStaticAsset(SS+'computer-wide.glb', 20, 0.2, -16.5, 0.85, Math.PI);
+  addStaticAsset(SS+'chair-headrest.glb', 20, 0.2, -15.5, 0.85, Math.PI);
+  addStaticAsset(FC+'screen-wide.glb', 20, 1.5, -17, 0.65, Math.PI);
+  addStaticAsset(SK+'desk_computerScreen.glb', 18.5, 0.2, -13.5, 0.75, Math.PI);
+  addStaticAsset(SK+'desk_computerScreen.glb', 21.5, 0.2, -13.5, 0.75, Math.PI);
+  addStaticAsset(SK+'desk_chairArms.glb', 18.5, 0.2, -12.5, 0.75, Math.PI);
+  addStaticAsset(SK+'desk_chairArms.glb', 21.5, 0.2, -12.5, 0.75, Math.PI);
+  addStaticAsset(SK+'desk_computer.glb', 18.5, 0.2, -11.5, 0.75, Math.PI);
+  addStaticAsset(SK+'desk_computer.glb', 21.5, 0.2, -11.5, 0.75, Math.PI);
+  addStaticAsset(SS+'container-tall.glb', 17.5, 0.2, -16, 0.75);
+  addStaticAsset(SK+'barrel.glb', 22.5, 0.2, -16, 0.85);
+
+  // === ISLAND 3: SKILL LAB — Factory Workshop ===
+  addStaticAsset(SK+'platform_large.glb', -20, 0, 14, 1.8);
+  addStaticAsset(FC+'floor-large.glb', -20, 0.15, 14, 1.3);
+  addStaticAsset(FC+'structure-wall.glb', -20, 0.2, 11, 0.8, 0);
+  addStaticAsset(FC+'structure-window.glb', -23.5, 0.2, 14, 0.7, Math.PI/2);
+  addStaticAsset(FC+'structure-doorway.glb', -16.5, 0.2, 14, 0.8, -Math.PI/2);
+  addStaticAsset(FC+'conveyor.glb', -21, 0.2, 13, 0.75, 0);
+  addStaticAsset(FC+'conveyor.glb', -21, 0.2, 14.5, 0.75, 0);
+  addStaticAsset(FC+'conveyor-corner.glb', -21, 0.2, 16, 0.75, Math.PI/2);
+  addStaticAsset(FC+'machine.glb', -19, 0.2, 12, 0.7);
+  addStaticAsset(FC+'robot-arm-a.glb', -22.5, 0.2, 13.5, 0.7, -Math.PI/3);
+  addStaticAsset(FC+'robot-arm-b.glb', -22.5, 0.2, 15, 0.7, Math.PI/4);
+  addStaticAsset(FC+'piston-round.glb', -18, 0.2, 16, 0.6);
+  addStaticAsset(FC+'crane-magnet.glb', -19, 0.2, 16.5, 0.55);
+  addStaticAsset(FC+'pipe-large.glb', -23, 0.2, 11.5, 0.6, Math.PI/2);
+  addStaticAsset(FC+'pipe-large-bend.glb', -23, 0.2, 12.5, 0.5);
+  addStaticAsset(FC+'hopper-round.glb', -17.5, 0.2, 11.5, 0.6);
+  addStaticAsset(FC+'screen-panel-wide.glb', -18, 1.0, 11.2, 0.55, Math.PI);
+  addStaticAsset(FC+'screen-hanging-wide.glb', -20, 2.0, 12, 0.5, Math.PI);
+  addStaticAsset(FC+'warning-traffic.glb', -17, 0.2, 13, 0.7);
+  addStaticAsset(FC+'cone.glb', -17, 0.2, 15, 0.7);
+  addStaticAsset(SK+'barrels.glb', -23, 0.2, 16.5, 0.8);
+  addStaticAsset(FC+'box-large.glb', -23, 0.2, 12, 0.7);
+  addStaticAsset(FC+'box-small.glb', -23, 0.7, 12, 0.65);
+
+  // === ISLAND 4: MUSEUM — Hangar Gallery ===
+  addStaticAsset(SK+'platform_large.glb', 20, 0, 14, 1.8);
+  addStaticAsset(FC+'floor-large.glb', 20, 0.15, 14, 1.3);
+  addStaticAsset(SK+'hangar_largeA.glb', 20, 0.2, 14, 0.65);
+  addStaticAsset(SS+'table-display-planet.glb', 18.5, 0.2, 13, 0.9);
+  addStaticAsset(SS+'table-display.glb', 21.5, 0.2, 13, 0.9);
+  addStaticAsset(SS+'table-display-small.glb', 20, 0.2, 16, 0.85);
+  addStaticAsset(SK+'rail.glb', 18, 0.2, 12, 0.8);
+  addStaticAsset(SK+'rail.glb', 22, 0.2, 12, 0.8);
+  addStaticAsset(SS+'balcony-rail.glb', 20, 0.2, 17, 0.8);
+  loader.load(SK+'craft_racer.glb', (gltf) => {
+    const mesh = gltf.scene; mesh.position.set(20, 1.7, 14); mesh.scale.set(0.85, 0.85, 0.85);
+    mesh.traverse(c => { if(c.isMesh){c.castShadow=true;c.receiveShadow=true;} });
+    threeScene.add(mesh); threeAssets.push(mesh); threeAssets.racerCraft = mesh;
+  });
+  addStaticAsset(SK+'craft_speederC.glb', 18, 1.5, 15.5, 0.65, Math.PI/3);
+  addStaticAsset(SK+'craft_speederD.glb', 22, 1.5, 15.5, 0.65, -Math.PI/3);
+  addStaticAsset(SK+'turret_single.glb', 23, 0.2, 11.5, 0.6, -Math.PI/4);
+
+  // === ISLAND 5: PORTAL ===
+  addStaticAsset(SK+'platform_large.glb', 0, 0, 24, 1.3);
+  addStaticAsset(SK+'gate_complex.glb', 0, 0.2, 24, 0.95, Math.PI);
+  addStaticAsset(SS+'door-double.glb', 0, 0.2, 24.5, 1.1, Math.PI);
+  addStaticAsset(SK+'structure_detailed.glb', -2, 0.2, 23, 0.75);
+  addStaticAsset(SK+'structure_detailed.glb', 2, 0.2, 23, 0.75);
+
+  // === MONORAIL CONNECTIONS ===
+  addStaticAsset(SK+'monorail_trackStraight.glb', -10, 0.1, -7, 0.9, Math.PI/4);
+  addStaticAsset(SK+'monorail_trackStraight.glb', -13, 0.1, -9, 0.9, Math.PI/4);
+  addStaticAsset(SK+'monorail_trackSupport.glb', -10, -0.8, -7, 0.85);
+  addStaticAsset(SK+'monorail_trackStraight.glb', 10, 0.1, -7, 0.9, -Math.PI/4);
+  addStaticAsset(SK+'monorail_trackStraight.glb', 13, 0.1, -9, 0.9, -Math.PI/4);
+  addStaticAsset(SK+'monorail_trackSupport.glb', 10, -0.8, -7, 0.85);
+  addStaticAsset(SK+'monorail_trackStraight.glb', -10, 0.1, 7, 0.9, -Math.PI/4+Math.PI);
+  addStaticAsset(SK+'monorail_trackSupport.glb', -10, -0.8, 7, 0.85);
+  addStaticAsset(SK+'monorail_trackStraight.glb', 10, 0.1, 7, 0.9, Math.PI/4+Math.PI);
+  addStaticAsset(SK+'monorail_trackSupport.glb', 10, -0.8, 7, 0.85);
+  addStaticAsset(SK+'monorail_trackStraight.glb', 0, 0.1, 10, 0.9, Math.PI);
+  addStaticAsset(SK+'monorail_trackStraight.glb', 0, 0.1, 16, 0.9, Math.PI);
+  addStaticAsset(SK+'monorail_trackStraight.glb', 0, 0.1, 20, 0.9, Math.PI);
+  addStaticAsset(SK+'monorail_trackSupport.glb', 0, -0.8, 14, 0.85);
+
+  // === PERIPHERALS ===
+  addStaticAsset(SK+'satelliteDish_large.glb', -28, 0.2, -26, 1.4, Math.PI/6);
+  addStaticAsset(SK+'satelliteDish_detailed.glb', 28, 0.2, -26, 1.2, -Math.PI/6);
+  addStaticAsset(SK+'turret_double.glb', -28, 0.2, 26, 0.7, Math.PI/4);
+  addStaticAsset(SK+'turret_single.glb', 28, 0.2, 26, 0.7, -Math.PI/4);
+  addStaticAsset(SS+'structure-barrier-high.glb', 16, 0.2, -12, 0.7);
+  addStaticAsset(SS+'structure-barrier-high.glb', -16, 0.2, -12, 0.7);
+  addStaticAsset(SS+'structure-barrier.glb', -16, 0.2, 12, 0.7);
+  addStaticAsset(SS+'structure-barrier.glb', 16, 0.2, 12, 0.7);
+  addStaticAsset(SK+'pipe_straight.glb', -28, 0.2, 0, 1.0, Math.PI/2);
+  addStaticAsset(SK+'pipe_straight.glb', 28, 0.2, 0, 1.0, Math.PI/2);
+
+  // === ROCKET PAD (background) ===
+  addStaticAsset(SK+'platform_large.glb', 0, 0, -24, 1.0);
+  addStaticAsset(SK+'rocket_baseB.glb', 0, 0.2, -24, 1.1);
+  addStaticAsset(SK+'rocket_sidesB.glb', 0, 0.9, -24, 1.1);
+  addStaticAsset(SK+'rocket_finsB.glb', 0, 1.7, -24, 1.1);
+  addStaticAsset(SK+'rocket_topB.glb', 0, 2.5, -24, 1.1);
+  addStaticAsset(SS+'balcony-rail.glb', 0, 0.2, -22, 0.8);
+
+  // === NPC ASTRONAUTS ===
+  addStaticAsset(SK+'astronautA.glb', -19, 0.2, -12, 0.85, Math.PI/3);
+  addStaticAsset(SK+'astronautB.glb', 21, 0.2, -12, 0.85, -Math.PI/6);
+  addStaticAsset(SK+'astronautA.glb', -18, 0.2, 16, 0.85, Math.PI);
+  addStaticAsset(SK+'alien.glb', 22, 0.2, 16, 0.85, -Math.PI/2);
+
+  // === COGWHEELS ===
+  addCogAsset(FC+'cog-a.glb', -20, -6, -14, 4.5, 0.007);
+  addCogAsset(FC+'cog-b.glb', 20, -7, -14, 5.0, -0.005);
+  addCogAsset(FC+'cog-c.glb', -20, -6, 14, 4.0, 0.008);
+  addCogAsset(FC+'cog-d.glb', 20, -6, 14, 4.5, -0.006);
+  addCogAsset(FC+'cog-e.glb', 0, -9, 0, 7.5, 0.003);
+
+  // === PATROL SHIPS ===
+  addCraftAsset(SK+'craft_miner.glb', -27, 3.2, -7, 0.95, Math.PI/2, 0.6, 0.0016);
+  addCraftAsset(SK+'craft_speederA.glb', 27, 3.5, -7, 0.95, -Math.PI/2, 0.7, 0.002);
+  addCraftAsset(SK+'craft_speederB.glb', 26, 2.8, 8, 0.85, Math.PI, 0.55, 0.0018);
+  addCraftAsset(SK+'craft_cargoA.glb', -27, 3.8, 8, 0.9, 0, 0.65, 0.0013);
+  addCraftAsset(SK+'craft_cargoB.glb', 0, 4.5, -30, 1.0, Math.PI, 0.8, 0.001);
+
+  // === STEPPING ROCKS ===
+  addStaticAsset(SK+'rock.glb', -10, -0.6, -7, 1.1);
+  addStaticAsset(SK+'rock_crystalsLargeA.glb', -8, 0.6, -6, 0.7, Math.PI/4);
+  addStaticAsset(SK+'rock_largeA.glb', -14, -0.4, -10, 0.9);
+  addStaticAsset(SK+'rock.glb', 10, -0.6, -7, 1.1);
+  addStaticAsset(SK+'rock_crystalsLargeB.glb', 8, 0.6, -6, 0.7, -Math.PI/4);
+  addStaticAsset(SK+'rock_largeB.glb', 14, -0.4, -10, 0.9);
+  addStaticAsset(SK+'rock.glb', -10, -0.6, 7, 1.1);
+  addStaticAsset(SK+'rock.glb', 10, -0.6, 7, 1.1);
+  addStaticAsset(SK+'rock.glb', 0, -0.6, 12, 1.2);
+  addStaticAsset(SK+'rock.glb', 0, -0.6, 18, 1.25);
+  addStaticAsset(SK+'rock.glb', -15, -0.5, -4, 0.9);
+  addStaticAsset(SK+'rock.glb', 15, -0.5, 4, 0.95);
+  addStaticAsset(SK+'rocks_smallA.glb', -5, -0.3, -3, 0.8);
+  addStaticAsset(SK+'rocks_smallB.glb', 5, -0.3, 3, 0.8);
+
+  // === SKY DEBRIS ===
+  addStaticAsset(SK+'meteor_detailed.glb', -14, 6, -28, 1.8);
+  addStaticAsset(SK+'meteor.glb', 15, 8, 30, 2.1);
+  addStaticAsset(SK+'meteor_half.glb', -25, 5, 20, 1.5);
+  addStaticAsset(SK+'rock_crystalsLargeA.glb', -28, -1, 0, 1.2);
+  addStaticAsset(SK+'rock_crystalsLargeB.glb', 28, -1, 0, 1.2);
+  addStaticAsset(SK+'rock_crystals.glb', 0, 5, -30, 1.0);
+
+  // === DESTRUCTIBLE BOXES ===
+  addDestructibleBox(0, 0.4, 5, 1.0);
+  addDestructibleBox(-0.55, 1.2, 5, 0.9);
+  addDestructibleBox(0.55, 1.2, 5, 0.9);
+  addDestructibleBox(-9, 0.4, -6.5, 0.95);
+  addDestructibleBox(-9, 1.2, -6.5, 0.9);
+  addDestructibleBox(9, 0.4, -6.5, 0.95);
+  addDestructibleBox(9, 1.2, -6.5, 0.9);
+  
+  // Skill Lab entry boxes
+  addDestructibleBox(-9, 0.4, 6.5, 0.95);
+  
+  // Project Museum entry boxes
+  addDestructibleBox(9, 0.4, 6.5, 0.95);
+}
+
+function animate3D() {
+  threeAnimId = requestAnimationFrame(animate3D);
+
+  // 1. Controls update
+  if (threeControls) threeControls.update();
+
+  // Update Animation Mixer
+  const mixerDelta = 0.016; 
+  if (threeMixer) threeMixer.update(mixerDelta);
+
+  // 2. Character logic -> Astronaut walking
+  if (threePlayerMesh) {
+    let moveX = 0;
+    let moveZ = 0;
+    if (threeKeys['KeyW'] || threeKeys['ArrowUp']) moveZ = -1;
+    if (threeKeys['KeyS'] || threeKeys['ArrowDown']) moveZ = 1;
+    if (threeKeys['KeyA'] || threeKeys['ArrowLeft']) moveX = -1;
+    if (threeKeys['KeyD'] || threeKeys['ArrowRight']) moveX = 1;
+
+    const length = Math.sqrt(moveX * moveX + moveZ * moveZ);
+    const isMoving = length > 0;
+    if (isMoving) {
+      moveX /= length;
+      moveZ /= length;
+      const speed = 0.16;
+      threePlayerMesh.position.x += moveX * speed;
+      threePlayerMesh.position.z += moveZ * speed;
+      const angle = Math.atan2(moveX, moveZ);
+      threePlayerMesh.rotation.y = angle;
+    }
+
+    // Border constraints
+    threePlayerMesh.position.x = Math.max(-32, Math.min(32, threePlayerMesh.position.x));
+    threePlayerMesh.position.z = Math.max(-32, Math.min(32, threePlayerMesh.position.z));
+
+    // Skeletal animation transitions
+    if (threeMixer) {
+      let targetActionName = 'idle';
+      if (isMoving) {
+        targetActionName = threeClips['run'] ? 'run' : (threeClips['walk'] ? 'walk' : 'idle');
+      } else {
+        targetActionName = threeClips['idle'] ? 'idle' : (threeClips['float'] ? 'float' : 'idle');
+      }
+      const nextAction = threeClips[targetActionName];
+      if (nextAction && activeAction !== nextAction) {
+        nextAction.reset();
+        nextAction.setEffectiveTimeScale(1);
+        nextAction.setEffectiveWeight(1);
+        nextAction.crossFadeFrom(activeAction, 0.25, true);
+        nextAction.play();
+        activeAction = nextAction;
+      }
+    } else {
+      const time = Date.now() * 0.003;
+      threePlayerMesh.position.y = 0.45 + Math.sin(time) * 0.08;
+      threePlayerMesh.rotation.z = Math.sin(time * 0.5) * 0.04;
+    }
+
+    // 3. Collision with destructible small boxes (physicsBoxes)
+    const px = threePlayerMesh.position.x;
+    const pz = threePlayerMesh.position.z;
+    const playerRadius = 0.8;
+
+    physicsBoxes.forEach(box => {
+      const dx = box.mesh.position.x - px;
+      const dz = box.mesh.position.z - pz;
+      const dist = Math.sqrt(dx * dx + dz * dz);
+      if (dist < playerRadius + box.size / 2) {
+        const angle = Math.atan2(dx, dz);
+        const force = isMoving ? 0.18 : 0.08;
+        box.vx = Math.sin(angle) * force;
+        box.vz = Math.cos(angle) * force;
+        box.vy = 0.06;
+        box.onGround = false;
+        box.rx = (Math.random()-0.5)*0.2;
+        box.ry = (Math.random()-0.5)*0.2;
+        box.rz = (Math.random()-0.5)*0.2;
+        playClickSound();
+      }
+      if (!box.onGround) {
+        box.mesh.position.x += box.vx;
+        box.mesh.position.z += box.vz;
+        box.vy -= 0.012;
+        box.mesh.position.y += box.vy;
+        box.mesh.rotation.x += box.rx;
+        box.mesh.rotation.y += box.ry;
+        box.mesh.rotation.z += box.rz;
+        box.vx *= 0.94; box.vz *= 0.94;
+        box.rx *= 0.94; box.ry *= 0.94; box.rz *= 0.94;
+        if (box.mesh.position.y < 0.3) {
+          box.mesh.position.y = 0.3;
+          box.vy=0; box.vx=0; box.vz=0;
+          box.rx=0; box.ry=0; box.rz=0;
+          box.onGround = true;
+        }
+        if (box.mesh.position.y < -8) {
+          box.mesh.position.set(box.x, box.y, box.z);
+          box.mesh.rotation.set(0,0,0);
+          box.vx=box.vy=box.vz=0; box.rx=box.ry=box.rz=0;
+          box.onGround = true;
+        }
+      }
+    });
+
+    // 4. Camera follow
+    const camH = isCinematicView ? 25 : 14;
+    const camD = isCinematicView ? 30 : 16;
+    const camS = isCinematicView ? -10 : 0;
+    const targetCamPos = new THREE.Vector3(
+      threePlayerMesh.position.x + camS, camH,
+      threePlayerMesh.position.z + camD
+    );
+    threeCamera.position.lerp(targetCamPos, 0.07);
+    threeControls.target.lerp(threePlayerMesh.position, 0.15);
+
+    // 5. Zone collision
+    detect3DZoneCollision();
+    // 6. Minimap
+    updateRadarMinimap();
+  }
+
+  // Nebula Starfield rotating animations
+  if (spaceParticles) {
+    spaceParticles.rotation.y += 0.0007;
+    spaceParticles.rotation.x += 0.0003;
+  }
+
+  // Underneath steam-punk cogs rotating animations
+  animatedCogs.forEach(cog => {
+    cog.mesh.rotation.y += cog.speed;
+  });
+
+  // Patrol spaceships hovering animations
+  const now = Date.now();
+  animatedCrafts.forEach(craft => {
+    craft.mesh.position.y = craft.baseY + Math.sin(now * craft.hoverSpeed + craft.offset) * craft.hoverRange;
+  });
+
+  // Display models rotating animations
+  if (threeAssets.racerCraft) {
+    threeAssets.racerCraft.rotation.y += 0.006;
+    threeAssets.racerCraft.position.y = 1.6 + Math.sin(now * 0.002) * 0.07;
+  }
+
+  // Render pipeline
+  if (threeRenderer && threeScene && threeCamera) {
+    threeRenderer.render(threeScene, threeCamera);
+  }
+}
+
+function detect3DZoneCollision() {
+  if (!threePlayerMesh) return;
+
+  const px = threePlayerMesh.position.x;
+  const pz = threePlayerMesh.position.z;
+  let detectedZoneId = null;
+
+  for (const zone of ZONES_3D) {
+    const dist = Math.sqrt((px - zone.x) ** 2 + (pz - zone.z) ** 2);
+    if (dist < zone.radius) {
+      detectedZoneId = zone.id;
+      break;
+    }
+  }
+
+  if (detectedZoneId && active3DZoneId !== detectedZoneId) {
+    active3DZoneId = detectedZoneId;
+    playNewZoneSound();
+
+    if (detectedZoneId === 'portal') {
+      // Step on escape portal to exit 3D Mode
+      exit3DMode();
+    } else {
+      // Load Bento Info details
+      state.activeZoneId = detectedZoneId;
+      updateUIForActiveZone();
+    }
+  }
+}
+
+function handle3DKeyDown(e) {
+  const code = e.code;
+  if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'KeyW', 'KeyS', 'KeyA', 'KeyD', 'Space'].includes(code)) {
+    e.preventDefault();
+  }
+  threeKeys[code] = true;
+}
+
+function handle3DKeyUp(e) {
+  threeKeys[e.code] = false;
+}
+
+function handle3DResize() {
+  const container = document.getElementById('threejs_3d_viewport');
+  if (!container || !threeRenderer || !threeCamera) return;
+  threeCamera.aspect = container.clientWidth / container.clientHeight;
+  threeCamera.updateProjectionMatrix();
+  threeRenderer.setSize(container.clientWidth, container.clientHeight);
+}
+
+function disposeThreeJS() {
+  window.removeEventListener('keydown', handle3DKeyDown);
+  window.removeEventListener('keyup', handle3DKeyUp);
+  window.removeEventListener('resize', handle3DResize);
+
+  if (threeAnimId) {
+    cancelAnimationFrame(threeAnimId);
+    threeAnimId = null;
+  }
+
+  if (threeMixer) {
+    threeMixer.stopAllActions();
+    threeMixer = null;
+  }
+  threeClips = {};
+  activeAction = null;
+
+  if (spaceParticles) {
+    threeScene.remove(spaceParticles);
+    if (spaceParticles.geometry) spaceParticles.geometry.dispose();
+    if (spaceParticles.material) spaceParticles.material.dispose();
+    spaceParticles = null;
+  }
+
+  // Clean and release mesh objects
+  threeAssets.forEach((asset) => {
+    threeScene.remove(asset);
+    asset.traverse((child) => {
+      if (child.isMesh) {
+        if (child.geometry) child.geometry.dispose();
+        if (child.material) {
+          if (Array.isArray(child.material)) {
+            child.material.forEach(m => m.dispose());
+          } else {
+            child.material.dispose();
+          }
+        }
+      }
+    });
+  });
+  threeAssets = [];
+  physicsBoxes = [];
+  threePlayerMesh = null;
+  threeAssets.racerCraft = null;
+
+  if (threeControls) {
+    threeControls.dispose();
+    threeControls = null;
+  }
+
+  if (threeRenderer) {
+    threeRenderer.dispose();
+    const container = document.getElementById('threejs_3d_viewport');
+    if (container) container.innerHTML = '';
+    threeRenderer = null;
+  }
+
+  threeScene = null;
+  threeCamera = null;
+  active3DZoneId = null;
+}
+
+function updateRadarMinimap() {
+  const radarCanvas = document.getElementById('radar_canvas');
+  if (!radarCanvas || !threePlayerMesh) return;
+  const rCtx = radarCanvas.getContext('2d');
+  if (!rCtx) return;
+
+  rCtx.clearRect(0, 0, 96, 96);
+  const center = 48;
+
+  // 1. Draw radar grids
+  rCtx.strokeStyle = 'rgba(16, 185, 129, 0.15)';
+  rCtx.lineWidth = 1;
+  rCtx.beginPath();
+  rCtx.arc(center, center, 44, 0, Math.PI * 2);
+  rCtx.stroke();
+  rCtx.beginPath();
+  rCtx.arc(center, center, 24, 0, Math.PI * 2);
+  rCtx.stroke();
+
+  // Crosshairs
+  rCtx.strokeStyle = 'rgba(16, 185, 129, 0.08)';
+  rCtx.beginPath();
+  rCtx.moveTo(center, 4);
+  rCtx.lineTo(center, 92);
+  rCtx.moveTo(4, center);
+  rCtx.lineTo(92, center);
+  rCtx.stroke();
+
+  // 2. Draw static island hubs (Updated divisor to 30 for wider scale)
+  ZONES_3D.forEach(zone => {
+    const rx = center + (zone.x / 30) * 38;
+    const rz = center + (zone.z / 30) * 38;
+
+    const color = zone.id === 'home' ? '#f59e0b' :
+                  zone.id === 'academy' ? '#10b981' :
+                  zone.id === 'lab' ? '#3b82f6' :
+                  zone.id === 'museum' ? '#a855f7' : '#ec4899';
+
+    rCtx.fillStyle = color;
+    rCtx.beginPath();
+    rCtx.arc(rx, rz, 4, 0, Math.PI * 2);
+    rCtx.fill();
+
+    rCtx.shadowBlur = 6;
+    rCtx.shadowColor = color;
+    rCtx.fillStyle = 'rgba(255, 255, 255, 0.25)';
+    rCtx.beginPath();
+    rCtx.arc(rx, rz, 1.5, 0, Math.PI * 2);
+    rCtx.fill();
+    rCtx.shadowBlur = 0;
+  });
+
+  // 3. Draw player position (blinking white dot)
+  const px = center + (threePlayerMesh.position.x / 30) * 38;
+  const pz = center + (threePlayerMesh.position.z / 30) * 38;
+
+  rCtx.fillStyle = '#ffffff';
+  rCtx.shadowBlur = 10;
+  rCtx.shadowColor = '#10b981';
+  rCtx.beginPath();
+  rCtx.arc(px, pz, 3, 0, Math.PI * 2);
+  rCtx.fill();
+  rCtx.shadowBlur = 0;
+}
+
+async function enter3DMode() {
+  if (state.is3DActive) return;
+  state.is3DActive = true;
+
+  playTeleportSound();
+
+  const container = document.getElementById('retro_game_map_canvas').parentElement;
+  container.classList.add('transition-dimension');
+
+  // Pause 2D GameLoop loop
+  if (animationFrameId) {
+    cancelAnimationFrame(animationFrameId);
+    animationFrameId = null;
+  }
+
+  try {
+    await loadThreeJS();
+
+    document.getElementById('retro_game_map_canvas').classList.add('hidden');
+    document.getElementById('threejs_3d_viewport').classList.remove('hidden');
+    document.getElementById('container_exit_3d').classList.remove('hidden');
+    document.getElementById('radar_minimap_container').classList.remove('hidden');
+
+    initThreeJS();
+
+  } catch (err) {
+    console.error(err);
+    state.is3DActive = false;
+    document.getElementById('retro_game_map_canvas').classList.remove('hidden');
+    document.getElementById('threejs_3d_viewport').classList.add('hidden');
+    document.getElementById('container_exit_3d').classList.add('hidden');
+    document.getElementById('radar_minimap_container').classList.add('hidden');
+    gameLoop();
+  }
+
+  setTimeout(() => {
+    container.classList.remove('transition-dimension');
+  }, 600);
+}
+
+function exit3DMode() {
+  if (!state.is3DActive) return;
+  state.is3DActive = false;
+
+  playTeleportSound();
+
+  const container = document.getElementById('retro_game_map_canvas').parentElement;
+  container.classList.add('transition-dimension');
+
+  disposeThreeJS();
+
+  document.getElementById('retro_game_map_canvas').classList.remove('hidden');
+  document.getElementById('threejs_3d_viewport').classList.add('hidden');
+  document.getElementById('container_exit_3d').classList.add('hidden');
+  document.getElementById('radar_minimap_container').classList.add('hidden');
+
+  // Safely translate 2D player coordinates away from Portal Zone trigger
+  player.x = 415;
+  player.y = 145;
+  player.vx = 0;
+  player.vy = 0;
+  mouseTarget = null;
+
+  state.activeZoneId = 'home';
+  updateUIForActiveZone();
+
+  // Resume 2D GameLoop loop
+  gameLoop();
+
+  setTimeout(() => {
+    container.classList.remove('transition-dimension');
+  }, 600);
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   // Bind Language selectors
   document.getElementById('btn_lang_vi').addEventListener('click', () => switchLanguage('vi'));
