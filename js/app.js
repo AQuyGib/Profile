@@ -202,18 +202,21 @@ function initGameEngine() {
   // Toggle D-Pad
   const btnToggleDpad = document.getElementById('btn_toggle_dpad');
   const dpadContainer = document.querySelector('.absolute.bottom-4.right-4');
-  btnToggleDpad.addEventListener('click', () => {
-    playClickSound();
-    if (dpadContainer.classList.contains('hidden-panel')) {
-      dpadContainer.classList.remove('hidden-panel');
-      btnToggleDpad.classList.add('bg-zinc-900/80', 'text-emerald-400');
-      btnToggleDpad.querySelector('span').textContent = 'ẨN ĐIỀU KHIỂN';
-    } else {
-      dpadContainer.classList.add('hidden-panel');
-      btnToggleDpad.classList.remove('bg-zinc-900/80', 'text-emerald-400');
-      btnToggleDpad.querySelector('span').textContent = 'HIỆN ĐIỀU KHIỂN';
-    }
-  });
+  if (btnToggleDpad && dpadContainer) {
+    btnToggleDpad.addEventListener('click', () => {
+      playClickSound();
+      const label = btnToggleDpad.querySelector('span');
+      if (dpadContainer.classList.contains('hidden-panel')) {
+        dpadContainer.classList.remove('hidden-panel');
+        btnToggleDpad.classList.add('bg-zinc-900/80', 'text-emerald-400');
+        if (label) label.textContent = 'ẨN ĐIỀU KHIỂN';
+      } else {
+        dpadContainer.classList.add('hidden-panel');
+        btnToggleDpad.classList.remove('bg-zinc-900/80', 'text-emerald-400');
+        if (label) label.textContent = 'HIỆN ĐIỀU KHIỂN';
+      }
+    });
+  }
 
   // Exit 3D Button Event
   const btnExit3D = document.getElementById('btn_exit_3d');
@@ -741,20 +744,21 @@ function getHeaderIconHtml(iconName) {
 }
 
 function updateUIForActiveZone() {
-  const zone = state.zones.find(z => z.id === state.activeZoneId);
-  const container = document.getElementById('zone_detail_content');
-  if (!zone || !container) return;
+  try {
+    const zone = state.zones.find(z => z.id === state.activeZoneId);
+    const container = document.getElementById('zone_detail_content');
+    if (!zone || !container) return;
 
-  // Render Title and Icon
-  document.getElementById('zone_banner_title').textContent = state.language === 'vi' ? zone.vietnameseName : zone.name;
-  document.getElementById('zone_banner_icon_holder').innerHTML = getHeaderIconHtml(zone.icon);
+    const bannerTitle = document.getElementById('zone_banner_title');
+    const bannerIconHolder = document.getElementById('zone_banner_icon_holder');
+    const mapSectorName = document.getElementById('game_map_sector_name');
+    if (bannerTitle) bannerTitle.textContent = state.language === 'vi' ? zone.vietnameseName : zone.name;
+    if (bannerIconHolder) bannerIconHolder.innerHTML = getHeaderIconHtml(zone.icon);
+    if (mapSectorName) mapSectorName.textContent = state.language === 'vi' ? zone.vietnameseName : zone.name;
 
-  // Update Sector Name in Game Map
-  document.getElementById('game_map_sector_name').textContent = state.language === 'vi' ? zone.vietnameseName : zone.name;
+    const details = state.language === 'vi' ? zone.details_vi : (zone.details_en || zone.details_vi);
 
-  const details = state.language === 'vi' ? zone.details_vi : (zone.details_en || zone.details_vi);
-
-  let html = '';
+    let html = '';
 
   // Render customized DOM based on zone ID
   if (zone.id === 'home' && details) {
@@ -778,7 +782,7 @@ function updateUIForActiveZone() {
             ${state.language === 'vi' ? 'THÔNG TIN CƠ BẢN' : 'ESSENTIAL INFO'}
           </h4>
           <div class="grid grid-cols-2 gap-3 text-xs font-mono">
-            ${details.basicInfo.map(info => `
+            ${(details.basicInfo || []).map(info => `
               <div class="bg-zinc-900/50 p-3 rounded-xl border border-zinc-800/60 font-sans">
                 <span class="text-zinc-600 block mb-1 font-mono text-[9px] uppercase tracking-wider">${info.label}</span>
                 <span class="text-zinc-300 block font-medium mt-0.5">${info.value}</span>
@@ -852,7 +856,7 @@ function updateUIForActiveZone() {
         </p>
 
         <div class="space-y-4 max-h-[340px] overflow-y-auto pr-1">
-          ${details.skills.map(skill => `
+          ${(details.skills || []).map(skill => `
             <div class="bg-zinc-900/40 p-4 rounded-2xl border border-zinc-800/60">
               <div class="flex items-center gap-2 mb-2">
                 ${getSkillIcon(skill.category)}
@@ -903,7 +907,7 @@ function updateUIForActiveZone() {
         </div>
 
         <div class="space-y-3 text-xs max-h-[220px] overflow-y-auto pr-1">
-          ${details.accomplishments.map(acc => `
+          ${(details.accomplishments || []).map(acc => `
             <div class="bg-zinc-900/50 p-3 rounded-xl border border-zinc-800/60">
               <strong class="text-zinc-200 block mb-1.5">${acc.title}</strong>
               <p class="text-zinc-400 font-light leading-relaxed">${acc.desc}</p>
@@ -929,7 +933,7 @@ function updateUIForActiveZone() {
         <h3 class="text-md font-mono text-zinc-500 uppercase tracking-widest">${details.filename}</h3>
         
         <div class="space-y-4 font-light text-sm text-zinc-300 leading-relaxed">
-          ${details.philosophies.map(phil => `
+          ${(details.philosophies || []).map(phil => `
             <div class="p-4 bg-zinc-900/40 rounded-2xl border border-zinc-800 flex gap-3 items-start">
               ${getPhilIcon(phil.title)}
               <div>
@@ -955,7 +959,7 @@ function updateUIForActiveZone() {
         </p>
 
         <div class="space-y-3 text-xs font-mono">
-          ${details.contacts.map(con => `
+          ${(details.contacts || []).map(con => `
             <a 
               href="${con.url}" 
               class="flex items-center justify-between p-3.5 bg-zinc-900/60 rounded-xl border border-zinc-800 hover:border-pink-500/40 transition-colors group"
@@ -979,19 +983,22 @@ function updateUIForActiveZone() {
     `;
   }
 
-  container.innerHTML = html;
+    container.innerHTML = html;
 
-  // Sync active states on Quick Teleport buttons
-  state.zones.forEach((z) => {
-    const el = document.getElementById(`quick_teleport_${z.id}`);
-    if (el) {
-      if (z.id === state.activeZoneId) {
-        el.className = 'px-3 py-1.5 text-xs font-mono rounded-lg border transition-all cursor-pointer bg-zinc-800 text-white border-zinc-650';
-      } else {
-        el.className = 'px-3 py-1.5 text-xs font-mono rounded-lg border transition-all cursor-pointer bg-zinc-900/40 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-850 border-zinc-800/80';
+    // Sync active states on Quick Teleport buttons
+    state.zones.forEach((z) => {
+      const el = document.getElementById(`quick_teleport_${z.id}`);
+      if (el) {
+        if (z.id === state.activeZoneId) {
+          el.className = 'px-3 py-1.5 text-xs font-mono rounded-lg border transition-all cursor-pointer bg-zinc-800 text-white border-zinc-650';
+        } else {
+          el.className = 'px-3 py-1.5 text-xs font-mono rounded-lg border transition-all cursor-pointer bg-zinc-900/40 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-850 border-zinc-800/80';
+        }
       }
-    }
-  });
+    });
+  } catch (err) {
+    console.error('updateUIForActiveZone failed:', err);
+  }
 }
 
 function initQuickTeleportButtons() {
@@ -1036,6 +1043,10 @@ function initChatbot() {
   const btnReset = document.getElementById('btn_reset_chat');
   const chatForm = document.getElementById('chatbot_form');
   const chatInput = document.getElementById('chatbot_message_input');
+
+  if (!chatTrigger || !chatbotBody || !btnMinimize || !btnReset || !chatForm || !chatInput) {
+    return;
+  }
 
   // Toggle chatbot visibility
   chatTrigger.addEventListener('click', () => {
@@ -1332,6 +1343,74 @@ function updateDimensionToggleBtnText() {
 // -------------------------------------------------------------
 // Loading Screen Sequence
 // -------------------------------------------------------------
+const FALLBACK_ZONES = [
+  {
+    id: 'home',
+    name: 'Home',
+    vietnameseName: 'Vùng Đất Khởi Đầu',
+    icon: 'Home',
+    color: 'amber',
+    coords: { x: 150, y: 150 },
+    size: { w: 120, h: 100 },
+    description_vi: 'Nơi giới thiệu bản thân Nguyễn Anh Quý.',
+    description_en: 'Introduction of Nguyen Anh Quy.',
+    details_vi: { fullName: 'NGUYỄN ANH QUÝ', role: 'Thực tập sinh Web Developer' },
+    details_en: { fullName: 'NGUYEN ANH QUY', role: 'Web Developer Intern' }
+  },
+  {
+    id: 'academy',
+    name: 'Academy',
+    vietnameseName: 'Học Viện Công Nghệ TDC',
+    icon: 'GraduationCap',
+    color: 'emerald',
+    coords: { x: 550, y: 150 },
+    size: { w: 130, h: 100 },
+    description_vi: 'Thông tin học vấn tại TDC.',
+    description_en: 'Education at TDC.',
+    details_vi: { institution: 'Trường Cao Đẳng Công Nghệ Thủ Đức', gpa: '3.1 / 4.0' },
+    details_en: { institution: 'Thu Duc College of Technology', gpa: '3.1 / 4.0' }
+  },
+  {
+    id: 'lab',
+    name: 'Lab',
+    vietnameseName: 'Xưởng Kỹ Năng',
+    icon: 'Cpu',
+    color: 'blue',
+    coords: { x: 150, y: 450 },
+    size: { w: 120, h: 100 },
+    description_vi: 'Tổng quan kỹ năng và công nghệ.',
+    description_en: 'Skills and technologies overview.',
+    details_vi: { intro: 'Frontend, Backend, Mobile, Security, AI.' },
+    details_en: { intro: 'Frontend, Backend, Mobile, Security, AI.' }
+  },
+  {
+    id: 'museum',
+    name: 'Museum',
+    vietnameseName: 'Phòng Trưng Bày Dự Án',
+    icon: 'Briefcase',
+    color: 'purple',
+    coords: { x: 550, y: 450 },
+    size: { w: 130, h: 100 },
+    description_vi: 'Trưng bày các dự án tiêu biểu.',
+    description_en: 'Showcase of featured projects.',
+    details_vi: { intro: 'DIENMAYPRO và các sản phẩm thực chiến.' },
+    details_en: { intro: 'DIENMAYPRO and practical projects.' }
+  },
+  {
+    id: 'portal',
+    name: 'Portal',
+    vietnameseName: 'Cổng Kết Nối',
+    icon: 'MapPinned',
+    color: 'pink',
+    coords: { x: 350, y: 650 },
+    size: { w: 110, h: 90 },
+    description_vi: 'Liên hệ và điều hướng nhanh.',
+    description_en: 'Contact and quick navigation.',
+    details_vi: { intro: 'Kết nối trực tiếp với Nguyễn Anh Quý.' },
+    details_en: { intro: 'Direct contact with Nguyen Anh Quy.' }
+  }
+];
+
 function startLoadingSequence() {
   const steps = [
     { log: "CONNECTING TO THE PORTFOLIO SERVER GATES...", weight: 20 },
@@ -1352,30 +1431,39 @@ function startLoadingSequence() {
   const statusLight = document.getElementById('sys_status_light');
   const statusText = document.getElementById('sys_status_text');
 
-  // Load JSON payload from server
-  fetch('data.json')
-    .then(res => {
-      if (!res.ok) throw new Error("Failed to load local database files: " + res.statusText);
-      return res.json();
-    })
-    .then(data => {
-      state.zones = data.zones;
-    })
-    .catch(err => {
-      console.error(err);
-      errorStatus = err.message || "Failed to load static assets";
-      statusLight.className = 'w-2 h-2 rounded-full bg-red-500 animate-pulse';
-      statusText.textContent = 'SYS_STATUS: FAILED_HALT';
-      logViewport.innerHTML = `
-        <div class="text-red-400 flex items-start gap-2 h-full justify-center flex-col font-mono text-[10px]">
-          <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
-          <p class="font-semibold uppercase">CRITICAL SYSTEM FAILURE</p>
-          <p class="text-[9px] text-zinc-500 leading-normal">${errorStatus}</p>
-        </div>
-        <button id="btn_reload_page" class="w-full mt-2 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 font-mono text-xs py-2 rounded-xl border border-zinc-800">REFRESH CONNECTIVITY</button>
-      `;
-      document.getElementById('btn_reload_page').addEventListener('click', () => window.location.reload());
-    });
+  const normalizeZoneDetails = (zone) => {
+    if (!zone || typeof zone !== 'object') return zone;
+    const base = FALLBACK_ZONES.find(z => z.id === zone.id) || {};
+    return {
+      ...base,
+      ...zone,
+      details_vi: { ...(base.details_vi || {}), ...(zone.details_vi || {}) },
+      details_en: { ...(base.details_en || {}), ...(zone.details_en || {}) }
+    };
+  };
+
+  const applyZones = (zones) => {
+    const source = Array.isArray(zones) && zones.length ? zones : FALLBACK_ZONES;
+    state.zones = source.map(normalizeZoneDetails);
+    if (statusLight) statusLight.className = 'w-2 h-2 rounded-full bg-emerald-500 animate-pulse';
+    if (statusText) statusText.textContent = 'SYS_STATUS: ONLINE';
+  };
+
+  const isHttp = ['http:', 'https:'].includes(window.location.protocol);
+  if (!isHttp) {
+    applyZones(FALLBACK_ZONES);
+  } else {
+    fetch('./data.json', { cache: 'no-store' })
+      .then(res => {
+        if (!res.ok) throw new Error('Failed to load local database files: ' + res.statusText);
+        return res.json();
+      })
+      .then(data => applyZones(data.zones))
+      .catch(err => {
+        console.warn('Falling back to embedded zone data because /data.json could not be fetched.', err);
+        applyZones(FALLBACK_ZONES);
+      });
+  }
 
   // Tick function
   const tick = () => {
@@ -1459,6 +1547,8 @@ function startLoadingSequence() {
 let threeScene, threeCamera, threeRenderer, threeControls, threeComposer;
 let isCameraUserInteracting = false;
 let threePlayerMesh = null;
+let threePlayerAura = null;
+let threePlayerPlaceholder = null;
 let threeAssets = [];
 let threeAnimId = null;
 let active3DZoneId = null;
@@ -1474,6 +1564,31 @@ let physicsBoxes = [];
 let emissiveMaterials = [];
 let zoneBoxes = [];
 let activeHotspots = [];
+let zoneEnvironment = null;
+let zoneTerrainAnimations = [];
+let zoneParticleSystem = null;
+let assetLoadFailures = [];
+let assetFailureBannerShown = false;
+let diagnosticModeEnabled = true;
+let diagnosticSnapshot = null;
+let threeReadiness = {
+  gateOpen: false,
+  coreReady: false,
+  assetsReady: false,
+  requiredAssets: ['astronaut', 'homeBeacon', 'worldGroup'],
+  lastReason: 'booting'
+};
+let threeReadinessTimer = null;
+let threeReadinessResolve = null;
+let threeReadinessPromise = null;
+let zoneTransitionState = {
+  currentZoneId: null,
+  targetZoneId: null,
+  progress: 1,
+  focusPulse: 0,
+  vignettePulse: 0,
+  lastZoneChangeAt: 0
+};
 
 const roverPhysics = {
   speed: 0,
@@ -1543,7 +1658,8 @@ function getGroundHeight(x, z) {
     if (distRock < rock.r) return rock.y;
   }
   
-  return -100;
+  // Keep the astronaut on the visible surface instead of dropping into the abyss.
+  return 0.2;
 }
 
 // 3D Islands Coordinates representation
@@ -1554,6 +1670,14 @@ const ZONES_3D = [
   { id: 'museum', x: 20, z: 14, radius: 5.5 },
   { id: 'portal', x: 0, z: 24, radius: 4.5 }
 ];
+
+const ZONE_THEMES = {
+  home: { skyTop: '#3b2f63', skyBottom: '#050816', fog: '#0b1020', hemi: '#f59e0b', dir: '#f97316', fill: '#60a5fa', particle: '#fcd34d', bgMusic: 'home' },
+  academy: { skyTop: '#17324d', skyBottom: '#050816', fog: '#081522', hemi: '#10b981', dir: '#38bdf8', fill: '#0ea5e9', particle: '#34d399', bgMusic: 'academy' },
+  lab: { skyTop: '#0f2744', skyBottom: '#020617', fog: '#08111f', hemi: '#3b82f6', dir: '#22d3ee', fill: '#a855f7', particle: '#67e8f9', bgMusic: 'lab' },
+  museum: { skyTop: '#24123f', skyBottom: '#050816', fog: '#10091f', hemi: '#a855f7', dir: '#ec4899', fill: '#f59e0b', particle: '#f5d0fe', bgMusic: 'museum' },
+  portal: { skyTop: '#3c0f3c', skyBottom: '#020617', fog: '#0f091a', hemi: '#ec4899', dir: '#ffffff', fill: '#a855f7', particle: '#fda4af', bgMusic: 'portal' }
+};
 
 function loadScript(src) {
   return new Promise((resolve, reject) => {
@@ -1575,24 +1699,17 @@ function loadScript(src) {
 }
 
 async function loadThreeJS() {
-  if (window.THREE && window.THREE.OrbitControls && window.THREE.GLTFLoader && window.THREE.EffectComposer) return;
+  if (window.THREE && window.THREE.OrbitControls && window.THREE.GLTFLoader) return;
   try {
     // 1. Load Three.js core with a pinned, reliable unpkg CDN version
     await loadScript("https://unpkg.com/three@0.128.0/build/three.min.js");
     
-    // 2. Load auxiliary controls & loaders
+    // 2. Load auxiliary controls & loaders only.
+    // Postprocessing is optional and may be disabled if the CDN/runtime blocks it.
     await Promise.all([
       loadScript("https://unpkg.com/three@0.128.0/examples/js/controls/OrbitControls.js"),
       loadScript("https://unpkg.com/three@0.128.0/examples/js/loaders/GLTFLoader.js")
     ]);
-
-    // 3. Load Postprocessing core dependencies sequentially to avoid order-of-execution race conditions
-    await loadScript("https://unpkg.com/three@0.128.0/examples/js/shaders/CopyShader.js");
-    await loadScript("https://unpkg.com/three@0.128.0/examples/js/postprocessing/ShaderPass.js");
-    await loadScript("https://unpkg.com/three@0.128.0/examples/js/postprocessing/RenderPass.js");
-    await loadScript("https://unpkg.com/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js");
-    await loadScript("https://unpkg.com/three@0.128.0/examples/js/postprocessing/EffectComposer.js");
-    await loadScript("https://unpkg.com/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js");
   } catch (err) {
     console.error("Three.js load error:", err);
     throw err;
@@ -1607,8 +1724,8 @@ function initThreeJS() {
 
   // Scene setup
   threeScene = new THREE.Scene();
-  threeScene.background = new THREE.Color('#09090b');
-  threeScene.fog = new THREE.FogExp2('#09090b', 0.025);
+  threeScene.background = new THREE.Color('#050816');
+  threeScene.fog = new THREE.FogExp2('#050816', 0.012);
 
   // Initialize precise THREE.Box3 boundaries for island interactions
   zoneBoxes = ZONES_3D.map(zone => ({
@@ -1619,44 +1736,484 @@ function initThreeJS() {
     )
   }));
 
-  // Camera setup (Top-down view)
-  threeCamera = new THREE.PerspectiveCamera(50, container.clientWidth / container.clientHeight, 0.1, 1000);
-  threeCamera.position.set(0, 16, 20);
+  // Camera setup (cinematic orbit by default)
+  threeCamera = new THREE.PerspectiveCamera(55, container.clientWidth / container.clientHeight, 0.1, 1000);
+  threeCamera.position.set(20, 22, 30);
 
   // Renderer setup
   threeRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
   threeRenderer.setSize(container.clientWidth, container.clientHeight);
   threeRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  threeRenderer.setClearColor('#050816', 1);
   threeRenderer.shadowMap.enabled = true;
   threeRenderer.shadowMap.type = THREE.PCFSoftShadowMap;
   container.appendChild(threeRenderer.domElement);
 
-  // Post-Processing Cybernetic Pipeline (EffectComposer + UnrealBloomPass for expensive high-contrast neon glows)
-  if (THREE.EffectComposer && THREE.RenderPass && THREE.UnrealBloomPass) {
-    const renderScene = new THREE.RenderPass(threeScene, threeCamera);
-    const bloomPass = new THREE.UnrealBloomPass(
-      new THREE.Vector2(container.clientWidth, container.clientHeight),
-      1.25,  // Glow intensity strength
-      0.38,  // Bloom dispersion radius
-      0.15   // Luminosity threshold
-    );
-    threeComposer = new THREE.EffectComposer(threeRenderer);
-    threeComposer.addPass(renderScene);
-    threeComposer.addPass(bloomPass);
-  }
+  // Post-Processing Cybernetic Pipeline is optional.
+  // Avoid hard dependency on RenderPass/ShaderPass CDN assets that can fail in file/runtime contexts.
+  threeComposer = null;
 
-  // Controls setup (Top-down view constraints)
+  // Controls setup (smooth orbit around a real world)
   threeControls = new THREE.OrbitControls(threeCamera, threeRenderer.domElement);
   threeControls.enableDamping = true;
-  threeControls.dampingFactor = 0.05;
-  threeControls.maxPolarAngle = Math.PI / 2.2;
-  threeControls.minDistance = 10;
-  threeControls.maxDistance = 45;
+  threeControls.dampingFactor = 0.06;
+  threeControls.minPolarAngle = 0.35;
+  threeControls.maxPolarAngle = Math.PI / 2.1;
+  threeControls.minDistance = 12;
+  threeControls.maxDistance = 55;
+  threeControls.target.set(0, 1.5, 0);
 
   // Track manual camera interactions to prevent fight back
   isCameraUserInteracting = false;
   threeControls.addEventListener('start', () => { isCameraUserInteracting = true; });
   threeControls.addEventListener('end', () => { isCameraUserInteracting = false; });
+
+  // Sky dome and atmosphere to replace the flat grid feeling
+  const skyGeo = new THREE.SphereGeometry(320, 32, 16);
+  const skyMat = new THREE.ShaderMaterial({
+    side: THREE.BackSide,
+    uniforms: {
+      topColor: { value: new THREE.Color('#10204a') },
+      bottomColor: { value: new THREE.Color('#050816') },
+      offset: { value: 30 },
+      exponent: { value: 0.65 }
+    },
+    vertexShader: 'varying vec3 vWorldPosition; void main() { vec4 worldPosition = modelMatrix * vec4(position, 1.0); vWorldPosition = worldPosition.xyz; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+    fragmentShader: 'uniform vec3 topColor; uniform vec3 bottomColor; uniform float offset; uniform float exponent; varying vec3 vWorldPosition; void main() { float h = normalize(vWorldPosition + offset).y; float mixRatio = max(pow(max(h, 0.0), exponent), 0.0); gl_FragColor = vec4(mix(bottomColor, topColor, mixRatio), 1.0); }'
+  });
+  const sky = new THREE.Mesh(skyGeo, skyMat);
+  threeScene.add(sky);
+
+  const ambientAnchor = new THREE.Mesh(
+    new THREE.SphereGeometry(2, 8, 8),
+    new THREE.MeshBasicMaterial({ color: '#0b1220', transparent: true, opacity: 0 })
+  );
+  ambientAnchor.position.set(0, 1.2, 0);
+  threeScene.add(ambientAnchor);
+
+  const worldGroup = new THREE.Group();
+  threeScene.add(worldGroup);
+  threeReadiness.worldGroup = worldGroup;
+
+  const addGlowRing = (x, y, z, radius, color, opacity = 0.35) => {
+    const ring = new THREE.Mesh(
+      new THREE.TorusGeometry(radius, 0.12, 10, 32),
+      new THREE.MeshBasicMaterial({ color, transparent: true, opacity, blending: THREE.AdditiveBlending })
+    );
+    ring.rotation.x = Math.PI / 2;
+    ring.position.set(x, y, z);
+    worldGroup.add(ring);
+    return ring;
+  };
+
+  const addIsland = (x, z, color, radius = 8, height = 1.2) => {
+    const island = new THREE.Group();
+    const base = new THREE.Mesh(
+      new THREE.CylinderGeometry(radius * 1.15, radius, height, 8),
+      new THREE.MeshStandardMaterial({ color: '#0b1220', roughness: 0.95, metalness: 0.15 })
+    );
+    base.position.y = -0.6;
+    base.castShadow = true;
+    base.receiveShadow = true;
+    island.add(base);
+
+    const top = new THREE.Mesh(
+      new THREE.CylinderGeometry(radius, radius * 0.92, 0.7, 8),
+      new THREE.MeshStandardMaterial({ color: '#111827', roughness: 0.55, metalness: 0.55 })
+    );
+    top.position.y = 0.25;
+    top.castShadow = true;
+    top.receiveShadow = true;
+    island.add(top);
+
+    const halo = new THREE.Mesh(
+      new THREE.TorusGeometry(radius * 1.18, 0.08, 8, 24),
+      new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.6, blending: THREE.AdditiveBlending })
+    );
+    halo.rotation.x = Math.PI / 2;
+    halo.position.y = 0.18;
+    island.add(halo);
+
+    island.position.set(x, 0, z);
+    worldGroup.add(island);
+    return island;
+  };
+
+  const addSoftRoundIsland = (x, z, color) => {
+    const island = new THREE.Group();
+    const mound = new THREE.Mesh(
+      new THREE.SphereGeometry(9.6, 28, 18),
+      new THREE.MeshStandardMaterial({ color: '#0b1220', roughness: 0.95, metalness: 0.12 })
+    );
+    mound.visible = true;
+    mound.scale.set(1.0, 0.42, 1.0);
+    mound.position.y = -0.5;
+    mound.castShadow = true;
+    mound.receiveShadow = true;
+    island.add(mound);
+
+    const pad = new THREE.Mesh(
+      new THREE.CylinderGeometry(8.2, 8.5, 0.8, 40),
+      new THREE.MeshStandardMaterial({ color: '#111827', roughness: 0.42, metalness: 0.38 })
+    );
+    pad.position.y = 0.08;
+    pad.receiveShadow = true;
+    island.add(pad);
+
+    const halo = new THREE.Mesh(new THREE.TorusGeometry(8.8, 0.08, 8, 40), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.52, blending: THREE.AdditiveBlending }));
+    halo.rotation.x = Math.PI / 2;
+    halo.position.y = 0.24;
+    island.add(halo);
+    island.position.set(x, 0, z);
+    worldGroup.add(island);
+    zoneTerrainAnimations.push({ kind: 'home', group: island, mound, halo });
+    return island;
+  };
+
+  const addSquareGridIsland = (x, z, color) => {
+    const island = new THREE.Group();
+    const base = new THREE.Mesh(new THREE.BoxGeometry(18, 0.8, 18), new THREE.MeshStandardMaterial({ color: '#0b1220', roughness: 0.9, metalness: 0.15 }));
+    base.position.y = -0.35;
+    base.castShadow = true;
+    base.receiveShadow = true;
+    island.add(base);
+
+    const top = new THREE.Mesh(new THREE.BoxGeometry(16, 0.25, 16), new THREE.MeshStandardMaterial({ color: '#101827', roughness: 0.5, metalness: 0.45 }));
+    top.position.y = 0.18;
+    top.receiveShadow = true;
+    island.add(top);
+
+    const gridMat = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.16, wireframe: true });
+    const gridPlane = new THREE.Mesh(new THREE.PlaneGeometry(15, 15, 8, 8), gridMat);
+    gridPlane.rotation.x = -Math.PI / 2;
+    gridPlane.position.y = 0.33;
+    island.add(gridPlane);
+
+    const scanLine = new THREE.Mesh(new THREE.BoxGeometry(14.2, 0.08, 0.32), new THREE.MeshBasicMaterial({ color: '#a7f3d0', transparent: true, opacity: 0.95, blending: THREE.AdditiveBlending }));
+    scanLine.position.set(-7, 0.42, -3.8);
+    island.add(scanLine);
+
+    const halo = new THREE.Mesh(new THREE.TorusGeometry(9.5, 0.08, 8, 4), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.5, blending: THREE.AdditiveBlending }));
+    halo.rotation.x = Math.PI / 2;
+    halo.position.y = 0.32;
+    island.add(halo);
+    island.position.set(x, 0, z);
+    worldGroup.add(island);
+    zoneTerrainAnimations.push({ kind: 'academy', group: island, gridPlane, scanLine });
+    return island;
+  };
+
+  const addTieredLabIsland = (x, z, color) => {
+    const island = new THREE.Group();
+    const tier1 = new THREE.Mesh(new THREE.CylinderGeometry(9.5, 10.8, 0.9, 10), new THREE.MeshStandardMaterial({ color: '#0b1220', roughness: 0.95, metalness: 0.15 }));
+    tier1.position.y = -0.45;
+    tier1.castShadow = true;
+    tier1.receiveShadow = true;
+    island.add(tier1);
+
+    const tier2 = new THREE.Mesh(new THREE.CylinderGeometry(7.2, 8.2, 0.8, 10), new THREE.MeshStandardMaterial({ color: '#111827', roughness: 0.72, metalness: 0.26 }));
+    tier2.position.y = 0.2;
+    tier2.castShadow = true;
+    tier2.receiveShadow = true;
+    island.add(tier2);
+
+    const tier3 = new THREE.Mesh(new THREE.CylinderGeometry(4.6, 5.6, 0.75, 10), new THREE.MeshStandardMaterial({ color: '#1f2937', roughness: 0.45, metalness: 0.42 }));
+    tier3.position.set(0, 0.98, 0);
+    tier3.castShadow = true;
+    tier3.receiveShadow = true;
+    island.add(tier3);
+
+    const pipe1 = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.45, 11, 10), new THREE.MeshStandardMaterial({ color: '#38bdf8', emissive: '#0ea5e9', emissiveIntensity: 0.22, metalness: 0.8, roughness: 0.25 }));
+    pipe1.rotation.z = Math.PI / 2;
+    pipe1.position.set(-3.6, 1.3, -2.8);
+    island.add(pipe1);
+    const pipe2 = pipe1.clone();
+    pipe2.position.set(3.6, 1.55, 2.6);
+    pipe2.rotation.z = Math.PI / 2.1;
+    island.add(pipe2);
+
+    const pipeGlow = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.24, 12, 10), new THREE.MeshBasicMaterial({ color: '#22d3ee', transparent: true, opacity: 0.8, blending: THREE.AdditiveBlending }));
+    pipeGlow.rotation.z = Math.PI / 2;
+    pipeGlow.position.set(0, 1.45, 0);
+    island.add(pipeGlow);
+
+    const halo = new THREE.Mesh(new THREE.TorusGeometry(10.4, 0.08, 8, 32), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.54, blending: THREE.AdditiveBlending }));
+    halo.rotation.x = Math.PI / 2;
+    halo.position.y = 0.28;
+    island.add(halo);
+    island.position.set(x, 0, z);
+    worldGroup.add(island);
+    zoneTerrainAnimations.push({ kind: 'lab', group: island, pipeGlow, pipe1, pipe2 });
+    return island;
+  };
+
+  const addMuseumPlinthIsland = (x, z, color) => {
+    const island = new THREE.Group();
+    const outer = new THREE.Mesh(new THREE.CylinderGeometry(10.5, 11.4, 0.8, 32), new THREE.MeshStandardMaterial({ color: '#0b1220', roughness: 0.92, metalness: 0.12 }));
+    outer.position.y = -0.35;
+    outer.castShadow = true;
+    outer.receiveShadow = true;
+    island.add(outer);
+
+    const plinth = new THREE.Mesh(new THREE.CylinderGeometry(6.6, 7.2, 1.2, 24), new THREE.MeshStandardMaterial({ color: '#111827', roughness: 0.45, metalness: 0.35 }));
+    plinth.position.y = 0.36;
+    plinth.castShadow = true;
+    plinth.receiveShadow = true;
+    island.add(plinth);
+
+    const openField = new THREE.Mesh(new THREE.CircleGeometry(11.6, 48), new THREE.MeshBasicMaterial({ color: '#081221', transparent: true, opacity: 0.35, side: THREE.DoubleSide }));
+    openField.rotation.x = -Math.PI / 2;
+    openField.position.y = 0.02;
+    island.add(openField);
+
+    const spotlightA = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 2.2, 7.5, 10, 1, true), new THREE.MeshBasicMaterial({ color: '#fde68a', transparent: true, opacity: 0.22, blending: THREE.AdditiveBlending, side: THREE.DoubleSide }));
+    spotlightA.position.set(-4.2, 4.2, -2.5);
+    island.add(spotlightA);
+    const spotlightB = spotlightA.clone();
+    spotlightB.position.set(4.3, 4.2, 2.8);
+    spotlightB.rotation.y = Math.PI / 4;
+    island.add(spotlightB);
+
+    const halo = new THREE.Mesh(new THREE.TorusGeometry(11.2, 0.08, 8, 48), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.5, blending: THREE.AdditiveBlending }));
+    halo.rotation.x = Math.PI / 2;
+    halo.position.y = 0.18;
+    island.add(halo);
+    island.position.set(x, 0, z);
+    worldGroup.add(island);
+    zoneTerrainAnimations.push({ kind: 'museum', group: island, spotlightA, spotlightB });
+    return island;
+  };
+
+  const addPortalRingIsland = (x, z, color) => {
+    const island = new THREE.Group();
+    const ringBase = new THREE.Mesh(new THREE.TorusGeometry(10.4, 0.38, 12, 36), new THREE.MeshStandardMaterial({ color: '#3f1d4f', roughness: 0.28, metalness: 0.72, emissive: '#ec4899', emissiveIntensity: 0.18 }));
+    ringBase.rotation.x = Math.PI / 2;
+    ringBase.position.y = 0.38;
+    ringBase.castShadow = true;
+    ringBase.receiveShadow = true;
+    island.add(ringBase);
+
+    const stonePad = new THREE.Mesh(new THREE.CylinderGeometry(8.8, 9.4, 1.2, 16), new THREE.MeshStandardMaterial({ color: '#0b1220', roughness: 0.88, metalness: 0.14 }));
+    stonePad.position.y = -0.2;
+    stonePad.castShadow = true;
+    stonePad.receiveShadow = true;
+    island.add(stonePad);
+
+    const columnA = new THREE.Mesh(new THREE.BoxGeometry(1.1, 10.5, 1.1), new THREE.MeshStandardMaterial({ color: '#fb7185', emissive: '#fb7185', emissiveIntensity: 0.28, roughness: 0.25, metalness: 0.45 }));
+    const columnB = columnA.clone();
+    columnA.position.set(-6.2, 5.2, 0);
+    columnB.position.set(6.2, 5.2, 0);
+    island.add(columnA, columnB);
+
+    const innerRing = new THREE.Mesh(new THREE.TorusGeometry(6.5, 0.18, 12, 42), new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0.45, blending: THREE.AdditiveBlending }));
+    innerRing.rotation.x = Math.PI / 2;
+    innerRing.position.y = 1.0;
+    island.add(innerRing);
+
+    const halo = new THREE.Mesh(new THREE.TorusGeometry(9.2, 0.1, 8, 40), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.7, blending: THREE.AdditiveBlending }));
+    halo.rotation.x = Math.PI / 2;
+    halo.position.y = 0.42;
+    island.add(halo);
+    island.position.set(x, 0, z);
+    worldGroup.add(island);
+    zoneTerrainAnimations.push({ kind: 'portal', group: island, ringBase, innerRing });
+    return island;
+  };
+
+  addSoftRoundIsland(-20, -14, '#f59e0b');
+  addSquareGridIsland(20, -14, '#10b981');
+  addTieredLabIsland(-20, 14, '#3b82f6');
+  addMuseumPlinthIsland(20, 14, '#a855f7');
+  addPortalRingIsland(0, 24, '#ec4899');
+
+
+  // Central mainland floor to connect all zones into one world
+  const mainGround = new THREE.Mesh(
+    new THREE.CircleGeometry(42, 64),
+    new THREE.MeshStandardMaterial({ color: '#07111f', roughness: 0.92, metalness: 0.18 })
+  );
+  mainGround.rotation.x = -Math.PI / 2;
+  mainGround.receiveShadow = true;
+  worldGroup.add(mainGround);
+
+  const homeBeacon = new THREE.Mesh(
+    new THREE.SphereGeometry(1.2, 16, 16),
+    new THREE.MeshBasicMaterial({ color: '#f59e0b', transparent: true, opacity: 0.35, blending: THREE.AdditiveBlending })
+  );
+  homeBeacon.position.set(-20, 1.8, -14);
+  worldGroup.add(homeBeacon);
+  threeReadiness.homeBeacon = homeBeacon;
+
+  const mainGroundGlow = new THREE.Mesh(
+    new THREE.CircleGeometry(42.6, 64),
+    new THREE.MeshBasicMaterial({ color: '#0f766e', transparent: true, opacity: 0.08, side: THREE.DoubleSide, blending: THREE.AdditiveBlending })
+  );
+  mainGroundGlow.rotation.x = -Math.PI / 2;
+  mainGroundGlow.position.y = 0.02;
+  worldGroup.add(mainGroundGlow);
+
+  addGlowRing(0, 0.1, 0, 14, '#10b981', 0.25);
+  addGlowRing(-20, 0.12, -14, 10, '#f59e0b', 0.18);
+  addGlowRing(20, 0.12, -14, 10, '#10b981', 0.18);
+  addGlowRing(-20, 0.12, 14, 10, '#3b82f6', 0.18);
+  addGlowRing(20, 0.12, 14, 10, '#a855f7', 0.18);
+  addGlowRing(0, 0.12, 24, 9, '#ec4899', 0.22);
+
+  // Bridges that visually connect the zones
+  const bridgeMat = new THREE.MeshStandardMaterial({ color: '#142035', roughness: 0.7, metalness: 0.4 });
+  const bridge = (x1, z1, x2, z2) => {
+    const dx = x2 - x1;
+    const dz = z2 - z1;
+    const len = Math.sqrt(dx * dx + dz * dz);
+    const mesh = new THREE.Mesh(new THREE.BoxGeometry(2.5, 0.28, len), bridgeMat);
+    mesh.position.set((x1 + x2) / 2, 0.12, (z1 + z2) / 2);
+    mesh.rotation.y = Math.atan2(dx, dz);
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    worldGroup.add(mesh);
+    return mesh;
+  };
+  bridge(0, 0, -20, -14);
+  bridge(0, 0, 20, -14);
+  bridge(0, 0, -20, 14);
+  bridge(0, 0, 20, 14);
+  bridge(0, 0, 0, 24);
+
+  const createLandmarkBase = (x, y, z, radius, color) => {
+    const group = new THREE.Group();
+    const pedestal = new THREE.Mesh(
+      new THREE.CylinderGeometry(radius * 0.9, radius * 1.15, 1.8, 10),
+      new THREE.MeshStandardMaterial({ color: '#0b1120', roughness: 0.92, metalness: 0.2 })
+    );
+    pedestal.position.y = 0.9;
+    pedestal.castShadow = true;
+    pedestal.receiveShadow = true;
+    group.add(pedestal);
+
+    const halo = new THREE.Mesh(
+      new THREE.TorusGeometry(radius * 1.35, 0.12, 10, 32),
+      new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.75, blending: THREE.AdditiveBlending })
+    );
+    halo.rotation.x = Math.PI / 2;
+    halo.position.y = 1.5;
+    group.add(halo);
+
+    group.position.set(x, y, z);
+    worldGroup.add(group);
+    return group;
+  };
+
+  const addZoneLandmarks = () => {
+    // Home landmark
+    const home = createLandmarkBase(-26, 0, -20, 2.8, '#f59e0b');
+    const homeCore = new THREE.Mesh(
+      new THREE.CylinderGeometry(1.3, 1.6, 8.5, 6),
+      new THREE.MeshStandardMaterial({ color: '#f97316', metalness: 0.4, roughness: 0.35, emissive: '#7c2d12', emissiveIntensity: 0.45 })
+    );
+    homeCore.position.y = 5;
+    homeCore.castShadow = true;
+    home.add(homeCore);
+    home.add(createLandmarkBase(0, 0, 0, 0.001, '#000000'));
+    home.add(new THREE.Mesh(new THREE.SphereGeometry(1.15, 16, 12), new THREE.MeshStandardMaterial({ color: '#fde68a', emissive: '#f59e0b', emissiveIntensity: 0.75, roughness: 0.2 }))).position.set(0, 9.4, 0);
+
+    // Academy landmark
+    const academy = createLandmarkBase(26, 0, -20, 2.8, '#10b981');
+    const academyPillar = new THREE.Mesh(
+      new THREE.BoxGeometry(2.2, 10, 2.2),
+      new THREE.MeshStandardMaterial({ color: '#065f46', metalness: 0.6, roughness: 0.3, emissive: '#10b981', emissiveIntensity: 0.25 })
+    );
+    academyPillar.position.y = 5.6;
+    academyPillar.castShadow = true;
+    academy.add(academyPillar);
+    const academyRing = new THREE.Mesh(new THREE.TorusGeometry(2.4, 0.18, 12, 32), new THREE.MeshBasicMaterial({ color: '#34d399', transparent: true, opacity: 0.75, blending: THREE.AdditiveBlending }));
+    academyRing.rotation.x = Math.PI / 2;
+    academyRing.position.y = 8.6;
+    academy.add(academyRing);
+    const academyDish = new THREE.Mesh(new THREE.SphereGeometry(1.1, 18, 14), new THREE.MeshStandardMaterial({ color: '#d1fae5', emissive: '#6ee7b7', emissiveIntensity: 0.55, roughness: 0.25 }));
+    academyDish.scale.set(1.6, 0.45, 1.6);
+    academyDish.position.y = 11.1;
+    academy.add(academyDish);
+
+    // Lab landmark
+    const lab = createLandmarkBase(-26, 0, 18, 2.8, '#38bdf8');
+    const labTower = new THREE.Mesh(
+      new THREE.CylinderGeometry(1.6, 2.2, 11, 7),
+      new THREE.MeshStandardMaterial({ color: '#0f172a', metalness: 0.9, roughness: 0.22, emissive: '#0ea5e9', emissiveIntensity: 0.18 })
+    );
+    labTower.position.y = 6.1;
+    labTower.castShadow = true;
+    lab.add(labTower);
+    const labArm = new THREE.Mesh(new THREE.BoxGeometry(6.5, 0.45, 0.45), new THREE.MeshStandardMaterial({ color: '#38bdf8', emissive: '#22d3ee', emissiveIntensity: 0.4, metalness: 0.85, roughness: 0.2 }));
+    labArm.position.set(2.2, 8.2, 0);
+    labArm.rotation.z = -0.18;
+    lab.add(labArm);
+    const labCore = new THREE.Mesh(new THREE.SphereGeometry(1.05, 16, 16), new THREE.MeshStandardMaterial({ color: '#e0f2fe', emissive: '#38bdf8', emissiveIntensity: 0.85, roughness: 0.18 }));
+    labCore.position.set(4.9, 8.05, 0);
+    lab.add(labCore);
+
+    // Museum landmark
+    const museum = createLandmarkBase(26, 0, 18, 2.8, '#a855f7');
+    const museumArch = new THREE.Mesh(
+      new THREE.TorusGeometry(4.2, 0.35, 10, 24, Math.PI),
+      new THREE.MeshStandardMaterial({ color: '#6d28d9', metalness: 0.75, roughness: 0.28, emissive: '#c084fc', emissiveIntensity: 0.22 })
+    );
+    museumArch.rotation.z = Math.PI / 2;
+    museumArch.position.y = 7.2;
+    museum.add(museumArch);
+    const museumPod = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.2, 8.8, 8), new THREE.MeshStandardMaterial({ color: '#1f1147', emissive: '#a855f7', emissiveIntensity: 0.28, roughness: 0.35, metalness: 0.5 }));
+    museumPod.position.y = 5.1;
+    museum.add(museumPod);
+    const museumSpot = new THREE.Mesh(new THREE.SphereGeometry(0.8, 16, 12), new THREE.MeshStandardMaterial({ color: '#f5d0fe', emissive: '#f472b6', emissiveIntensity: 0.8, roughness: 0.15 }));
+    museumSpot.position.y = 10.6;
+    museum.add(museumSpot);
+
+    // Portal landmark
+    const portal = createLandmarkBase(0, 0, 29, 3.2, '#ec4899');
+    const portalRing = new THREE.Mesh(
+      new THREE.TorusGeometry(4.8, 0.5, 14, 36),
+      new THREE.MeshStandardMaterial({ color: '#831843', emissive: '#fb7185', emissiveIntensity: 0.55, metalness: 0.7, roughness: 0.22 })
+    );
+    portalRing.rotation.y = Math.PI / 2;
+    portalRing.position.y = 7.2;
+    portal.add(portalRing);
+    const portalCore = new THREE.Mesh(new THREE.SphereGeometry(1.5, 18, 16), new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0.9 }));
+    portalCore.position.y = 7.2;
+    portal.add(portalCore);
+    const portalPillarLeft = new THREE.Mesh(new THREE.BoxGeometry(0.6, 10, 0.6), new THREE.MeshStandardMaterial({ color: '#fb7185', emissive: '#fb7185', emissiveIntensity: 0.35, roughness: 0.25 }));
+    const portalPillarRight = portalPillarLeft.clone();
+    portalPillarLeft.position.set(-4.1, 5, 0);
+    portalPillarRight.position.set(4.1, 5, 0);
+    portal.add(portalPillarLeft, portalPillarRight);
+  };
+
+  addZoneLandmarks();
+
+  // World lighting
+  const ambientLight = new THREE.AmbientLight('#ffffff', 2.2);
+  threeScene.add(ambientLight);
+
+  const dirLight = new THREE.DirectionalLight('#ffffff', 2.4);
+  dirLight.position.set(18, 28, 12);
+  dirLight.castShadow = true;
+  dirLight.shadow.mapSize.width = 2048;
+  dirLight.shadow.mapSize.height = 2048;
+  threeScene.add(dirLight);
+
+  const fillLight = new THREE.PointLight('#38bdf8', 3.0, 120);
+  fillLight.position.set(0, 12, 0);
+  threeScene.add(fillLight);
+
+  const coreBeacon = new THREE.Mesh(
+    new THREE.SphereGeometry(1.2, 24, 24),
+    new THREE.MeshStandardMaterial({ color: '#f8fafc', emissive: '#f59e0b', emissiveIntensity: 1.4, roughness: 0.15, metalness: 0.1 })
+  );
+  coreBeacon.position.set(0, 1.8, 0);
+  threeScene.add(coreBeacon);
+  threeReadiness.coreBeacon = coreBeacon;
+
+  zoneEnvironment = { ambientLight, dirLight, fillLight, skyMat };
+  buildZoneParticles();
+  applyZoneTheme3D(state.activeZoneId || 'home');
 
   // Camera Toggle Button Event
   const btnToggleCamera = document.getElementById('btn_toggle_camera_view');
@@ -1680,18 +2237,6 @@ function initThreeJS() {
       }
     };
   }
-
-  // Cyberpunk Lighting Setup
-  const ambientLight = new THREE.AmbientLight('#18181b', 1.6);
-  threeScene.add(ambientLight);
-
-  const dirLight = new THREE.DirectionalLight('#ffffff', 0.95);
-  dirLight.position.set(25, 40, 25);
-  dirLight.castShadow = true;
-  dirLight.shadow.mapSize.width = 2048;
-  dirLight.shadow.mapSize.height = 2048;
-  dirLight.shadow.bias = -0.0005;
-  threeScene.add(dirLight);
 
   // === ADVANCED STRATIFIED CYBER GROUND SYSTEM ===
   const groundSystemGroup = new THREE.Group();
@@ -1824,7 +2369,7 @@ function initThreeJS() {
   pointLightPortal.position.set(0, 2.5, 24);
   threeScene.add(pointLightPortal);
 
-  // Space Dust Particles Setup (Nebula stars)
+  // Floating atmosphere particles and distant stars
   const particleCount = 1500;
   const particlesGeo = new THREE.BufferGeometry();
   const positions = new Float32Array(particleCount * 3);
@@ -1892,7 +2437,238 @@ function initThreeJS() {
   window.addEventListener('resize', handle3DResize);
 }
 
-function load3DModels() {
+function buildZoneParticles() {
+  if (!threeScene) return;
+  if (zoneParticleSystem?.group) {
+    threeScene.remove(zoneParticleSystem.group);
+  }
+
+  const group = new THREE.Group();
+  const particles = [];
+  const styles = {
+    home: { count: 90, spread: 6, y: 1.4, speed: 0.18 },
+    academy: { count: 110, spread: 7, y: 1.8, speed: 0.28 },
+    lab: { count: 140, spread: 7.5, y: 2.0, speed: 0.42 },
+    museum: { count: 100, spread: 7.2, y: 1.8, speed: 0.22 },
+    portal: { count: 150, spread: 8.5, y: 2.4, speed: 0.55 }
+  };
+
+  Object.entries(ZONE_THEMES).forEach(([zoneId, theme]) => {
+    const zone = ZONES_3D.find(z => z.id === zoneId);
+    if (!zone) return;
+    const style = styles[zoneId] || styles.home;
+    const geo = new THREE.BufferGeometry();
+    const pos = new Float32Array(style.count * 3);
+    const seed = [];
+
+    for (let i = 0; i < style.count; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const radius = Math.sqrt(Math.random()) * style.spread;
+      const h = style.y + (Math.random() - 0.5) * 2.2;
+      pos[i * 3] = zone.x + Math.cos(angle) * radius;
+      pos[i * 3 + 1] = h;
+      pos[i * 3 + 2] = zone.z + Math.sin(angle) * radius;
+      seed.push({ angle, radius, height: h, drift: (Math.random() * 0.6 + 0.2) * style.speed, lift: Math.random() * 0.9 + 0.2 });
+    }
+
+    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    const spriteCanvas = document.createElement('canvas');
+    spriteCanvas.width = 16;
+    spriteCanvas.height = 16;
+    const ctx = spriteCanvas.getContext('2d');
+    const grad = ctx.createRadialGradient(8, 8, 0, 8, 8, 8);
+    grad.addColorStop(0, 'rgba(255,255,255,1)');
+    grad.addColorStop(0.35, hexToRgba(theme.particle, 0.8));
+    grad.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 16, 16);
+
+    const material = new THREE.PointsMaterial({
+      size: zoneId === 'portal' ? 0.42 : 0.28,
+      map: new THREE.CanvasTexture(spriteCanvas),
+      transparent: true,
+      opacity: 0.95,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      color: new THREE.Color(theme.particle)
+    });
+
+    const points = new THREE.Points(geo, material);
+    group.add(points);
+    particles.push({ zoneId, zone, style, geo, points, seed, material });
+  });
+
+  zoneParticleSystem = { group, particles };
+  threeScene.add(group);
+}
+
+function hexToRgba(hex, alpha = 1) {
+  const c = new THREE.Color(hex);
+  return `rgba(${Math.round(c.r * 255)}, ${Math.round(c.g * 255)}, ${Math.round(c.b * 255)}, ${alpha})`;
+}
+
+function registerAssetFailure(assetPath, error, category = 'asset', context = {}) {
+  const key = `${category}|${assetPath}`;
+  if (assetFailureBannerShown && assetLoadFailures.some(item => item.key === key)) return;
+  const entry = {
+    key,
+    category,
+    assetPath,
+    message: error?.message || String(error || 'Unknown asset error'),
+    stack: error?.stack || '',
+    context,
+    time: new Date().toISOString()
+  };
+  assetLoadFailures.push(entry);
+  console.warn(`[ASSET:${category}] ${assetPath}`, entry.message, context);
+  renderAssetFailureBanner();
+  return entry;
+}
+
+function renderAssetFailureBanner() {
+  const host = document.getElementById('threejs_3d_viewport');
+  if (!host) return;
+  const last = assetLoadFailures[assetLoadFailures.length - 1];
+  if (!last) return;
+  let banner = document.getElementById('asset_failure_banner');
+  if (!banner) {
+    banner = document.createElement('div');
+    banner.id = 'asset_failure_banner';
+    banner.className = 'absolute top-3 left-3 z-40 max-w-md rounded-2xl border border-amber-500/30 bg-zinc-950/85 text-zinc-100 shadow-2xl backdrop-blur-md overflow-hidden';
+    banner.innerHTML = `
+      <div class="flex items-start gap-3 p-4">
+        <div class="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-300 flex-shrink-0">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M10.29 3.86l-8.25 14.31A2 2 0 003.77 21h16.46a2 2 0 001.73-2.83L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+        </div>
+        <div class="min-w-0">
+          <div class="text-xs uppercase tracking-[0.2em] text-amber-300/80 font-mono mb-1">Asset fallback active</div>
+          <div id="asset_failure_title" class="text-sm font-semibold text-zinc-50 leading-snug"></div>
+          <div id="asset_failure_desc" class="text-[12px] text-zinc-300 mt-1 leading-relaxed"></div>
+        </div>
+      </div>
+    `;
+    host.appendChild(banner);
+  }
+  banner.querySelector('#asset_failure_title').textContent = `${last.category.toUpperCase()} • ${last.assetPath.split('/').pop()}`;
+  banner.querySelector('#asset_failure_desc').textContent = 'Asset không tải được. Hệ thống đã chuyển sang fallback an toàn để tránh màn hình đen.';
+}
+
+function renderDiagnosticOverlay(snapshot) {
+  const host = document.getElementById('threejs_3d_viewport');
+  if (!host) return;
+  let overlay = document.getElementById('diagnostic_overlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'diagnostic_overlay';
+    overlay.className = 'absolute bottom-3 right-3 z-50 w-[22rem] rounded-2xl border border-cyan-500/30 bg-zinc-950/88 text-zinc-100 shadow-2xl backdrop-blur-md overflow-hidden';
+    overlay.innerHTML = `
+      <div class="px-4 py-3 border-b border-white/5 flex items-center justify-between">
+        <div>
+          <div class="text-xs uppercase tracking-[0.22em] text-cyan-300/80 font-mono">Diagnostic mode</div>
+          <div class="text-sm text-zinc-200 mt-1">3D black-screen probe</div>
+        </div>
+        <button id="diagnostic_close" class="text-zinc-500 hover:text-zinc-200">×</button>
+      </div>
+      <div id="diagnostic_body" class="p-4 text-[11px] text-zinc-300 space-y-2 max-h-56 overflow-auto whitespace-pre-wrap"></div>
+    `;
+    host.appendChild(overlay);
+    overlay.querySelector('#diagnostic_close').addEventListener('click', () => overlay.remove());
+  }
+  overlay.querySelector('#diagnostic_body').textContent = JSON.stringify(snapshot, null, 2);
+}
+
+function setThreeReadiness(partial) {
+  threeReadiness = { ...threeReadiness, ...partial };
+  threeReadiness.lastReason = partial.reason || threeReadiness.lastReason;
+  diagnosticSnapshot = {
+    phase: threeReadiness.gateOpen ? (threeReadiness.coreReady ? 'ready' : 'waiting-assets') : 'booting',
+    camera: threeCamera ? {
+      x: Number(threeCamera.position.x.toFixed(2)),
+      y: Number(threeCamera.position.y.toFixed(2)),
+      z: Number(threeCamera.position.z.toFixed(2))
+    } : null,
+    sceneObjects: threeScene ? threeScene.children.length : 0,
+    activeZone: state.activeZoneId,
+    background: threeScene?.background ? `#${threeScene.background.getHexString()}` : null,
+    readiness: threeReadiness,
+    failures: assetLoadFailures.slice(-5).map(f => ({ category: f.category, asset: f.assetPath }))
+  };
+  renderDiagnosticOverlay(diagnosticSnapshot);
+}
+
+function createThreeReadinessGate() {
+  threeReadiness.gateOpen = false;
+  threeReadiness.coreReady = false;
+  threeReadiness.assetsReady = false;
+  threeReadiness.lastReason = 'booting';
+  threeReadinessPromise = new Promise(resolve => {
+    threeReadinessResolve = resolve;
+  });
+  if (threeReadinessTimer) clearTimeout(threeReadinessTimer);
+  threeReadinessTimer = setTimeout(() => {
+    setThreeReadiness({ reason: 'timeout-waiting-assets' });
+  }, 9000);
+  return threeReadinessPromise;
+}
+
+function unlockThreeReadinessGate(reason = 'core-objects-ready') {
+  threeReadiness.gateOpen = true;
+  threeReadiness.coreReady = true;
+  threeReadiness.assetsReady = true;
+  setThreeReadiness({ reason });
+  if (threeReadinessTimer) {
+    clearTimeout(threeReadinessTimer);
+    threeReadinessTimer = null;
+  }
+  if (threeReadinessResolve) {
+    threeReadinessResolve(true);
+    threeReadinessResolve = null;
+  }
+}
+
+function applyZoneTheme3D(zoneId, instant = false) {
+  if (!threeScene || !zoneEnvironment) return;
+  const theme = ZONE_THEMES[zoneId] || ZONE_THEMES.home;
+
+  if (!instant) {
+    zoneTransitionState.targetZoneId = zoneId;
+    zoneTransitionState.currentZoneId = zoneTransitionState.currentZoneId || zoneId;
+    zoneTransitionState.progress = 0;
+    zoneTransitionState.focusPulse = 1;
+    zoneTransitionState.vignettePulse = 1;
+    zoneTransitionState.lastZoneChangeAt = Date.now();
+  }
+
+  threeScene.background = new THREE.Color(theme.skyBottom);
+  if (threeScene.fog) {
+    threeScene.fog.color = new THREE.Color(theme.fog);
+  }
+  if (zoneEnvironment.skyMat?.uniforms) {
+    zoneEnvironment.skyMat.uniforms.topColor.value = new THREE.Color(theme.skyTop);
+    zoneEnvironment.skyMat.uniforms.bottomColor.value = new THREE.Color(theme.skyBottom);
+  }
+  zoneEnvironment.ambientLight.color = new THREE.Color(theme.hemi);
+  zoneEnvironment.dirLight.color = new THREE.Color(theme.dir);
+  zoneEnvironment.fillLight.color = new THREE.Color(theme.fill);
+
+  if (zoneParticleSystem?.particles) {
+    zoneParticleSystem.particles.forEach(entry => {
+      const active = entry.zoneId === zoneId;
+      entry.points.visible = true;
+      entry.material.opacity = active ? 0.95 : 0.12;
+      entry.material.size = active ? (zoneId === 'portal' ? 0.42 : 0.3) : 0.12;
+      entry.material.color = new THREE.Color(active ? theme.particle : '#64748b');
+    });
+  }
+
+  if (threeComposer?.passes?.[1]) {
+    threeComposer.passes[1].strength = zoneId === 'portal' ? 1.15 : zoneId === 'museum' ? 1.05 : 0.9;
+    threeComposer.passes[1].radius = zoneId === 'lab' ? 0.28 : 0.35;
+    threeComposer.passes[1].threshold = zoneId === 'academy' ? 0.18 : 0.16;
+  }
+}
+
+async function load3DModels() {
   const loader = new THREE.GLTFLoader();
   const SK = '3d/spacekit/GLTF format/';
   const SS = '3d/spacestation/GLB format/';
@@ -1902,7 +2678,70 @@ function load3DModels() {
   const pendingCallbacks = {};
 
   // 1. Load Main Character Astronaut GLB with animations
+  const createPlayerPlaceholder = () => {
+    if (threePlayerPlaceholder) return threePlayerPlaceholder;
+    const group = new THREE.Group();
+    const body = new THREE.Mesh(
+      new THREE.BoxGeometry(0.95, 1.25, 0.65),
+      new THREE.MeshStandardMaterial({ color: '#dbeafe', emissive: '#38bdf8', emissiveIntensity: 0.18, roughness: 0.35, metalness: 0.45 })
+    );
+    body.castShadow = true;
+    body.receiveShadow = true;
+    body.position.y = 0.95;
+    group.add(body);
+
+    const torso = new THREE.Mesh(
+      new THREE.SphereGeometry(0.46, 16, 16),
+      new THREE.MeshStandardMaterial({ color: '#eff6ff', emissive: '#60a5fa', emissiveIntensity: 0.16, roughness: 0.3, metalness: 0.28 })
+    );
+    torso.scale.set(1.0, 1.15, 0.9);
+    torso.position.y = 1.45;
+    torso.castShadow = true;
+    torso.receiveShadow = true;
+    group.add(torso);
+
+    const head = new THREE.Mesh(
+      new THREE.SphereGeometry(0.38, 16, 16),
+      new THREE.MeshStandardMaterial({ color: '#ffffff', emissive: '#60a5fa', emissiveIntensity: 0.22, roughness: 0.25, metalness: 0.3 })
+    );
+    head.position.y = 2.05;
+    head.castShadow = true;
+    head.receiveShadow = true;
+    group.add(head);
+
+    const visor = new THREE.Mesh(
+      new THREE.SphereGeometry(0.26, 16, 16),
+      new THREE.MeshBasicMaterial({ color: '#0f172a', transparent: true, opacity: 0.85 })
+    );
+    visor.position.set(0, 2.03, 0.28);
+    group.add(visor);
+
+    const glow = new THREE.Mesh(
+      new THREE.TorusGeometry(0.92, 0.08, 12, 24),
+      new THREE.MeshBasicMaterial({ color: '#38bdf8', transparent: true, opacity: 0.35, blending: THREE.AdditiveBlending })
+    );
+    glow.rotation.x = Math.PI / 2;
+    glow.position.y = 0.28;
+    group.add(glow);
+
+    group.position.set(0, 0.5, 0);
+    group.scale.set(0.85, 0.85, 0.85);
+    threeScene.add(group);
+    threeAssets.push(group);
+    threePlayerPlaceholder = group;
+    console.warn('[Astronaut] Using placeholder player model.');
+    return group;
+  };
+
   loader.load('3d/character/3d_cute_astronaut_made_in_blender.glb', (gltf) => {
+    console.info('[Astronaut] GLB load success.');
+
+    if (threePlayerPlaceholder) {
+      threeScene.remove(threePlayerPlaceholder);
+      threeAssets = threeAssets.filter(asset => asset !== threePlayerPlaceholder);
+      threePlayerPlaceholder = null;
+    }
+
     threePlayerMesh = gltf.scene;
     threePlayerMesh.position.set(0, 0.5, 0);
     threePlayerMesh.scale.set(0.65, 0.65, 0.65);
@@ -1930,7 +2769,23 @@ function load3DModels() {
 
     threeScene.add(threePlayerMesh);
     threeAssets.push(threePlayerMesh);
-  }, undefined, (err) => console.error("Astronaut GLB load error:", err));
+
+    threePlayerAura = new THREE.Mesh(
+      new THREE.TorusGeometry(1.05, 0.12, 12, 24),
+      new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0.18, blending: THREE.AdditiveBlending })
+    );
+    threePlayerAura.rotation.x = Math.PI / 2;
+    threePlayerAura.position.set(0, 0.05, 0);
+    threeScene.add(threePlayerAura);
+    threeAssets.push(threePlayerAura);
+    threeReadiness.playerLoaded = true;
+    setThreeReadiness({ reason: 'astronaut-loaded' });
+  }, undefined, (err) => {
+    registerAssetFailure('3d/character/3d_cute_astronaut_made_in_blender.glb', err, 'astronaut', { layer: 'player', fallback: 'placeholder' });
+    createPlayerPlaceholder();
+    threeReadiness.playerLoaded = false;
+    setThreeReadiness({ reason: 'astronaut-placeholder' });
+  });
 
   // Helper method to scan loaded models and apply auto-emissive setup for lights/panels
   const scanAndApplyGlow = (mesh) => {
@@ -2057,8 +2912,20 @@ function load3DModels() {
         callbacks.forEach(cb => cb(gltf.scene));
       }
     }, undefined, (err) => {
-      console.warn(`Error loading model ${path}:`, err);
+      registerAssetFailure(path, err, 'static-model', { x, y, z, scale, rotY, staticStructural: false });
       delete pendingCallbacks[path];
+      if (threeScene) {
+        const fallback = new THREE.Mesh(
+          new THREE.BoxGeometry(1.2 * scale, 1.2 * scale, 1.2 * scale),
+          new THREE.MeshStandardMaterial({ color: '#1f2937', roughness: 0.7, metalness: 0.15, emissive: '#0f172a', emissiveIntensity: 0.12 })
+        );
+        fallback.position.set(x, y + 0.4, z);
+        fallback.rotation.y = rotY;
+        fallback.castShadow = true;
+        fallback.receiveShadow = true;
+        threeScene.add(fallback);
+        threeAssets.push(fallback);
+      }
     });
   };
 
@@ -2109,7 +2976,22 @@ function load3DModels() {
 
       threeScene.add(instancedMesh);
       threeAssets.push(instancedMesh);
-    }, undefined, (err) => console.warn(`Error building InstancedMesh for ${modelPath}:`, err));
+    }, undefined, (err) => {
+      registerAssetFailure(modelPath, err, 'instanced-model', { instances: instances.length });
+      const fallback = new THREE.Group();
+      instances.forEach((data) => {
+        const box = new THREE.Mesh(
+          new THREE.BoxGeometry(0.75, 0.75, 0.75),
+          new THREE.MeshStandardMaterial({ color: '#334155', roughness: 0.75, metalness: 0.12 })
+        );
+        box.position.set(data.x, data.y, data.z);
+        if (data.rotation) box.rotation.set(data.rotation.x || 0, data.rotation.y || 0, data.rotation.z || 0);
+        if (data.rotY) box.rotation.y = data.rotY;
+        fallback.add(box);
+      });
+      threeScene.add(fallback);
+      threeAssets.push(fallback);
+    });
   };
 
   // Reusable function to optimize repeating props using InstancedMesh
@@ -2154,7 +3036,17 @@ function load3DModels() {
       threeScene.add(mesh);
       threeAssets.push(mesh);
       animatedCogs.push({ mesh, speed });
-    }, undefined, (err) => console.warn(`Error loading cog ${path}:`, err));
+    }, undefined, (err) => {
+      registerAssetFailure(path, err, 'animated-cog', { x, y, z, scale, speed });
+      const fallback = new THREE.Mesh(
+        new THREE.TorusGeometry(0.85 * scale, 0.2, 10, 16),
+        new THREE.MeshStandardMaterial({ color: '#475569', roughness: 0.55, metalness: 0.55 })
+      );
+      fallback.position.set(x, y, z);
+      threeScene.add(fallback);
+      threeAssets.push(fallback);
+      animatedCogs.push({ mesh: fallback, speed });
+    });
   };
 
   // Helper method to load floating speeders & spacecrafts
@@ -2189,7 +3081,18 @@ function load3DModels() {
         hoverSpeed,
         offset: Math.random() * Math.PI * 2
       });
-    }, undefined, (err) => console.warn(`Error loading craft ${path}:`, err));
+    }, undefined, (err) => {
+      registerAssetFailure(path, err, 'animated-craft', { x, y, z, scale, rotY });
+      const fallback = new THREE.Mesh(
+        new THREE.BoxGeometry(1.2 * scale, 0.45 * scale, 2.1 * scale),
+        new THREE.MeshStandardMaterial({ color: '#1e293b', roughness: 0.42, metalness: 0.52, emissive: '#0f172a', emissiveIntensity: 0.18 })
+      );
+      fallback.position.set(x, y, z);
+      fallback.rotation.y = rotY;
+      threeScene.add(fallback);
+      threeAssets.push(fallback);
+      animatedCrafts.push({ mesh: fallback, baseY: y, hoverRange, hoverSpeed, offset: Math.random() * Math.PI * 2 });
+    });
   };
 
   // Helper method to load and register destructible physics boxes (HTML/CSS/JS boxes)
@@ -2225,7 +3128,81 @@ function load3DModels() {
         size: 0.9 * scale,
         onGround: true
       });
-    }, undefined, (err) => console.warn("Error loading destructible box:", err));
+    }, undefined, (err) => {
+      registerAssetFailure('3d/factory/GLB format/box-small.glb', err, 'physics-box', { x, y, z, scale });
+      const mesh = new THREE.Mesh(
+        new THREE.BoxGeometry(scale, scale, scale),
+        new THREE.MeshStandardMaterial({ color: '#7c2d12', roughness: 0.75, metalness: 0.15 })
+      );
+      mesh.position.set(x, y, z);
+      threeScene.add(mesh);
+      threeAssets.push(mesh);
+      physicsBoxes.push({
+        mesh,
+        vx: 0,
+        vy: 0,
+        vz: 0,
+        rx: 0,
+        ry: 0,
+        rz: 0,
+        x,
+        y,
+        z,
+        size: 0.9 * scale,
+        onGround: true
+      });
+    });
+  };
+
+  const decorateZoneTheme = (theme, x, z) => {
+    const add = (path, gx, gz, tier = 'GROUND', scale = 1, rotY = 0) => spawnAssetInGrid(path, x + gx, z + gz, tier, scale, rotY);
+    if (theme === 'home') {
+      add(SS + 'bed-single.glb', -0.8, -0.2, 'GROUND', 0.75, Math.PI / 2);
+      add(SS + 'table.glb', 0.6, 0.2, 'GROUND', 0.75, 0);
+      add(SS + 'chair.glb', 0.7, -0.2, 'GROUND', 0.72, Math.PI);
+      add(SS + 'container.glb', -1.2, 0.8, 'GROUND', 0.7, Math.PI / 3);
+      add(SS + 'wall-window.glb', 0, -1.2, 'GROUND', 0.72, Math.PI);
+      add(SS + 'wall-door.glb', 1.2, 0.0, 'GROUND', 0.72, -Math.PI / 2);
+      add(SS + 'display-wall.glb', -0.2, -1.35, 'GROUND', 0.62, Math.PI);
+      add(SK + 'machine_wireless.glb', 1.0, -1.1, 'GROUND', 0.7, 0);
+      add(SK + 'rocket_baseA.glb', -1.5, 1.6, 'BACKGROUND', 0.55);
+      add(SK + 'rocket_topA.glb', -1.5, 1.6, 'BACKGROUND', 0.55);
+    } else if (theme === 'academy') {
+      add(SS + 'computer-wide.glb', 0, -0.8, 'GROUND', 0.75, Math.PI);
+      add(SS + 'chair-headrest.glb', 0.2, -0.5, 'GROUND', 0.72, Math.PI);
+      add(FC + 'screen-panel-wide.glb', -1.0, -1.1, 'CATWALK', 0.55, Math.PI);
+      add(FC + 'screen-hanging-wide.glb', 1.0, -1.0, 'CATWALK', 0.5, Math.PI);
+      add(SS + 'container-tall.glb', -1.6, 0.7, 'GROUND', 0.68, 0);
+      add(SK + 'barrel.glb', 1.5, 0.9, 'GROUND', 0.7, 0);
+      add(FC + 'warning-orange.glb', 0.0, 1.5, 'BACKGROUND', 0.65, 0);
+      add(SK + 'machine_generator.glb', 0.0, 1.9, 'BACKGROUND', 0.7, 0);
+    } else if (theme === 'lab') {
+      add(FC + 'machine.glb', 0.0, -0.7, 'GROUND', 0.72, 0);
+      add(FC + 'robot-arm-a.glb', -1.1, -0.2, 'GROUND', 0.68, -Math.PI / 4);
+      add(FC + 'robot-arm-b.glb', 1.1, 0.2, 'GROUND', 0.68, Math.PI / 4);
+      add(FC + 'conveyor.glb', -0.8, 1.0, 'GROUND', 0.6, 0);
+      add(FC + 'pipe-large.glb', 1.4, -1.0, 'GROUND', 0.58, Math.PI / 2);
+      add(FC + 'hopper-round.glb', 1.4, 1.2, 'GROUND', 0.6, 0);
+      add(FC + 'screen-panel-wide.glb', -1.5, -1.3, 'CATWALK', 0.5, Math.PI);
+      add(FC + 'crane-magnet.glb', 0.0, 1.5, 'BACKGROUND', 0.5, 0);
+    } else if (theme === 'museum') {
+      add(SK + 'craft_racer.glb', 0, 0.4, 'GROUND', 0.7, Math.PI / 2);
+      add(SK + 'craft_speederC.glb', -1.4, -0.6, 'GROUND', 0.6, Math.PI / 6);
+      add(SK + 'craft_speederD.glb', 1.4, -0.6, 'GROUND', 0.6, -Math.PI / 6);
+      add(SS + 'table-display-planet.glb', -1.4, 1.1, 'GROUND', 0.75, 0);
+      add(SS + 'table-display.glb', 1.4, 1.1, 'GROUND', 0.75, 0);
+      add(SK + 'hangar_largeA.glb', 0, 1.7, 'BACKGROUND', 0.55, 0);
+      add(SK + 'satelliteDish_large.glb', -1.9, 1.9, 'BACKGROUND', 0.6, Math.PI / 4);
+      add(SK + 'satelliteDish_detailed.glb', 1.9, 1.9, 'BACKGROUND', 0.55, -Math.PI / 4);
+    } else if (theme === 'portal') {
+      add(SK + 'gate_complex.glb', 0, 0.2, 'GROUND', 0.88, Math.PI);
+      add(SS + 'door-double.glb', 0, 0.35, 'GROUND', 0.95, Math.PI);
+      add(SK + 'structure_detailed.glb', -1.0, -0.7, 'GROUND', 0.68, 0);
+      add(SK + 'structure_detailed.glb', 1.0, -0.7, 'GROUND', 0.68, Math.PI);
+      add(FC + 'warning-traffic.glb', -1.2, 1.0, 'GROUND', 0.65, 0);
+      add(FC + 'warning-orange.glb', 1.2, 1.0, 'GROUND', 0.65, 0);
+      add(SK + 'satelliteDish_large.glb', 0, -1.7, 'BACKGROUND', 0.7, 0);
+    }
   };
 
   // === MODULAR TIERS: GROUND LEVEL SYSTEM ===
@@ -2261,6 +3238,7 @@ function load3DModels() {
   spawnAssetInGrid(SS + 'container-tall.glb', -5.625, -2.75, 'GROUND', 0.8);
   spawnAssetInGrid(SS + 'display-wall.glb', -5.125, -4.25, 'GROUND', 0.7, Math.PI);
   spawnAssetInGrid(SK + 'machine_wireless.glb', -4.375, -4.125, 'GROUND', 0.85);
+  decorateZoneTheme('home', -20, -14);
   
   // Rocket A (Home Area Backdrop Structural Tier)
   spawnAssetInGrid(SK + 'rocket_baseA.glb', -4.25, -2.75, 'BACKGROUND', 0.9);
@@ -2279,6 +3257,7 @@ function load3DModels() {
   spawnAssetInGrid(SS + 'chair-headrest.glb', 5, -3.875, 'GROUND', 0.85, Math.PI);
   spawnAssetInGrid(SS + 'container-tall.glb', 4.375, -4.0, 'GROUND', 0.75);
   spawnAssetInGrid(SK + 'barrel.glb', 5.625, -4.0, 'GROUND', 0.85);
+  decorateZoneTheme('academy', 20, -14);
 
   // Elevated Holographic Learning Monitor
   spawnAssetInGrid(FC + 'screen-wide.glb', 5.0, -4.25, 'CATWALK', 0.65, Math.PI);
@@ -2305,6 +3284,7 @@ function load3DModels() {
   spawnAssetInGrid(SK + 'barrels.glb', -5.75, 4.125, 'GROUND', 0.8);
   spawnAssetInGrid(FC + 'box-large.glb', -5.75, 3.0, 'GROUND', 0.7);
   spawnAssetInGrid(FC + 'box-small.glb', -5.75, 3.0, 'GROUND', 0.65);
+  decorateZoneTheme('lab', -20, 14);
 
   // Raised Industrial Interactive Monitors
   spawnAssetInGrid(FC + 'screen-panel-wide.glb', -4.5, 2.8, 'CATWALK', 0.55, Math.PI);
@@ -2319,6 +3299,7 @@ function load3DModels() {
 
   // Massive Gallery Hangar (Background Tier)
   spawnAssetInGrid(SK + 'hangar_largeA.glb', 5.0, 3.5, 'BACKGROUND', 0.65);
+  decorateZoneTheme('museum', 20, 14);
 
   loader.load(SK + 'craft_racer.glb', (gltf) => {
     const mesh = gltf.scene;
@@ -2345,6 +3326,7 @@ function load3DModels() {
   spawnAssetInGrid(SS + 'door-double.glb', 0, 6.125, 'GROUND', 1.1, Math.PI);
   spawnAssetInGrid(SK + 'structure_detailed.glb', -0.5, 5.75, 'GROUND', 0.75);
   spawnAssetInGrid(SK + 'structure_detailed.glb', 0.5, 5.75, 'GROUND', 0.75);
+  decorateZoneTheme('portal', 0, 24);
 
   // === MONORAIL CONNECTIONS & PERIPHERALS ===
   // Outer perimeter defense turrets, satellite tracking dishes, and warning high structures (BACKGROUND Tier)
@@ -2527,6 +3509,8 @@ function load3DModels() {
   
   // Project Museum entry boxes
   addDestructibleBox(9, 0.4, 6.5, 0.95);
+
+  unlockThreeReadinessGate('core-objects-ready');
 }
 
 function animate3D() {
@@ -2537,11 +3521,77 @@ function animate3D() {
   // 1. Controls update
   if (threeControls) threeControls.update();
 
+  if (zoneTransitionState.progress < 1 && zoneTransitionState.targetZoneId) {
+    zoneTransitionState.progress = Math.min(1, zoneTransitionState.progress + 0.03);
+    const smoothT = 1 - Math.pow(1 - zoneTransitionState.progress, 3);
+    const activeTheme = ZONE_THEMES[zoneTransitionState.targetZoneId] || ZONE_THEMES.home;
+    const currentTheme = ZONE_THEMES[zoneTransitionState.currentZoneId || zoneTransitionState.targetZoneId] || ZONE_THEMES.home;
+    const lerpColor = (a, b, t) => a.clone().lerp(b, t);
+
+    threeScene.background = lerpColor(new THREE.Color(currentTheme.skyBottom), new THREE.Color(activeTheme.skyBottom), smoothT);
+    if (threeScene.fog) {
+      threeScene.fog.color = lerpColor(new THREE.Color(currentTheme.fog), new THREE.Color(activeTheme.fog), smoothT);
+    }
+    if (zoneEnvironment?.skyMat?.uniforms) {
+      zoneEnvironment.skyMat.uniforms.topColor.value = lerpColor(new THREE.Color(currentTheme.skyTop), new THREE.Color(activeTheme.skyTop), smoothT);
+      zoneEnvironment.skyMat.uniforms.bottomColor.value = lerpColor(new THREE.Color(currentTheme.skyBottom), new THREE.Color(activeTheme.skyBottom), smoothT);
+    }
+    if (zoneEnvironment) {
+      zoneEnvironment.ambientLight.color = lerpColor(new THREE.Color(currentTheme.hemi), new THREE.Color(activeTheme.hemi), smoothT);
+      zoneEnvironment.dirLight.color = lerpColor(new THREE.Color(currentTheme.dir), new THREE.Color(activeTheme.dir), smoothT);
+      zoneEnvironment.fillLight.color = lerpColor(new THREE.Color(currentTheme.fill), new THREE.Color(activeTheme.fill), smoothT);
+    }
+    if (threeComposer?.passes?.[1]) {
+      threeComposer.passes[1].strength = 0.9 + (smoothT * ((zoneTransitionState.targetZoneId === 'portal' ? 1.15 : zoneTransitionState.targetZoneId === 'museum' ? 1.05 : 0.9) - 0.9));
+      threeComposer.passes[1].radius = 0.35 + (zoneTransitionState.targetZoneId === 'lab' ? -0.07 : 0);
+      threeComposer.passes[1].threshold = 0.16 + (zoneTransitionState.targetZoneId === 'academy' ? 0.02 : 0);
+    }
+    if (zoneTransitionState.progress >= 1) {
+      zoneTransitionState.currentZoneId = zoneTransitionState.targetZoneId;
+      zoneTransitionState.focusPulse = 0;
+      zoneTransitionState.vignettePulse = 0;
+    }
+  }
+
   // Update Animation Mixer
   const mixerDelta = 0.016; 
   if (threeMixer) threeMixer.update(mixerDelta);
 
+  // 1b. Terrain micro-animations per zone
+  if (zoneTerrainAnimations.length) {
+    const t = now * 0.001;
+    zoneTerrainAnimations.forEach((item, index) => {
+      if (!item || !item.group) return;
+      if (item.kind === 'home' && item.mound) {
+        item.group.position.y = Math.sin(t * 0.75 + index) * 0.12;
+        item.mound.rotation.y += 0.0012;
+        if (item.halo) item.halo.rotation.z += 0.0015;
+      } else if (item.kind === 'academy') {
+        item.scanLine.position.x = -7 + ((t * 1.8) % 14);
+        item.gridPlane.rotation.z = Math.sin(t * 0.35) * 0.01;
+        item.group.position.y = Math.sin(t * 0.55 + index) * 0.04;
+      } else if (item.kind === 'lab') {
+        const glow = 0.55 + (Math.sin(t * 3.0) * 0.18);
+        item.pipeGlow.material.opacity = glow;
+        item.pipe1.material.emissiveIntensity = 0.18 + (Math.sin(t * 2.2) * 0.08);
+        item.pipe2.material.emissiveIntensity = 0.18 + (Math.cos(t * 2.0) * 0.08);
+        item.group.position.y = Math.sin(t * 0.85 + index) * 0.05;
+      } else if (item.kind === 'museum') {
+        item.spotlightA.rotation.y += 0.003;
+        item.spotlightB.rotation.y -= 0.0022;
+        item.group.position.y = Math.sin(t * 0.45 + index) * 0.03;
+      } else if (item.kind === 'portal') {
+        item.ringBase.rotation.z += 0.006;
+        item.innerRing.rotation.z -= 0.01;
+        item.group.position.y = Math.sin(t * 0.6 + index) * 0.06;
+      }
+    });
+  }
+
   // 2. Character logic -> Astronaut walking
+  if (!threePlayerMesh && threePlayerPlaceholder) {
+    threePlayerMesh = threePlayerPlaceholder;
+  }
   if (threePlayerMesh) {
     let moveX = 0;
     let moveZ = 0;
@@ -2558,13 +3608,25 @@ function animate3D() {
       const speed = 0.16;
       threePlayerMesh.position.x += moveX * speed;
       threePlayerMesh.position.z += moveZ * speed;
+      if (threePlayerAura) {
+        threePlayerAura.position.x += moveX * speed;
+        threePlayerAura.position.z += moveZ * speed;
+      }
       const angle = Math.atan2(moveX, moveZ);
       threePlayerMesh.rotation.y = angle;
+      if (threePlayerAura) threePlayerAura.rotation.y += 0.02;
     }
 
     // Border constraints
     threePlayerMesh.position.x = Math.max(-32, Math.min(32, threePlayerMesh.position.x));
     threePlayerMesh.position.z = Math.max(-32, Math.min(32, threePlayerMesh.position.z));
+    threePlayerMesh.position.y = getGroundHeight(threePlayerMesh.position.x, threePlayerMesh.position.z) + 0.45;
+    if (threePlayerAura) {
+      threePlayerAura.position.x = threePlayerMesh.position.x;
+      threePlayerAura.position.z = threePlayerMesh.position.z;
+      threePlayerAura.position.y = threePlayerMesh.position.y - 0.34;
+      threePlayerAura.scale.setScalar(1 + Math.sin(now * 0.004) * 0.04);
+    }
 
     // Skeletal animation transitions
     if (threeMixer) {
@@ -2590,6 +3652,10 @@ function animate3D() {
     }
 
     // 3. Collision with destructible small boxes (physicsBoxes)
+    if (!threePlayerMesh.visible && !threePlayerMesh.__runtimeHideWarned) {
+      console.warn('[Astronaut] Player mesh is hidden during runtime.');
+      threePlayerMesh.__runtimeHideWarned = true;
+    }
     const px = threePlayerMesh.position.x;
     const pz = threePlayerMesh.position.z;
     const playerRadius = 0.8;
@@ -2666,6 +3732,7 @@ function animate3D() {
 
     // 5. Zone collision
     detect3DZoneCollision();
+    updateZoneTransitionFX();
     // 6. Minimap
     updateRadarMinimap();
   }
@@ -2760,12 +3827,77 @@ function animate3D() {
 
   // Render pipeline using premium glowing EffectComposer or immediate WebGL fallback
   if (threeRenderer && threeScene && threeCamera) {
+    if (diagnosticModeEnabled && !diagnosticSnapshot) {
+      diagnosticSnapshot = {
+        camera: {
+          x: Number(threeCamera.position.x.toFixed(2)),
+          y: Number(threeCamera.position.y.toFixed(2)),
+          z: Number(threeCamera.position.z.toFixed(2)),
+          target: threeControls ? {
+            x: Number(threeControls.target.x.toFixed(2)),
+            y: Number(threeControls.target.y.toFixed(2)),
+            z: Number(threeControls.target.z.toFixed(2))
+          } : null
+        },
+        sceneObjects: threeScene.children.length,
+        zone: active3DZoneId || state.activeZoneId || 'home',
+        playerVisible: !!threePlayerMesh,
+        placeholderVisible: !!threePlayerPlaceholder,
+        rendererSize: threeRenderer.domElement ? {
+          w: threeRenderer.domElement.width,
+          h: threeRenderer.domElement.height
+        } : null,
+        hasBackground: !!threeScene.background,
+        failures: assetLoadFailures.map(f => ({ category: f.category, asset: f.assetPath }))
+      };
+      renderDiagnosticOverlay(diagnosticSnapshot);
+    }
     if (threeComposer) {
       threeComposer.render();
     } else {
       threeRenderer.render(threeScene, threeCamera);
     }
   }
+
+  if (threeRenderer && threeScene && threeCamera && threeScene.background) {
+    threeRenderer.setClearColor(threeScene.background, 1);
+  }
+
+  if (diagnosticModeEnabled && state.is3DActive && diagnosticSnapshot && diagnosticSnapshot.phase !== 'shown') {
+    diagnosticSnapshot.phase = 'shown';
+    renderDiagnosticOverlay(diagnosticSnapshot);
+  }
+}
+
+function updateZoneTransitionFX() {
+  if (!threeScene || !threeCamera || !threeControls) return;
+  const activeId = zoneTransitionState.targetZoneId || state.activeZoneId;
+  const theme = ZONE_THEMES[activeId] || ZONE_THEMES.home;
+
+  if (!threeScene.userData.zoneOverlay) {
+    const overlay = new THREE.Mesh(
+      new THREE.PlaneGeometry(2, 2),
+      new THREE.MeshBasicMaterial({
+        color: '#000000',
+        transparent: true,
+        opacity: 0,
+        depthWrite: false,
+        depthTest: false,
+        side: THREE.DoubleSide
+      })
+    );
+    overlay.renderOrder = 9999;
+    const overlayScene = new THREE.Scene();
+    const overlayCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+    overlayScene.add(overlay);
+    threeScene.userData.zoneOverlay = { overlay, overlayScene, overlayCam };
+  }
+
+  const overlayData = threeScene.userData.zoneOverlay;
+  const targetOpacity = zoneTransitionState.progress < 1 ? 0.18 : 0.06;
+  overlayData.overlay.material.color = new THREE.Color(theme.fog);
+  overlayData.overlay.material.opacity += (targetOpacity - overlayData.overlay.material.opacity) * 0.08;
+  overlayData.overlay.scale.set(2.2, 2.2, 1);
 }
 
 function detect3DZoneCollision() {
@@ -2786,6 +3918,17 @@ function detect3DZoneCollision() {
   if (detectedZoneId && active3DZoneId !== detectedZoneId) {
     active3DZoneId = detectedZoneId;
     playNewZoneSound();
+    applyZoneTheme3D(detectedZoneId);
+
+    if (threeControls && threePlayerMesh) {
+      const zone = ZONES_3D.find(z => z.id === detectedZoneId);
+      if (zone) {
+        const focusPos = new THREE.Vector3(zone.x * 0.55, 1.9, zone.z * 0.55);
+        threeControls.target.lerp(focusPos, 0.3);
+        const focusCamPos = focusPos.clone().add(new THREE.Vector3(0, zone.id === 'portal' ? 22 : 18, zone.id === 'portal' ? 30 : 20));
+        threeCamera.position.lerp(focusCamPos, 0.22);
+      }
+    }
 
     if (detectedZoneId === 'portal') {
       // Step on escape portal to exit 3D Mode
@@ -2958,39 +4101,118 @@ async function enter3DMode() {
 
   playTeleportSound();
 
-  const container = document.getElementById('retro_game_map_canvas').parentElement;
-  container.classList.add('transition-dimension');
+  const container = document.getElementById('retro_game_map_canvas')?.parentElement;
+  const viewport = document.getElementById('threejs_3d_viewport');
+  const gameCanvas = document.getElementById('retro_game_map_canvas');
+  const loadingOverlay = document.getElementById('threejs_loading_overlay');
 
-  // Pause 2D GameLoop loop
-  if (animationFrameId) {
-    cancelAnimationFrame(animationFrameId);
-    animationFrameId = null;
-  }
+  if (container) container.classList.add('transition-dimension');
+
+  const failBackTo2D = (message, error) => {
+    console.error('[3D] Enter failed:', message, error);
+    state.is3DActive = false;
+    if (loadingOverlay) loadingOverlay.classList.add('hidden');
+    if (viewport) viewport.classList.add('hidden');
+    gameCanvas?.classList.remove('hidden');
+    document.getElementById('container_exit_3d')?.classList.add('hidden');
+    document.getElementById('radar_minimap_container')?.classList.add('hidden');
+    if (animationFrameId == null) gameLoop();
+  };
 
   try {
+    if (!viewport || !gameCanvas) {
+      throw new Error('Missing 3D viewport or game canvas.');
+    }
+
+    if (loadingOverlay) {
+      loadingOverlay.classList.remove('hidden');
+      loadingOverlay.innerHTML = `
+        <div class="rounded-2xl border border-emerald-500/20 bg-zinc-950/85 px-5 py-4 shadow-2xl backdrop-blur-md text-zinc-200 max-w-sm w-full">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-300 animate-pulse">
+              <svg class="w-5 h-5 animate-spin" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.228 10H18.2M4 9h5M4 9v5"/></svg>
+            </div>
+            <div>
+              <div class="text-xs uppercase tracking-[0.25em] text-emerald-300/80 font-mono">Loading 3D scene</div>
+              <div class="text-sm text-zinc-300 mt-1">Đang dựng vùng 3D an toàn cho Home zone...</div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
     await loadThreeJS();
-
-    document.getElementById('retro_game_map_canvas').classList.add('hidden');
-    document.getElementById('threejs_3d_viewport').classList.remove('hidden');
-    document.getElementById('container_exit_3d').classList.remove('hidden');
-    document.getElementById('radar_minimap_container').classList.remove('hidden');
-
     initThreeJS();
+    setThreeReadiness({ reason: 'core-scene-created' });
+
+    const waitForCore = () => new Promise((resolve) => {
+      const check = () => {
+        const ready = !!threeReadiness.gateOpen && !!threeReadiness.coreReady && !!threePlayerMesh && !!threeReadiness.worldGroup && !!threeReadiness.homeBeacon && !!threeReadiness.coreBeacon;
+        const visibleAssets = [threePlayerMesh, threeReadiness.worldGroup, threeReadiness.homeBeacon, threeReadiness.coreBeacon].filter(Boolean).length;
+        setThreeReadiness({
+          reason: ready ? 'core-ready' : 'waiting-core-assets',
+          assetsReady: ready,
+          visibleAssets
+        });
+        if (ready) return resolve(true);
+        if (loadingOverlay) {
+          loadingOverlay.classList.remove('hidden');
+          loadingOverlay.innerHTML = `
+            <div class="rounded-2xl border border-cyan-500/20 bg-zinc-950/85 px-5 py-4 shadow-2xl backdrop-blur-md text-zinc-200 max-w-sm w-full">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-300 animate-pulse">
+                  <svg class="w-5 h-5 animate-spin" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.228 10H18.2M4 9h5M4 9v5"/></svg>
+                </div>
+                <div>
+                  <div class="text-xs uppercase tracking-[0.25em] text-cyan-300/80 font-mono">Waiting for core objects</div>
+                  <div class="text-sm text-zinc-300 mt-1">Giữ 2D canvas cho tới khi Home zone, player và ánh sáng sẵn sàng.</div>
+                </div>
+              </div>
+            </div>
+          `;
+        }
+        requestAnimationFrame(check);
+      };
+      check();
+    });
+
+    await waitForCore();
+
+    diagnosticSnapshot = {
+      phase: 'post-init',
+      camera: {
+        x: Number(threeCamera.position.x.toFixed(2)),
+        y: Number(threeCamera.position.y.toFixed(2)),
+        z: Number(threeCamera.position.z.toFixed(2))
+      },
+      sceneObjects: threeScene ? threeScene.children.length : 0,
+      activeZone: state.activeZoneId,
+      background: threeScene?.background ? `#${threeScene.background.getHexString()}` : null
+    };
+    if (diagnosticModeEnabled) renderDiagnosticOverlay(diagnosticSnapshot);
+
+    gameCanvas.classList.add('hidden');
+    viewport.classList.remove('hidden');
+    document.getElementById('container_exit_3d')?.classList.remove('hidden');
+    document.getElementById('radar_minimap_container')?.classList.remove('hidden');
     updateDimensionToggleBtnText();
+    if (loadingOverlay) loadingOverlay.classList.add('hidden');
+    setThreeReadiness({ reason: 'viewport-unhidden' });
 
+    if (animationFrameId) {
+      cancelAnimationFrame(animationFrameId);
+      animationFrameId = null;
+    }
+
+    setTimeout(() => {
+      container?.classList.remove('transition-dimension');
+    }, 600);
   } catch (err) {
-    console.error(err);
-    state.is3DActive = false;
-    document.getElementById('retro_game_map_canvas').classList.remove('hidden');
-    document.getElementById('threejs_3d_viewport').classList.add('hidden');
-    document.getElementById('container_exit_3d').classList.add('hidden');
-    document.getElementById('radar_minimap_container').classList.add('hidden');
-    gameLoop();
+    failBackTo2D('Có lỗi khi khởi tạo không gian 3D hoặc tải asset. Mở console để xem chi tiết.', err);
+    setTimeout(() => {
+      container?.classList.remove('transition-dimension');
+    }, 600);
   }
-
-  setTimeout(() => {
-    container.classList.remove('transition-dimension');
-  }, 600);
 }
 
 function exit3DMode() {
