@@ -208,18 +208,18 @@
               </div>
 
               <!-- Top Status Indicator -->
-              <div class="absolute top-4 left-4 right-4 flex items-center justify-between pointer-events-none">
-                <div class="bg-zinc-950/80 backdrop-blur-sm px-3 py-1.5 rounded-xl border border-zinc-800 text-xs font-mono text-zinc-300 flex items-center gap-2">
+              <div class="absolute top-4 left-4 flex flex-col gap-2 pointer-events-none z-20">
+                <div class="bg-zinc-950/80 backdrop-blur-sm px-3 py-1.5 rounded-xl border border-zinc-800 text-xs font-mono text-zinc-300 flex items-center gap-2 w-max">
                   <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
                   <span>CYBER PORTFOLIO ACTIVE</span>
                 </div>
-                <div class="bg-zinc-950/80 backdrop-blur-sm px-3 py-1.5 rounded-xl border border-zinc-800 text-[10px] font-mono text-zinc-400">
-                  3D WebGL Engine Active
+                <div id="lbl_engine_status" class="bg-zinc-950/80 backdrop-blur-sm px-3 py-1.5 rounded-xl border border-zinc-800 text-[10px] font-mono text-zinc-400 w-max">
+                  2D Retro Engine Active
                 </div>
               </div>
 
               <!-- Active Zone Status HUD -->
-              <div class="absolute bottom-4 left-4 pointer-events-none">
+              <div id="active_zone_hud" class="absolute bottom-4 left-4 pointer-events-none z-20 transition-all duration-300">
                 <div class="bg-zinc-950/90 backdrop-blur-md px-4 py-2.5 rounded-2xl border border-emerald-500/30 shadow-lg flex items-center gap-3">
                   <div class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></div>
                   <div>
@@ -277,10 +277,10 @@
           </div>
 
           <!-- Glassmorphic Details Card -->
-          <div class="bg-zinc-900/20 border border-zinc-800 p-6 md:p-8 rounded-3xl h-full flex flex-col justify-between glass-panel">
-            <div>
+          <div class="bg-zinc-900/20 border border-zinc-800 p-6 md:p-8 rounded-3xl h-[500px] flex flex-col justify-between glass-panel">
+            <div class="flex-1 flex flex-col min-h-0">
               <!-- Header Section inside Info Panel -->
-              <div class="flex items-center gap-4 border-b border-zinc-850 pb-5 mb-6">
+              <div class="flex items-center gap-4 border-b border-zinc-850 pb-5 mb-6 flex-shrink-0">
                 <div id="zone_banner_icon_holder" class="p-3 bg-zinc-900 rounded-2xl border border-zinc-800/80 shadow-sm">
                   <!-- Injected by JavaScript -->
                 </div>
@@ -293,13 +293,13 @@
               </div>
 
               <!-- Main Dynamic Info Viewport -->
-              <div id="zone_detail_content">
+              <div id="zone_detail_content" class="flex-1 overflow-y-auto pr-2">
                 <!-- Injected dynamically by JavaScript -->
               </div>
             </div>
 
             <!-- Quick Map Teleportation Actions -->
-            <div class="mt-8 pt-6 border-t border-zinc-850">
+            <div class="mt-6 pt-4 border-t border-zinc-850 flex-shrink-0">
               <span class="text-[10px] font-mono text-zinc-500 block mb-2">ĐIỀU HƯỚNG NHANH BẢN ĐỒ</span>
               <div id="quick_teleport_container" class="flex flex-wrap gap-2">
                 <!-- Injected dynamically by JavaScript -->
