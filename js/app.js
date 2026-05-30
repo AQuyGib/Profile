@@ -20,6 +20,167 @@ const state = {
 // Web Audio API Synthesizer
 let audioCtx = null;
 
+// Ambient Background Music Generator (Web Audio API Synthesizer)
+let bgMusicStarted = false;
+let bgMusicPlaying = false;
+let ambientNodes = [];
+let ambientMusicTimer = null;
+
+function startAmbientMusic() {
+  if (bgMusicPlaying) return;
+  const ctx = getAudioContext();
+  if (!ctx) return;
+  
+  bgMusicPlaying = true;
+  bgMusicStarted = true;
+  
+  try {
+    // Tạo node âm lượng tổng (tăng từ 0.04 lên 0.18 để nghe rõ hơn)
+    const masterGain = ctx.createGain();
+    masterGain.gain.setValueAtTime(0.18, ctx.currentTime);
+    masterGain.connect(ctx.destination);
+    ambientNodes.push(masterGain);
+    
+    // Bộ lọc Lowpass để tạo hiệu ứng không gian mờ ảo
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(550, ctx.currentTime); // tăng nhẹ tần số cắt
+    filter.connect(masterGain);
+    
+    // Âm đệm Drone nền (Nâng từ C2 (65Hz) lên C3 (130.81Hz) để loa laptop/điện thoại nghe rõ)
+    const droneOsc1 = ctx.createOscillator();
+    const droneOsc2 = ctx.createOscillator();
+    const droneGain = ctx.createGain();
+    
+    droneOsc1.type = 'sawtooth';
+    droneOsc1.frequency.setValueAtTime(130.81, ctx.currentTime); // C3
+    
+    droneOsc2.type = 'sawtooth';
+    droneOsc2.frequency.setValueAtTime(131.30, ctx.currentTime); // detuned nhẹ
+    
+    droneGain.gain.setValueAtTime(0.18, ctx.currentTime); // giảm drone gain để hài hòa với masterGain
+    
+    droneOsc1.connect(droneGain);
+    droneOsc2.connect(droneGain);
+    droneGain.connect(filter);
+    
+    droneOsc1.start();
+    droneOsc2.start();
+    
+    ambientNodes.push(droneOsc1, droneOsc2, droneGain);
+    
+    // Vòng hòa âm (Nâng lên 1 quãng tám để nghe rõ trên mọi thiết bị): C4min -> Ab3maj -> Gm3 -> Fm3
+    const chords = [
+      [261.63, 311.13, 392.00], // C4 minor chord (C4, Eb4, G4)
+      [207.65, 261.63, 311.13], // Ab3 major (Ab3, C4, Eb4)
+      [196.00, 233.08, 293.66], // Gm3 (G3, Bb3, D4)
+      [174.61, 207.65, 261.63]  // Fm3 (F3, Ab3, C4)
+    ];
+    
+    let chordIndex = 0;
+    
+    function playChordStep() {
+      if (!bgMusicPlaying) return;
+      const now = ctx.currentTime;
+      
+      // Phát 3 nốt của hợp âm với hiệu ứng tăng/giảm âm lượng từ từ
+      const stepNotes = chords[chordIndex];
+      stepNotes.forEach((freq) => {
+        const osc = ctx.createOscillator();
+        const oscGain = ctx.createGain();
+        
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(freq, now);
+        
+        oscGain.gain.setValueAtTime(0, now);
+        oscGain.gain.linearRampToValueAtTime(0.15, now + 1.5); // Attack 1.5s
+        oscGain.gain.setValueAtTime(0.15, now + 4.5);
+        oscGain.gain.exponentialRampToValueAtTime(0.001, now + 6.0); // Release 1.5s
+        
+        osc.connect(oscGain);
+        oscGain.connect(filter);
+        
+        osc.start(now);
+        osc.stop(now + 6.0);
+      });
+      
+      // Âm thanh ngân nga lung linh ngẫu nhiên ở tần số cao
+      const twinkleOsc = ctx.createOscillator();
+      const twinkleGain = ctx.createGain();
+      twinkleOsc.type = 'sine';
+      
+      const highFreqs = [523.25, 659.25, 783.99, 987.77]; // C5, E5, G5, B5
+      const randomFreq = highFreqs[Math.floor(Math.random() * highFreqs.length)];
+      twinkleOsc.frequency.setValueAtTime(randomFreq, now + 2.0);
+      
+      twinkleGain.gain.setValueAtTime(0, now + 2.0);
+      twinkleGain.gain.linearRampToValueAtTime(0.05, now + 2.5);
+      twinkleGain.gain.exponentialRampToValueAtTime(0.001, now + 4.5);
+      
+      twinkleOsc.connect(twinkleGain);
+      twinkleGain.connect(masterGain); // Bỏ qua filter để tiếng ngân cao vang và sáng rõ
+      
+      twinkleOsc.start(now + 2.0);
+      twinkleOsc.stop(now + 4.5);
+      
+      chordIndex = (chordIndex + 1) % chords.length;
+      ambientMusicTimer = setTimeout(playChordStep, 6000);
+    }
+    
+    playChordStep();
+    updateMusicUIButton(true);
+  } catch (err) {
+    console.error("Failed to play synthesized ambient music:", err);
+  }
+}
+
+function stopAmbientMusic() {
+  bgMusicPlaying = false;
+  if (ambientMusicTimer) {
+    clearTimeout(ambientMusicTimer);
+    ambientMusicTimer = null;
+  }
+  ambientNodes.forEach(node => {
+    try {
+      node.disconnect();
+      if (node.stop) node.stop();
+    } catch (e) {}
+  });
+  ambientNodes = [];
+  updateMusicUIButton(false);
+}
+
+function updateMusicUIButton(isPlaying) {
+  const btn = document.getElementById('btn_ambient_music');
+  const waves = document.getElementById('music_waves');
+  const lbl = document.getElementById('lbl_music');
+  if (!btn) return;
+  
+  if (isPlaying) {
+    btn.classList.remove('text-zinc-500', 'border-zinc-800');
+    btn.classList.add('text-emerald-400', 'border-emerald-500/20');
+    if (waves) waves.classList.remove('hidden');
+    if (lbl) {
+      lbl.textContent = state.language === 'vi' ? 'Nhạc nền: Bật' : 'Music: On';
+    }
+  } else {
+    btn.classList.remove('text-emerald-400', 'border-emerald-500/20');
+    btn.classList.add('text-zinc-500', 'border-zinc-800');
+    if (waves) waves.classList.add('hidden');
+    if (lbl) {
+      lbl.textContent = state.language === 'vi' ? 'Nhạc nền: Tắt' : 'Music: Off';
+    }
+  }
+}
+
+function toggleAmbientMusic() {
+  if (bgMusicPlaying) {
+    stopAmbientMusic();
+  } else {
+    startAmbientMusic();
+  }
+}
+
 function getAudioContext() {
   if (!audioCtx) {
     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -52,6 +213,181 @@ function playClickSound() {
     osc.stop(ctx.currentTime + 0.08);
   } catch (e) {
     console.warn("Audio failure:", e);
+  }
+}
+
+// =============================================================
+// Achievements / Badges System
+// =============================================================
+const ACHIEVEMENT_LIST = {
+  explorer: {
+    title_vi: "Nhà Khám Phá",
+    title_en: "Discovery Explorer",
+    desc_vi: "Bạn đã du hành qua tất cả 5 phân vùng trên bản đồ 2D!",
+    desc_en: "You have traveled through all 5 zones on the 2D map!",
+    icon: `<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/></svg>`
+  },
+  space: {
+    title_vi: "Du Hành Không Gian",
+    title_en: "Space Voyager",
+    desc_vi: "Bạn đã lần đầu kích hoạt và bước vào Cổng Không Gian 3D!",
+    desc_en: "You have activated and entered the 3D Space Gate for the first time!",
+    icon: `<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m0-12.728l.707.707m12.728 12.728l.707-.707M12 8a4 4 0 100 8 4 4 0 000-8z"/></svg>`
+  },
+  chat: {
+    title_vi: "Hỏi Đáp Cùng AI",
+    title_en: "AI Dialogue Specialist",
+    desc_vi: "Bạn đã bắt đầu cuộc trò chuyện và đặt câu hỏi cho Trợ lý ảo AI!",
+    desc_en: "You have initiated a conversation and asked the AI Assistant a question!",
+    icon: `<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>`
+  },
+  easteregg: {
+    title_vi: "Thành Tựu Easter Egg",
+    title_en: "Easter Egg Unlocked",
+    desc_vi: "Bạn đã nhặt được Thẻ Bộ Nhớ Bí Mật! Cảm ơn bạn rất nhiều vì đã khám phá sâu sắc!",
+    desc_en: "You found the Secret Memory Card! Thank you so much for your deep exploration!",
+    icon: `<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5a2 2 0 10-2 2h2zm0 0H4m8 0h8m-8 0a2 2 0 100-4 2 2 0 000 4z"/></svg>`
+  }
+};
+
+function initAchievements() {
+  if (!localStorage.getItem('unlocked_achievements')) {
+    localStorage.setItem('unlocked_achievements', JSON.stringify([]));
+  }
+  if (!localStorage.getItem('visited_zones')) {
+    localStorage.setItem('visited_zones', JSON.stringify([]));
+  }
+}
+
+function unlockAchievement(id) {
+  const unlocked = JSON.parse(localStorage.getItem('unlocked_achievements') || '[]');
+  if (unlocked.includes(id)) return;
+  
+  unlocked.push(id);
+  localStorage.setItem('unlocked_achievements', JSON.stringify(unlocked));
+  
+  playAchievementSound();
+  showAchievementToast(id);
+
+  if (id === 'easteregg') {
+    showSpecialThankYouModal();
+  }
+}
+
+function playAchievementSound() {
+  try {
+    const ctx = getAudioContext();
+    if (!ctx) return;
+    
+    const now = ctx.currentTime;
+    const notes = [523.25, 659.25, 783.99, 1046.50];
+    
+    notes.forEach((freq, index) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, now + index * 0.08);
+      
+      gain.gain.setValueAtTime(0, now + index * 0.08);
+      gain.gain.linearRampToValueAtTime(0.06, now + index * 0.08 + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + index * 0.08 + 0.25);
+      
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      
+      osc.start(now + index * 0.08);
+      osc.stop(now + index * 0.08 + 0.25);
+    });
+  } catch (e) {
+    console.warn("Achievement audio fail:", e);
+  }
+}
+
+function showAchievementToast(id) {
+  const container = document.getElementById('achievements_container');
+  if (!container) return;
+  
+  const ach = ACHIEVEMENT_LIST[id];
+  if (!ach) return;
+  
+  const toast = document.createElement('div');
+  toast.className = 'achievement-toast';
+  
+  const title = state.language === 'vi' ? ach.title_vi : ach.title_en;
+  const desc = state.language === 'vi' ? ach.desc_vi : ach.desc_en;
+  
+  toast.innerHTML = `
+    <div class="achievement-icon">${ach.icon}</div>
+    <div class="achievement-info">
+      <div class="achievement-title">${title}</div>
+      <div class="achievement-desc">${desc}</div>
+    </div>
+  `;
+  
+  container.appendChild(toast);
+  
+  setTimeout(() => {
+    toast.classList.add('show');
+  }, 100);
+  
+  setTimeout(() => {
+    toast.classList.remove('show');
+    toast.classList.add('hide');
+    setTimeout(() => {
+      toast.remove();
+    }, 600);
+  }, 5000);
+}
+
+function showSpecialThankYouModal() {
+  const overlay = document.createElement('div');
+  overlay.className = 'fixed inset-0 bg-zinc-950/80 z-50 flex items-center justify-center p-6 backdrop-blur-md';
+  overlay.id = 'thankyou_modal';
+  
+  const isVi = state.language === 'vi';
+  
+  overlay.innerHTML = `
+    <div class="w-full max-w-md bg-zinc-900 border border-emerald-500/30 p-8 rounded-3xl backdrop-blur-xl relative z-10 shadow-2xl flex flex-col gap-6 text-center">
+      <div class="w-16 h-16 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 mx-auto animate-bounce">
+        <svg class="w-8 h-8" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
+      </div>
+      <div>
+        <h3 class="text-xl font-display font-semibold text-zinc-100 tracking-tight mb-2">
+          ${isVi ? 'LỜI CẢM ƠN ĐẶC BIỆT!' : 'SPECIAL THANK YOU!'}
+        </h3>
+        <p class="text-sm text-zinc-300 leading-relaxed">
+          ${isVi 
+            ? 'Cảm ơn bạn rất nhiều vì đã dành thời gian khám phá và trải nghiệm kỹ lưỡng bản đồ RPG Portfolio của tôi! Việc tìm thấy chiếc thẻ nhớ bí mật này chứng tỏ bạn là một nhà tuyển dụng/người xem vô cùng chu đáo và tỉ mỉ. Rất hy vọng sẽ có cơ hội được đồng hành và cống hiến tại quý doanh nghiệp!' 
+            : 'Thank you so much for taking your time to thoroughly explore my RPG Portfolio map! Finding this secret memory card proves that you are an extremely thoughtful and detail-oriented employer. I look forward to working and contributing to your company!'}
+        </p>
+      </div>
+      <button 
+        id="btn_close_thankyou"
+        class="w-full py-2.5 bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold rounded-xl transition-all cursor-pointer border border-emerald-400"
+      >
+        ${isVi ? 'Đóng và tiếp tục trải nghiệm' : 'Close and continue'}
+      </button>
+    </div>
+  `;
+  
+  document.body.appendChild(overlay);
+  
+  document.getElementById('btn_close_thankyou').addEventListener('click', () => {
+    overlay.remove();
+  });
+}
+
+function trackVisitedZone(zoneId) {
+  const visited = JSON.parse(localStorage.getItem('visited_zones') || '[]');
+  if (!visited.includes(zoneId)) {
+    visited.push(zoneId);
+    localStorage.setItem('visited_zones', JSON.stringify(visited));
+  }
+  const required = ['home', 'academy', 'lab', 'museum', 'portal'];
+  const completed = required.every(z => visited.includes(z));
+  if (completed) {
+    unlockAchievement('explorer');
   }
 }
 
@@ -181,6 +517,10 @@ function initGameEngine() {
 
   // Event Listeners for Movement
   window.addEventListener('keydown', (e) => {
+    const activeEl = document.activeElement;
+    if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.isContentEditable)) {
+      return;
+    }
     const key = e.code;
     if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'KeyW', 'KeyS', 'KeyA', 'KeyD'].includes(key)) {
       e.preventDefault();
@@ -190,6 +530,10 @@ function initGameEngine() {
   });
 
   window.addEventListener('keyup', (e) => {
+    const activeEl = document.activeElement;
+    if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.isContentEditable)) {
+      return;
+    }
     keysPressed[e.code] = false;
   });
 
@@ -866,6 +1210,42 @@ function drawScene() {
     ctx.fillText("Dùng WASD, Phím mũi tên", player.x, player.y + 36);
     ctx.fillText("hoặc CLICK để di chuyển", player.x, player.y + 46);
   }
+
+  // Vẽ vật phẩm Easter Egg bí mật nếu chưa được nhặt
+  const unlockedAch = JSON.parse(localStorage.getItem('unlocked_achievements') || '[]');
+  if (!unlockedAch.includes('easteregg')) {
+    const eggX = 750;
+    const eggY = 50;
+    const eggBob = Math.sin(localFrame * 0.1) * 3;
+    
+    ctx.save();
+    ctx.shadowBlur = 12 + Math.sin(localFrame * 0.15) * 4;
+    ctx.shadowColor = '#f59e0b';
+    ctx.fillStyle = 'rgba(245, 158, 11, 0.2)';
+    ctx.beginPath();
+    ctx.arc(eggX, eggY + eggBob, 10, 0, Math.PI * 2);
+    ctx.fill();
+    
+    ctx.fillStyle = '#f59e0b';
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.roundRect(eggX - 6, eggY - 8 + eggBob, 12, 16, 2);
+    ctx.fill();
+    ctx.stroke();
+    
+    ctx.fillStyle = '#f59e0b';
+    ctx.font = 'bold 8px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText("SECRET DATA", eggX, eggY - 14 + eggBob);
+    ctx.restore();
+    
+    // Kiểm tra va chạm với người chơi (bán kính 22px)
+    const dist = Math.hypot(player.x - eggX, player.y - eggY);
+    if (dist < 22) {
+      unlockAchievement('easteregg');
+    }
+  }
 }
 
 // -------------------------------------------------------------
@@ -895,6 +1275,9 @@ function updateUIForActiveZone() {
     const zone = state.zones.find(z => z.id === state.activeZoneId);
     const container = document.getElementById('zone_detail_content');
     if (!zone || !container) return;
+
+    // Theo dõi tiến trình đi qua các Zone
+    trackVisitedZone(zone.id);
 
     const bannerTitle = document.getElementById('zone_banner_title');
     const bannerIconHolder = document.getElementById('zone_banner_icon_holder');
@@ -1100,37 +1483,157 @@ function updateUIForActiveZone() {
     };
 
     html = `
-      <div class="space-y-6">
-        <p class="text-sm text-zinc-400 leading-relaxed font-light">
-          ${details.intro}
-        </p>
-
-        <div class="space-y-3 text-xs font-mono">
-          ${(details.contacts || []).map(con => `
-            <a 
-              href="${con.url}" 
-              class="flex items-center justify-between p-3.5 bg-zinc-900/60 rounded-xl border border-zinc-800 hover:border-pink-500/40 transition-colors group"
-            >
-              <div class="flex items-center gap-3 font-sans">
-                ${getContactIcon(con.type)}
-                <span class="text-zinc-400 font-mono text-[11px]">${con.label}</span>
-              </div>
-              <span class="text-zinc-200 group-hover:text-pink-400 transition-colors flex items-center gap-1 font-mono text-[11px]">
-                ${con.value} 
-                <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
-              </span>
-            </a>
-          `).join('')}
+      <div class="space-y-4">
+        <!-- Tabs Header -->
+        <div class="flex border-b border-zinc-850 gap-4 text-xs font-mono pb-px">
+          <button id="portal_tab_contact" class="pb-2 border-b-2 border-pink-500 text-pink-400 font-semibold focus:outline-none cursor-pointer">
+            ${state.language === 'vi' ? 'LIÊN HỆ' : 'CONTACT'}
+          </button>
+          <button id="portal_tab_guestbook" class="pb-2 border-b-2 border-transparent text-zinc-500 hover:text-zinc-300 focus:outline-none cursor-pointer">
+            ${state.language === 'vi' ? 'SỔ LƯU NIỆM' : 'GUESTBOOK'}
+          </button>
         </div>
 
-        <div class="bg-pink-500/5 border border-pink-500/20 rounded-2xl p-4 text-xs text-pink-400 leading-relaxed font-mono">
-          ${details.notice}
+        <!-- Tab 1: Contact -->
+        <div id="portal_tab_content_contact" class="space-y-4">
+          <p class="text-xs text-zinc-400 leading-relaxed font-light font-mono">
+            ${details.intro}
+          </p>
+
+          <div class="space-y-2 text-xs font-mono">
+            ${(details.contacts || []).map(con => `
+              <a 
+                href="${con.url}" 
+                target="_blank"
+                class="flex items-center justify-between p-3 bg-zinc-900/60 rounded-xl border border-zinc-800/80 hover:border-pink-500/40 transition-colors group"
+              >
+                <div class="flex items-center gap-3 font-sans">
+                  ${getContactIcon(con.type)}
+                  <span class="text-zinc-400 font-mono text-[10px]">${con.label}</span>
+                </div>
+                <span class="text-zinc-200 group-hover:text-pink-400 transition-colors flex items-center gap-1 font-mono text-[10px]">
+                  ${con.value} 
+                  <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+                </span>
+              </a>
+            `).join('')}
+          </div>
+
+          <div class="bg-pink-500/5 border border-pink-500/10 rounded-2xl p-4 text-[10px] text-pink-400/80 leading-relaxed font-mono">
+            ${details.notice}
+          </div>
+        </div>
+
+        <!-- Tab 2: Guestbook -->
+        <div id="portal_tab_content_guestbook" class="hidden space-y-4 flex flex-col">
+          <!-- Form -->
+          <form id="portal_gb_form" class="space-y-2.5 flex-shrink-0 pt-1">
+            <div class="grid grid-cols-2 gap-2 text-xs">
+              <input type="text" id="portal_gb_name" required placeholder="${state.language === 'vi' ? 'Tên của bạn...' : 'Your name...'}" class="bg-zinc-950/45 border border-zinc-850 text-zinc-200 px-3 py-2 rounded-xl focus:outline-none focus:border-pink-500/40 transition-colors font-mono text-[11px] placeholder-zinc-550">
+              <input type="email" id="portal_gb_email" required placeholder="${state.language === 'vi' ? 'Email liên hệ...' : 'Contact email...'}" class="bg-zinc-950/45 border border-zinc-850 text-zinc-200 px-3 py-2 rounded-xl focus:outline-none focus:border-pink-500/40 transition-colors font-mono text-[11px] placeholder-zinc-550">
+            </div>
+            <textarea id="portal_gb_message" required rows="2" placeholder="${state.language === 'vi' ? 'Để lại lời nhắn gửi tới Quý...' : 'Write a message to Quy...'}" class="w-full bg-zinc-950/45 border border-zinc-850 text-zinc-200 p-2.5 rounded-xl focus:outline-none focus:border-pink-500/40 transition-colors font-sans text-xs resize-none placeholder-zinc-550 h-16"></textarea>
+            <div class="flex justify-between items-center">
+              <span id="portal_gb_status" class="hidden text-[10px] font-mono"></span>
+              <button type="submit" id="btn_submit_guestbook" class="px-4 py-2 bg-pink-600 hover:bg-pink-500 active:bg-pink-700 text-white rounded-xl text-[10px] font-mono font-semibold transition-all cursor-pointer border border-pink-500 shadow-md ml-auto">
+                ${state.language === 'vi' ? 'GỬI LỜI NHẮN' : 'SEND MESSAGE'}
+              </button>
+            </div>
+          </form>
+
+          <!-- List -->
+          <div class="mt-4">
+            <span class="text-[9px] font-mono text-zinc-550 block mb-2 uppercase tracking-wider">
+              ${state.language === 'vi' ? 'CÁC LỜI NHẮN ĐÃ DUYỆT' : 'APPROVED MESSAGES'}
+            </span>
+            <div id="portal_gb_messages_list" class="space-y-2">
+              <!-- AJAX messages -->
+            </div>
+          </div>
         </div>
       </div>
     `;
   }
 
     container.innerHTML = html;
+
+    // Attach listeners for Portal Tabs
+    if (zone.id === 'portal') {
+      const tabContact = document.getElementById('portal_tab_contact');
+      const tabGuestbook = document.getElementById('portal_tab_guestbook');
+      const contentContact = document.getElementById('portal_tab_content_contact');
+      const contentGuestbook = document.getElementById('portal_tab_content_guestbook');
+
+      if (tabContact && tabGuestbook && contentContact && contentGuestbook) {
+        tabContact.addEventListener('click', () => {
+          playClickSound();
+          tabContact.className = 'pb-2 border-b-2 border-pink-500 text-pink-400 font-semibold focus:outline-none cursor-pointer';
+          tabGuestbook.className = 'pb-2 border-b-2 border-transparent text-zinc-500 hover:text-zinc-350 focus:outline-none cursor-pointer';
+          contentContact.classList.remove('hidden');
+          contentGuestbook.classList.add('hidden');
+        });
+
+        tabGuestbook.addEventListener('click', () => {
+          playClickSound();
+          tabGuestbook.className = 'pb-2 border-b-2 border-pink-500 text-pink-400 font-semibold focus:outline-none cursor-pointer';
+          tabContact.className = 'pb-2 border-b-2 border-transparent text-zinc-500 hover:text-zinc-350 focus:outline-none cursor-pointer';
+          contentContact.classList.add('hidden');
+          contentGuestbook.classList.remove('hidden');
+          loadPublicGuestbook();
+        });
+      }
+
+      // Guestbook Submit handler
+      const formGb = document.getElementById('portal_gb_form');
+      if (formGb) {
+        formGb.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          const nameInput = document.getElementById('portal_gb_name');
+          const emailInput = document.getElementById('portal_gb_email');
+          const messageInput = document.getElementById('portal_gb_message');
+          const statusEl = document.getElementById('portal_gb_status');
+          const submitBtn = document.getElementById('btn_submit_guestbook');
+
+          if (!nameInput || !emailInput || !messageInput || !statusEl || !submitBtn) return;
+
+          const name = nameInput.value.trim();
+          const email = emailInput.value.trim();
+          const message = messageInput.value.trim();
+
+          submitBtn.disabled = true;
+          submitBtn.textContent = state.language === 'vi' ? 'ĐANG GỬI...' : 'SENDING...';
+          statusEl.classList.add('hidden');
+
+          try {
+            const res = await fetch('api/guestbook.php', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ name, email, message })
+            });
+            const data = await res.json();
+
+            statusEl.classList.remove('hidden');
+            if (data.status === 'success') {
+              statusEl.textContent = data.message;
+              statusEl.className = 'text-[10px] text-emerald-450 font-mono';
+              formGb.reset();
+              playTeleportSound();
+            } else {
+              statusEl.textContent = data.message || 'Lỗi gửi tin nhắn.';
+              statusEl.className = 'text-[10px] text-rose-450 font-mono';
+            }
+          } catch (err) {
+            statusEl.classList.remove('hidden');
+            statusEl.textContent = 'Lỗi kết nối máy chủ.';
+            statusEl.className = 'text-[10px] text-rose-400 font-mono';
+          } finally {
+            submitBtn.disabled = false;
+            submitBtn.textContent = state.language === 'vi' ? 'GỬI LỜI NHẮN' : 'SEND MESSAGE';
+          }
+        });
+      }
+    }
+
 
     // Sync active states on Quick Teleport buttons
     state.zones.forEach((z) => {
@@ -1242,6 +1745,11 @@ function initChatbot() {
   // Reset chatbot
   btnReset.addEventListener('click', () => {
     playClickSound();
+    if (window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+      const waveform = document.getElementById('ai_voice_waveform');
+      if (waveform) waveform.classList.add('hidden');
+    }
     resetChatbotHistory(true);
   });
 
@@ -1252,8 +1760,77 @@ function initChatbot() {
     if (!txt || state.isLoadingAI) return;
     
     playClickSound();
+    if (window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+      const waveform = document.getElementById('ai_voice_waveform');
+      if (waveform) waveform.classList.add('hidden');
+    }
     handleUserSendMessage(txt);
   });
+
+  // Voice Recognition (Speech-to-Text)
+  const micBtn = document.getElementById('btn_chatbot_mic');
+  let recognition = null;
+  let isListening = false;
+
+  if (micBtn) {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      recognition = new SpeechRecognition();
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      
+      recognition.onstart = () => {
+        isListening = true;
+        micBtn.classList.remove('text-zinc-400');
+        micBtn.classList.add('text-red-500', 'bg-red-500/10', 'border-red-500/30', 'animate-pulse');
+        chatInput.placeholder = state.language === 'vi' ? 'Đang lắng nghe... Nói gì đó đi ạ' : 'Listening... Speak now';
+      };
+
+      recognition.onend = () => {
+        isListening = false;
+        micBtn.classList.add('text-zinc-400');
+        micBtn.classList.remove('text-red-500', 'bg-red-500/10', 'border-red-500/30', 'animate-pulse');
+        chatInput.placeholder = state.language === 'vi' ? 'Hỏi về Quý (Ví dụ: Dự án của Quý)...' : "Ask about Quy (e.g., Quy's project)...";
+      };
+
+      recognition.onerror = (e) => {
+        console.error('Speech recognition error:', e.error);
+        isListening = false;
+        micBtn.classList.add('text-zinc-400');
+        micBtn.classList.remove('text-red-500', 'bg-red-500/10', 'border-red-500/30', 'animate-pulse');
+      };
+
+      recognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        chatInput.value = transcript;
+        playClickSound();
+        if (window.speechSynthesis) {
+          window.speechSynthesis.cancel();
+          const waveform = document.getElementById('ai_voice_waveform');
+          if (waveform) waveform.classList.add('hidden');
+        }
+        handleUserSendMessage(transcript);
+      };
+
+      micBtn.addEventListener('click', () => {
+        playClickSound();
+        if (isListening) {
+          recognition.stop();
+        } else {
+          if (window.speechSynthesis) {
+            window.speechSynthesis.cancel();
+            const waveform = document.getElementById('ai_voice_waveform');
+            if (waveform) waveform.classList.add('hidden');
+          }
+          recognition.lang = state.language === 'vi' ? 'vi-VN' : 'en-US';
+          recognition.start();
+        }
+      });
+    } else {
+      micBtn.style.display = 'none';
+    }
+  }
 
   // Set default initial greeting
   resetChatbotHistory(false);
@@ -1363,6 +1940,9 @@ function renderSuggestions() {
 }
 
 async function handleUserSendMessage(text) {
+  // Mở khóa thành tựu hỏi đáp cùng AI
+  unlockAchievement('chat');
+
   document.getElementById('chatbot_message_input').value = '';
   
   // Append User message to UI
@@ -1400,6 +1980,7 @@ async function handleUserSendMessage(text) {
 
     // Append AI reply
     appendChatMessage('ai', data.response);
+    speakText(data.response);
 
   } catch (err) {
     console.error("AI chatbot error:", err);
@@ -1409,6 +1990,104 @@ async function handleUserSendMessage(text) {
   } finally {
     state.isLoadingAI = false;
     showThinkingIndicator(false);
+  }
+}
+
+// Hàm phát giọng nói bằng Web Speech API (Text-to-Speech)
+function speakText(text) {
+  if (!window.speechSynthesis) return;
+
+  // Dừng mọi âm thanh đang phát trước đó
+  window.speechSynthesis.cancel();
+
+  // Loại bỏ các ký tự Markdown đặc biệt để đọc mượt mà hơn
+  let cleanText = text
+    .replace(/\*\*(.*?)\*\*/g, '$1')
+    .replace(/[-*]\s+/g, '')
+    .replace(/`{1,3}[\s\S]*?`{1,3}/g, '')
+    .replace(/[#_*\[\]()]/g, '');
+
+  const utterance = new SpeechSynthesisUtterance(cleanText);
+  utterance.lang = state.language === 'vi' ? 'vi-VN' : 'en-US';
+
+  // Chọn voice phù hợp theo ngôn ngữ
+  const voices = window.speechSynthesis.getVoices();
+  let voice = voices.find(v => v.lang.startsWith(state.language === 'vi' ? 'vi' : 'en'));
+  if (voice) {
+    utterance.voice = voice;
+  }
+
+  const waveform = document.getElementById('ai_voice_waveform');
+  const statusLbl = document.getElementById('lbl_waveform_status');
+
+  utterance.onstart = () => {
+    if (waveform) waveform.classList.remove('hidden');
+    if (statusLbl) {
+      statusLbl.textContent = state.language === 'vi' ? 'AI ĐANG PHÁT GIỌNG NÓI...' : 'AI IS SPEAKING...';
+    }
+  };
+
+  utterance.onend = () => {
+    if (waveform) waveform.classList.add('hidden');
+  };
+
+  utterance.onerror = () => {
+    if (waveform) waveform.classList.add('hidden');
+  };
+
+  window.speechSynthesis.speak(utterance);
+}
+
+// Hàm tải danh sách các tin nhắn đã duyệt trong Guestbook
+async function loadPublicGuestbook() {
+  const listEl = document.getElementById('portal_gb_messages_list');
+  if (!listEl) return;
+
+  listEl.innerHTML = `
+    <div class="flex items-center justify-center py-4 text-zinc-500 font-mono text-[10px] animate-pulse">
+      ${state.language === 'vi' ? 'ĐANG TẢI TIN NHẮN...' : 'LOADING MESSAGES...'}
+    </div>
+  `;
+
+  try {
+    const res = await fetch('api/guestbook.php');
+    const data = await res.json();
+
+    if (data.status === 'success' && Array.isArray(data.data)) {
+      if (data.data.length === 0) {
+        listEl.innerHTML = `
+          <div class="text-center py-4 text-zinc-500 font-mono text-[10px] border border-dashed border-zinc-800/60 rounded-xl">
+            ${state.language === 'vi' ? 'Chưa có lời nhắn nào được duyệt.' : 'No approved messages yet.'}
+          </div>
+        `;
+        return;
+      }
+
+      listEl.innerHTML = data.data.map(item => {
+        // Tránh lỗi XSS
+        const safeName = item.name.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        const safeMsg = item.message.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        const date = new Date(item.created_at).toLocaleDateString(
+          state.language === 'vi' ? 'vi-VN' : 'en-US',
+          { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }
+        );
+
+        return `
+          <div class="p-2.5 bg-zinc-950/45 border border-zinc-850 rounded-xl space-y-1 font-mono">
+            <div class="flex justify-between items-center text-[10px]">
+              <span class="text-pink-400 font-semibold text-[10.5px]">${safeName}</span>
+              <span class="text-zinc-550 text-[9px]">${date}</span>
+            </div>
+            <p class="text-[11px] text-zinc-350 leading-relaxed font-sans">${safeMsg}</p>
+          </div>
+        `;
+      }).join('');
+    } else {
+      listEl.innerHTML = `<div class="text-center py-2 text-rose-450 text-[10px] font-mono">Lỗi tải dữ liệu.</div>`;
+    }
+  } catch (err) {
+    console.error('Failed to load guestbook:', err);
+    listEl.innerHTML = `<div class="text-center py-2 text-rose-450 text-[10px] font-mono">Lỗi kết nối máy chủ.</div>`;
   }
 }
 
@@ -1494,6 +2173,7 @@ function switchLanguage(lang) {
   updateUIForActiveZone();
   resetChatbotHistory(false);
   updateDimensionToggleBtnText();
+  updateMusicUIButton(bgMusicPlaying);
 }
 
 function updateDimensionToggleBtnText() {
@@ -1861,6 +2541,7 @@ function loadScript(src) {
     const script = document.createElement('script');
     script.crossOrigin = 'anonymous'; // Support detailed cross-origin error reporting
     script.src = src;
+    script.async = false; // Bảo đảm thực thi đúng thứ tự nạp của các thư viện
     script.onload = resolve;
     script.onerror = (err) => {
       console.error(`Script load failed for: ${src}`, err);
@@ -1871,16 +2552,23 @@ function loadScript(src) {
 }
 
 async function loadThreeJS() {
-  if (window.THREE && window.THREE.OrbitControls && window.THREE.GLTFLoader) return;
+  if (window.THREE && window.THREE.OrbitControls && window.THREE.GLTFLoader && window.THREE.EffectComposer) return;
   try {
     // 1. Load Three.js core with a pinned, reliable unpkg CDN version
     await loadScript("https://unpkg.com/three@0.128.0/build/three.min.js");
     
-    // 2. Load auxiliary controls & loaders only.
-    // Postprocessing is optional and may be disabled if the CDN/runtime blocks it.
+    // 2. Load auxiliary controls, loaders, and postprocessing.
     await Promise.all([
       loadScript("https://unpkg.com/three@0.128.0/examples/js/controls/OrbitControls.js"),
-      loadScript("https://unpkg.com/three@0.128.0/examples/js/loaders/GLTFLoader.js")
+      loadScript("https://unpkg.com/three@0.128.0/examples/js/loaders/GLTFLoader.js"),
+      loadScript("https://unpkg.com/three@0.128.0/examples/js/loaders/DRACOLoader.js"),
+      // Post-Processing scripts
+      loadScript("https://unpkg.com/three@0.128.0/examples/js/postprocessing/EffectComposer.js"),
+      loadScript("https://unpkg.com/three@0.128.0/examples/js/postprocessing/RenderPass.js"),
+      loadScript("https://unpkg.com/three@0.128.0/examples/js/postprocessing/ShaderPass.js"),
+      loadScript("https://unpkg.com/three@0.128.0/examples/js/shaders/CopyShader.js"),
+      loadScript("https://unpkg.com/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"),
+      loadScript("https://unpkg.com/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js")
     ]);
   } catch (err) {
     console.error("Three.js load error:", err);
@@ -1929,9 +2617,28 @@ function initThreeJS() {
     threeResizeObserver.observe(container);
   }
 
-  // Post-Processing Cybernetic Pipeline is optional.
-  // Avoid hard dependency on RenderPass/ShaderPass CDN assets that can fail in file/runtime contexts.
-  threeComposer = null;
+  // Post-Processing Cybernetic Pipeline
+  try {
+    if (window.THREE.EffectComposer && window.THREE.RenderPass && window.THREE.UnrealBloomPass) {
+      threeComposer = new THREE.EffectComposer(threeRenderer);
+      const renderPass = new THREE.RenderPass(threeScene, threeCamera);
+      threeComposer.addPass(renderPass);
+      
+      const bloomPass = new THREE.UnrealBloomPass(
+        new THREE.Vector2(container.clientWidth, container.clientHeight),
+        0.35,  // strength (giảm xuống để đỡ chói)
+        0.3,   // radius
+        0.45   // threshold (tăng lên để lọc bớt ánh sáng yếu)
+      );
+      threeComposer.addPass(bloomPass);
+      console.log("Three.js Neon Bloom post-processing initialized successfully!");
+    } else {
+      threeComposer = null;
+    }
+  } catch (err) {
+    console.error("Post-processing initialization failed, falling back to basic renderer:", err);
+    threeComposer = null;
+  }
 
   // Controls setup (smooth orbit around a real world)
   threeControls = new THREE.OrbitControls(threeCamera, threeRenderer.domElement);
@@ -2842,14 +3549,27 @@ function applyZoneTheme3D(zoneId, instant = false) {
   }
 
   if (threeComposer?.passes?.[1]) {
-    threeComposer.passes[1].strength = zoneId === 'portal' ? 1.15 : zoneId === 'museum' ? 1.05 : 0.9;
-    threeComposer.passes[1].radius = zoneId === 'lab' ? 0.28 : 0.35;
-    threeComposer.passes[1].threshold = zoneId === 'academy' ? 0.18 : 0.16;
+    threeComposer.passes[1].strength = zoneId === 'portal' ? 0.45 : zoneId === 'museum' ? 0.4 : 0.35;
+    threeComposer.passes[1].radius = zoneId === 'lab' ? 0.25 : 0.3;
+    threeComposer.passes[1].threshold = zoneId === 'academy' ? 0.55 : 0.45;
   }
 }
 
 async function load3DModels() {
   const loader = new THREE.GLTFLoader();
+  
+  // Thiết lập giải nén mô hình 3D nén Draco (.glb/.gltf)
+  try {
+    if (window.THREE.DRACOLoader) {
+      const dracoLoader = new THREE.DRACOLoader();
+      dracoLoader.setDecoderPath('https://unpkg.com/three@0.128.0/examples/js/libs/draco/');
+      loader.setDRACOLoader(dracoLoader);
+      console.info('[Draco] DRACOLoader initialized successfully!');
+    }
+  } catch (dracoErr) {
+    console.error('Failed to initialize DRACOLoader:', dracoErr);
+  }
+
   const SK = '3d/spacekit/GLTF format/';
   const SS = '3d/spacestation/GLB format/';
   const FC = '3d/factory/GLB format/';
@@ -3868,9 +4588,13 @@ function animate3D() {
       zoneEnvironment.fillLight.color = lerpColor(new THREE.Color(currentTheme.fill), new THREE.Color(activeTheme.fill), smoothT);
     }
     if (threeComposer?.passes?.[1]) {
-      threeComposer.passes[1].strength = 0.9 + (smoothT * ((zoneTransitionState.targetZoneId === 'portal' ? 1.15 : zoneTransitionState.targetZoneId === 'museum' ? 1.05 : 0.9) - 0.9));
-      threeComposer.passes[1].radius = 0.35 + (zoneTransitionState.targetZoneId === 'lab' ? -0.07 : 0);
-      threeComposer.passes[1].threshold = 0.16 + (zoneTransitionState.targetZoneId === 'academy' ? 0.02 : 0);
+      const targetStrength = zoneTransitionState.targetZoneId === 'portal' ? 0.45 : zoneTransitionState.targetZoneId === 'museum' ? 0.4 : 0.35;
+      const targetRadius = zoneTransitionState.targetZoneId === 'lab' ? 0.25 : 0.3;
+      const targetThreshold = zoneTransitionState.targetZoneId === 'academy' ? 0.55 : 0.45;
+      
+      threeComposer.passes[1].strength = 0.35 + (smoothT * (targetStrength - 0.35));
+      threeComposer.passes[1].radius = 0.3 + (smoothT * (targetRadius - 0.3));
+      threeComposer.passes[1].threshold = 0.45 + (smoothT * (targetThreshold - 0.45));
     }
     if (zoneTransitionState.progress >= 1) {
       zoneTransitionState.currentZoneId = zoneTransitionState.targetZoneId;
@@ -4308,6 +5032,10 @@ function detect3DZoneCollision() {
 }
 
 function handle3DKeyDown(e) {
+  const activeEl = document.activeElement;
+  if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.isContentEditable)) {
+    return;
+  }
   const code = e.code;
   if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'KeyW', 'KeyS', 'KeyA', 'KeyD', 'Space'].includes(code)) {
     e.preventDefault();
@@ -4316,6 +5044,10 @@ function handle3DKeyDown(e) {
 }
 
 function handle3DKeyUp(e) {
+  const activeEl = document.activeElement;
+  if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.isContentEditable)) {
+    return;
+  }
   threeKeys[e.code] = false;
 }
 
@@ -4469,6 +5201,9 @@ function updateRadarMinimap() {
 async function enter3DMode() {
   if (state.is3DActive) return;
   state.is3DActive = true;
+
+  // Mở khóa thành tựu du hành không gian 3D
+  unlockAchievement('space');
 
   playTeleportSound();
 
@@ -4645,9 +5380,20 @@ function exit3DMode() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+  // Khởi tạo lưu trữ cục bộ cho Thành tựu (Achievements)
+  initAchievements();
+
   // Bind Language selectors
   document.getElementById('btn_lang_vi').addEventListener('click', () => switchLanguage('vi'));
   document.getElementById('btn_lang_en').addEventListener('click', () => switchLanguage('en'));
+
+  // Bind Ambient Music Toggle
+  const btnMusic = document.getElementById('btn_ambient_music');
+  if (btnMusic) {
+    btnMusic.addEventListener('click', () => {
+      toggleAmbientMusic();
+    });
+  }
 
   // Start Boot Sequence
   startLoadingSequence();

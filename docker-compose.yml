@@ -1,0 +1,9 @@
+services:
+  cyber-portfolio:
+    build: .
+    container_name: cyber_portfolio_app
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    restart: always

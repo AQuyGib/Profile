@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cyber-Oasis Admin Console</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                        display: ['Space Grotesk', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="../css/style.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        .glass-panel {
+            background: rgba(15, 15, 20, 0.45);
+            border: 1px solid rgba(63, 63, 70, 0.4);
+            backdrop-filter: blur(12px);
+        }
+        .neo-btn {
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        .neo-btn::after {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%; width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+            transition: all 0.6s ease;
+        }
+        .neo-btn:hover::after {
+            left: 100%;
+        }
+    </style>
+</head>
+<body class="bg-zinc-950 text-zinc-300 font-sans min-h-screen flex flex-col selection:bg-zinc-800 selection:text-zinc-100">
+
+    <!-- Background cyber ambient grid lines -->
+    <div class="fixed inset-0 bg-[linear-gradient(to_right,rgba(39,39,42,0.12)_1px,transparent_1px),linear-gradient(to_bottom,rgba(39,39,42,0.12)_1px,transparent_1px)] bg-[size:40px_40px] pointer-events-none z-0"></div>
+    <div class="fixed top-1/4 left-1/4 w-[500px] h-[500px] bg-purple-500/5 rounded-full blur-[120px] pointer-events-none z-0"></div>
+    <div class="fixed bottom-1/4 right-1/4 w-[500px] h-[500px] bg-emerald-500/5 rounded-full blur-[120px] pointer-events-none z-0"></div>
+
+    <!-- Header -->
+    <header class="border-b border-zinc-900 bg-zinc-950/80 sticky top-0 z-20 backdrop-blur-md px-6 py-4">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <a href="../" class="w-10 h-10 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-emerald-400 font-display font-medium font-mono hover:border-emerald-500/40 transition-colors">
+                    AQ
+                </a>
+                <div>
+                    <h1 class="text-sm font-display font-bold text-zinc-100 tracking-tight flex items-center gap-2">
+                        Console Quản Trị
+                        <span class="text-[9px] bg-purple-500/10 border border-purple-500/20 text-purple-400 font-mono px-2 py-0.5 rounded">
+                            SECURE CORE
+                        </span>
+                    </h1>
+                    <p class="text-[10px] text-zinc-500 font-mono">CYBER-OASIS PORTFOLIO SYSTEM</p>
+                </div>
+            </div>
+            
+            <div id="header_user_info" class="hidden flex items-center gap-4 text-xs font-mono">
+                <span class="text-zinc-400">ADMIN: <span id="lbl_logged_username" class="text-emerald-400 font-bold"></span></span>
+                <button id="btn_logout" class="px-3 py-1.5 bg-rose-950/60 border border-rose-800 text-rose-400 hover:bg-rose-900 hover:text-white rounded-lg transition-colors cursor-pointer select-none">
+                    Đăng xuất
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-1 w-full max-w-7xl mx-auto p-6 md:p-12 relative z-10 flex flex-col justify-center">
+
+        <!-- 1. LOGIN SCREEN -->
+        <section id="sec_login" class="max-w-md w-full mx-auto glass-panel p-8 rounded-3xl shadow-2xl relative">
+            <div class="text-center space-y-2 mb-6">
+                <div class="inline-flex p-3 bg-zinc-900 rounded-2xl border border-zinc-850 text-emerald-400">
+                    <svg class="w-6 h-6 text-emerald-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                </div>
+                <h2 class="text-xl font-display font-bold text-zinc-100">Xác thực Danh tính</h2>
+                <p class="text-xs text-zinc-500 font-mono">PASSWORD & 2-STEP VERIFICATION</p>
+            </div>
+
+            <form id="login_form" class="space-y-4 font-mono text-xs">
+                <div class="space-y-1.5">
+                    <label for="username" class="text-zinc-500 block uppercase">Username</label>
+                    <input type="text" id="username" required class="w-full bg-zinc-950 border border-zinc-850 px-4 py-3 rounded-xl text-zinc-100 focus:outline-none focus:border-emerald-500/40 font-sans text-sm">
+                </div>
+                <div class="space-y-1.5">
+                    <label for="password" class="text-zinc-500 block uppercase">Mật khẩu</label>
+                    <input type="password" id="password" required class="w-full bg-zinc-950 border border-zinc-850 px-4 py-3 rounded-xl text-zinc-100 focus:outline-none focus:border-emerald-500/40 font-sans text-sm">
+                </div>
+                <div id="otp_container" class="hidden space-y-1.5">
+                    <label for="code" class="text-zinc-500 block uppercase flex justify-between">
+                        Mã OTP Email
+                        <span class="text-emerald-400 animate-pulse font-normal lowercase">(Kiểm tra hộp thư)</span>
+                    </label>
+                    <input type="text" id="code" maxlength="6" placeholder="000000" class="w-full bg-zinc-950 border border-zinc-850 px-4 py-3 rounded-xl text-zinc-100 text-center tracking-[0.5em] focus:outline-none focus:border-purple-500/40 font-mono text-lg font-bold">
+                </div>
+                <div id="login_error_msg" class="text-rose-400 text-center hidden font-sans mt-2"></div>
+                <button type="submit" class="w-full bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-display font-semibold transition-all py-3.5 px-6 rounded-2xl shadow-[0_0_20px_rgba(16,185,129,0.2)] text-sm flex items-center justify-center gap-2 border border-emerald-400 mt-6 cursor-pointer neo-btn">
+                    ĐĂNG NHẬP HỆ THỐNG
+                </button>
+            </form>
+        </section>
+
+        <!-- 2. DASHBOARD PANEL (HIDDEN BY DEFAULT) -->
+        <section id="sec_dashboard" class="hidden space-y-6">
+            <!-- Navigation Tabs -->
+            <div class="flex border-b border-zinc-900 gap-2 overflow-x-auto pb-px">
+                <button id="tab_btn_guestbook" class="px-5 py-3 border-b-2 border-emerald-500 text-emerald-400 font-display font-semibold text-sm transition-all focus:outline-none flex items-center gap-2 cursor-pointer">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+                    Duyệt Lời Nhắn Guestbook
+                </button>
+                <button id="tab_btn_portfolio" class="px-5 py-3 border-b-2 border-transparent text-zinc-500 hover:text-zinc-300 font-display font-medium text-sm transition-all focus:outline-none flex items-center gap-2 cursor-pointer">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                    Cập Nhật Portfolio (data.json)
+                </button>
+            </div>
+
+            <!-- TAB 1: GUESTBOOK MANAGEMENT -->
+            <div id="tab_sec_guestbook" class="space-y-4">
+                <div class="flex justify-between items-center flex-wrap gap-3">
+                    <h3 class="text-base font-display font-medium text-zinc-200">Danh sách các lời nhắn chờ duyệt</h3>
+                    <button id="btn_refresh_guestbook" class="px-4 py-2 border border-zinc-800 bg-zinc-900/50 hover:bg-zinc-850 hover:text-white rounded-xl text-xs font-mono transition-colors flex items-center gap-1.5 cursor-pointer">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.228 10H18.2M4 9h5M4 9v5"/></svg>
+                        LÀM MỚI
+                    </button>
+                </div>
+
+                <div class="glass-panel rounded-3xl overflow-hidden shadow-xl border border-zinc-850">
+                    <div class="overflow-x-auto max-h-[460px]">
+                        <table class="w-full text-left text-xs font-mono border-collapse">
+                            <thead class="bg-zinc-900/70 border-b border-zinc-850 text-zinc-500 sticky top-0 backdrop-blur">
+                                <tr>
+                                    <th class="p-4 uppercase font-semibold">Khách Gửi</th>
+                                    <th class="p-4 uppercase font-semibold">Email</th>
+                                    <th class="p-4 uppercase font-semibold w-1/2">Nội dung Lời Nhắn</th>
+                                    <th class="p-4 uppercase font-semibold">Trạng Thái</th>
+                                    <th class="p-4 uppercase font-semibold text-center">Hành Động</th>
+                                </tr>
+                            </thead>
+                            <tbody id="guestbook_table_body" class="divide-y divide-zinc-900">
+                                <!-- Dynamic rows -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 2: PORTFOLIO DATA EDITOR -->
+            <div id="tab_sec_portfolio" class="hidden space-y-4">
+                <div class="flex justify-between items-center flex-wrap gap-3">
+                    <div>
+                        <h3 class="text-base font-display font-medium text-zinc-200">Trình soạn thảo JSON (data.json)</h3>
+                        <p class="text-[10px] text-zinc-500 font-mono mt-0.5">Hệ thống tự động format và kiểm tra cú pháp trước khi lưu.</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <button id="btn_save_portfolio" class="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-zinc-950 rounded-xl text-xs font-display font-semibold transition-colors flex items-center gap-1.5 cursor-pointer border border-emerald-400">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
+                            LƯU THAY ĐỔI
+                        </button>
+                    </div>
+                </div>
+
+                <div class="glass-panel p-4 rounded-3xl shadow-xl border border-zinc-850 flex flex-col">
+                    <textarea 
+                        id="portfolio_json_editor" 
+                        class="w-full h-[480px] bg-zinc-950/80 border border-zinc-900 text-emerald-400 p-6 rounded-2xl font-mono text-xs focus:outline-none focus:border-zinc-850 transition-colors leading-relaxed" 
+                        spellcheck="false"
+                    ></textarea>
+                    <div id="json_editor_error_msg" class="text-rose-400 text-xs font-mono mt-3 hidden bg-rose-500/5 border border-rose-500/10 p-3 rounded-xl"></div>
+                    <div id="json_editor_success_msg" class="text-emerald-400 text-xs font-mono mt-3 hidden bg-emerald-500/5 border border-emerald-500/10 p-3 rounded-xl"></div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-zinc-900 bg-zinc-950/40 py-6 text-center text-[10px] font-mono text-zinc-500 relative z-10">
+        © 2026 Nguyễn Anh Quý. Bảo mật xác thực 2-Step.
+    </footer>
+
+    <!-- Main Admin JS -->
+    <script src="admin.js"></script>
+</body>
+</html>
