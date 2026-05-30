@@ -162,48 +162,75 @@ $contents[] = [
     ]
 ];
 
-// Payload matching Gemini API spec
+// Thiết lập cấu trúc dữ liệu Payload (body request) theo đúng đặc tả của Google Gemini API
 $payload = [
-    "contents" => $contents,
-    "systemInstruction" => [
+    "contents" => $contents, // Mảng chứa lịch sử trò chuyện và tin nhắn hiện tại của người dùng
+    "systemInstruction" => [ // Hướng dẫn hệ thống (System Prompt) điều chỉnh tính cách, vai trò và giới hạn của AI
         "parts" => [
-            ["text" => $systemInstruction]
+            ["text" => $systemInstruction] // Nội dung chỉ thị hệ thống dạng văn bản (text)
         ]
     ]
 ];
 
-// Call Gemini API (using stable gemini-1.5-flash as the fallback)
-$url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" . $apiKey;
+// Khởi tạo URL endpoint của Gemini API bản v1beta với model mới nhất gemini-3.5-flash và đính kèm API Key
+$url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=" . $apiKey;
 
+// Khởi tạo phiên làm việc cURL để thực hiện gửi request HTTP đến máy chủ Google
 $ch = curl_init($url);
+
+// Cấu hình cURL: Trả về kết quả dưới dạng chuỗi (string) thay vì xuất trực tiếp ra màn hình
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+
+// Cấu hình cURL: Thiết lập phương thức gửi request là POST
 curl_setopt($ch, CURLOPT_POST, true);
+
+// Cấu hình cURL: Chuyển payload mảng PHP thành chuỗi định dạng JSON và đính kèm vào body request
 curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
+
+// Cấu hình cURL: Thiết lập Header cho request là kiểu dữ liệu JSON (application/json)
 curl_setopt($ch, CURLOPT_HTTPHEADER, [
     'Content-Type: application/json'
 ]);
 
+// Cấu hình cURL: Tắt kiểm tra chứng chỉ SSL của đối tác (Bắt buộc khi chạy local trên Windows/XAMPP để tránh lỗi SSL handshake)
+curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+
+// Cấu hình cURL: Tắt đối chiếu tên miền trong chứng chỉ SSL với tên miền máy chủ gọi tới để tránh bị cản trở kết nối
+curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+
+// Thực thi phiên cURL và nhận kết quả thô (JSON string) trả về từ Gemini API
 $response = curl_exec($ch);
+
+// Kiểm tra nếu cURL xảy ra lỗi kết nối mạng vật lý (ví dụ: DNS lỗi, sập mạng, không tìm thấy máy chủ)
 if (curl_errno($ch)) {
-    http_response_code(500);
-    echo json_encode(["error" => curl_error($ch)]);
-    exit;
+    http_response_code(500); // Thiết lập HTTP status code là 500 (Internal Server Error)
+    echo json_encode(["error" => curl_error($ch)]); // Trả về thông tin lỗi chi tiết của cURL dưới dạng JSON
+    exit; // Dừng chương trình ngay lập tức
 }
 
+// Lấy mã phản hồi HTTP Status Code từ API (200 là thành công, 400/404/500 là lỗi cấu hình/API Key)
 $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+
+// Đóng kết nối cURL để giải phóng tài nguyên hệ thống tránh rò rỉ bộ nhớ
 curl_close($ch);
 
+// Xử lý khi API Google trả về mã lỗi phản hồi (khác 200)
 if ($httpCode !== 200) {
-    http_response_code($httpCode);
-    $errorData = json_decode($response, true);
+    http_response_code($httpCode); // Đồng bộ mã lỗi HTTP của API về cho Client hiển thị
+    $errorData = json_decode($response, true); // Giải mã JSON thông điệp lỗi nhận từ Google
     echo json_encode([
-        "error" => $errorData['error']['message'] ?? "Error calling Gemini API",
-        "raw_response" => $errorData
+        "error" => $errorData['error']['message'] ?? "Error calling Gemini API", // Lấy câu báo lỗi chi tiết từ Google
+        "raw_response" => $errorData // Đính kèm phản hồi thô của Google giúp nhà phát triển dễ dàng gỡ lỗi (debug)
     ]);
-    exit;
+    exit; // Dừng chương trình
 }
 
+// Giải mã JSON kết quả thành công nhận được từ Gemini API thành mảng PHP
 $resData = json_decode($response, true);
+
+// Truy xuất văn bản câu trả lời của AI từ cấu trúc phản hồi nhiều cấp của Gemini API
+// Cấu trúc mặc định của Google: candidates -> content -> parts -> text
 $replyText = $resData['candidates'][0]['content']['parts'][0]['text'] ?? 'Xin lỗi, tôi gặp khó khăn khi xử lý yêu cầu của bạn.';
 
+// Trả kết quả cuối cùng về cho ứng dụng Client (Frontend Javascript) dưới dạng JSON chuẩn
 echo json_encode(["response" => $replyText]);

@@ -14,7 +14,9 @@ const state = {
   chatHistory: [],
   isChatOpen: false,
   is3DActive: false,
-  threeInstance: null
+  threeInstance: null,
+  isAiVoiceEnabled: localStorage.getItem('cyber_portfolio_ai_voice_enabled') !== 'false',
+  selectedVoiceURI: localStorage.getItem('cyber_portfolio_selected_voice_uri') || ''
 };
 
 // Web Audio API Synthesizer
@@ -1753,6 +1755,25 @@ function initChatbot() {
     resetChatbotHistory(true);
   });
 
+  // Bật/tắt giọng đọc AI
+  const btnToggleVoice = document.getElementById('btn_toggle_ai_voice');
+  if (btnToggleVoice) {
+    updateAiVoiceButtonUI();
+    btnToggleVoice.addEventListener('click', () => {
+      playClickSound();
+      state.isAiVoiceEnabled = !state.isAiVoiceEnabled;
+      localStorage.setItem('cyber_portfolio_ai_voice_enabled', state.isAiVoiceEnabled);
+      updateAiVoiceButtonUI();
+      
+      // Nếu tắt giọng đọc AI khi đang phát thì dừng phát âm thanh ngay lập tức
+      if (!state.isAiVoiceEnabled && window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+        const waveform = document.getElementById('ai_voice_waveform');
+        if (waveform) waveform.classList.add('hidden');
+      }
+    });
+  }
+
   // Chat submit form
   chatForm.addEventListener('submit', (e) => {
     e.preventDefault();
@@ -1832,22 +1853,53 @@ function initChatbot() {
     }
   }
 
-  // Set default initial greeting
-  resetChatbotHistory(false);
+  // Nạp lại lịch sử trò chuyện cũ từ localStorage (tránh mất mát khi sập mạng / reload trang)
+  const savedHistory = localStorage.getItem('cyber_portfolio_chat_history');
+  if (savedHistory) {
+    try {
+      state.chatHistory = JSON.parse(savedHistory);
+      const viewport = document.getElementById('chatbot_messages_viewport');
+      if (viewport) {
+        viewport.innerHTML = '';
+      }
+      state.chatHistory.forEach(msg => {
+        appendChatMessage(msg.role, msg.text, false); // pass false để không lưu đúp dữ liệu
+      });
+      renderSuggestions();
+    } catch (e) {
+      console.error("Failed to parse saved chat history:", e);
+      resetChatbotHistory(false);
+    }
+  } else {
+    resetChatbotHistory(false);
+  }
 }
 
 function resetChatbotHistory(isResetByUser) {
   state.chatHistory = [];
+  
+  // Xóa lịch sử trò chuyện khỏi localStorage
+  localStorage.removeItem('cyber_portfolio_chat_history');
+  
+  // Dọn sạch giao diện hiển thị tin nhắn cũ
+  const viewport = document.getElementById('chatbot_messages_viewport');
+  if (viewport) {
+    viewport.innerHTML = '';
+  }
+
   const greeting = state.language === 'vi' 
     ? (isResetByUser ? "Hộp thoại đã được khởi tạo lại! Em là Trợ lý Ảo đại diện cho Nguyễn Anh Quý. Có điều gì anh/chị cần em giải đáp thêm không ạ?" : "Xin chào! Em là Trợ lý Ảo đại diện cho Nguyễn Anh Quý. Em có thể chia tiết về dự án DIENMAYPRO, xưởng kỹ năng hay định hướng nghề nghiệp của Quý. Có điều gì em có thể hỗ trợ anh/chị ạ?")
     : (isResetByUser ? "Chat dialog has been reset! I am Nguyen Anh Quy's AI representative. Is there anything else you would like to know?" : "Hello! I am Nguyen Anh Quy's AI portfolio companion. Feel free to ask about DIENMAYPRO, his technology stack, or career goals of Quý. How may I assist you today?");
 
-  appendChatMessage('ai', greeting);
+  appendChatMessage('ai', greeting, true); // Lưu tin nhắn chào mừng này vào localStorage
   renderSuggestions();
 }
 
-function appendChatMessage(role, text) {
-  state.chatHistory.push({ role, text });
+function appendChatMessage(role, text, shouldSave = true) {
+  if (shouldSave) {
+    state.chatHistory.push({ role, text });
+    localStorage.setItem('cyber_portfolio_chat_history', JSON.stringify(state.chatHistory));
+  }
   
   const viewport = document.getElementById('chatbot_messages_viewport');
   if (!viewport) return;
@@ -1993,12 +2045,75 @@ async function handleUserSendMessage(text) {
   }
 }
 
+// Hàm cập nhật giao diện của nút loa bật/tắt giọng nói AI
+function updateAiVoiceButtonUI() {
+  const btn = document.getElementById('btn_toggle_ai_voice');
+  const icon = document.getElementById('icon_ai_voice');
+  if (!btn || !icon) return;
+
+  if (state.isAiVoiceEnabled) {
+    btn.className = 'p-1.5 hover:bg-zinc-800 text-emerald-400 rounded-md transition-colors';
+    btn.title = state.language === 'vi' ? 'Tắt giọng nói AI' : 'Disable AI Voice';
+    icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"/>';
+  } else {
+    btn.className = 'p-1.5 hover:bg-zinc-800 text-zinc-500 hover:text-zinc-400 rounded-md transition-colors';
+    btn.title = state.language === 'vi' ? 'Bật giọng nói AI' : 'Enable AI Voice';
+    icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" d="M17.25 9.75L19.5 12m0 0l2.25 2.25M19.5 12l2.25-2.25M19.5 12l-2.25 2.25M12 18.75V5.25L7.75 9.5H4.5v5h3.25L12 18.75z"/>';
+  }
+}
+
+// Hàm cập nhật danh sách các giọng đọc (voices) có sẵn dựa theo ngôn ngữ đang chọn
+function populateAiVoices() {
+  const select = document.getElementById('ai_voice_select');
+  if (!select || !window.speechSynthesis) return;
+
+  const voices = window.speechSynthesis.getVoices();
+  select.innerHTML = '';
+
+  const filterLang = state.language === 'vi' ? 'vi' : 'en';
+  const filtered = voices.filter(v => v.lang.toLowerCase().startsWith(filterLang));
+
+  if (filtered.length === 0) {
+    const opt = document.createElement('option');
+    opt.value = "";
+    opt.textContent = state.language === 'vi' ? 'Giọng mặc định' : 'Default Voice';
+    select.appendChild(opt);
+    return;
+  }
+
+  filtered.forEach(v => {
+    const opt = document.createElement('option');
+    opt.value = v.voiceURI;
+    // Rút gọn tên cho đẹp giao diện
+    let dispName = v.name.replace('Google', '').replace('Microsoft', '').replace('Desktop', '').trim();
+    opt.textContent = `${dispName}`;
+    select.appendChild(opt);
+  });
+
+  // Khôi phục lựa chọn cũ nếu có
+  if (state.selectedVoiceURI) {
+    const found = filtered.some(v => v.voiceURI === state.selectedVoiceURI);
+    if (found) {
+      select.value = state.selectedVoiceURI;
+    } else {
+      state.selectedVoiceURI = select.value;
+      localStorage.setItem('cyber_portfolio_selected_voice_uri', state.selectedVoiceURI);
+    }
+  } else {
+    state.selectedVoiceURI = select.value;
+    localStorage.setItem('cyber_portfolio_selected_voice_uri', state.selectedVoiceURI);
+  }
+}
+
 // Hàm phát giọng nói bằng Web Speech API (Text-to-Speech)
 function speakText(text) {
   if (!window.speechSynthesis) return;
 
   // Dừng mọi âm thanh đang phát trước đó
   window.speechSynthesis.cancel();
+
+  // Nếu tắt giọng đọc AI, không tiến hành phát âm thanh
+  if (!state.isAiVoiceEnabled) return;
 
   // Loại bỏ các ký tự Markdown đặc biệt để đọc mượt mà hơn
   let cleanText = text
@@ -2010,9 +2125,30 @@ function speakText(text) {
   const utterance = new SpeechSynthesisUtterance(cleanText);
   utterance.lang = state.language === 'vi' ? 'vi-VN' : 'en-US';
 
-  // Chọn voice phù hợp theo ngôn ngữ
+  // Chọn voice phù hợp theo ngôn ngữ mục tiêu (vi/en)
   const voices = window.speechSynthesis.getVoices();
-  let voice = voices.find(v => v.lang.startsWith(state.language === 'vi' ? 'vi' : 'en'));
+  const select = document.getElementById('ai_voice_select');
+  let voice = null;
+  const targetLang = state.language === 'vi' ? 'vi' : 'en';
+  
+  if (select && select.value) {
+    const chosenVoice = voices.find(v => v.voiceURI === select.value);
+    // Chỉ dùng nếu giọng đọc này khớp với ngôn ngữ mục tiêu
+    if (chosenVoice && chosenVoice.lang.toLowerCase().startsWith(targetLang)) {
+      voice = chosenVoice;
+    }
+  }
+  
+  if (!voice) {
+    voice = voices.find(v => v.lang.toLowerCase().startsWith(targetLang));
+  }
+
+  // Nếu đang ở tiếng Việt mà hệ thống không có bất kỳ giọng tiếng Việt nào, dừng phát âm thanh để tránh bị phát bằng giọng tiếng Anh rất khó nghe
+  if (!voice && state.language === 'vi') {
+    console.warn("No Vietnamese text-to-speech voice found on this device. Sound output skipped.");
+    return;
+  }
+  
   if (voice) {
     utterance.voice = voice;
   }
@@ -2174,6 +2310,8 @@ function switchLanguage(lang) {
   resetChatbotHistory(false);
   updateDimensionToggleBtnText();
   updateMusicUIButton(bgMusicPlaying);
+  updateAiVoiceButtonUI();
+  populateAiVoices();
 }
 
 function updateDimensionToggleBtnText() {
@@ -5382,6 +5520,25 @@ function exit3DMode() {
 document.addEventListener('DOMContentLoaded', () => {
   // Khởi tạo lưu trữ cục bộ cho Thành tựu (Achievements)
   initAchievements();
+
+  // Khởi tạo danh sách giọng nói AI và sự kiện thay đổi giọng nói
+  if (window.speechSynthesis) {
+    if (window.speechSynthesis.onvoiceschanged !== undefined) {
+      window.speechSynthesis.onvoiceschanged = () => {
+        populateAiVoices();
+      };
+    }
+    
+    const voiceSelect = document.getElementById('ai_voice_select');
+    if (voiceSelect) {
+      voiceSelect.addEventListener('change', (e) => {
+        state.selectedVoiceURI = e.target.value;
+      });
+    }
+    
+    // Nạp lần đầu (phòng trường hợp trình duyệt đã sẵn sàng trước đó)
+    populateAiVoices();
+  }
 
   // Bind Language selectors
   document.getElementById('btn_lang_vi').addEventListener('click', () => switchLanguage('vi'));

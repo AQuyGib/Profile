@@ -37,9 +37,30 @@
     - Thành tựu "Easter Egg": Giấu ổ dữ liệu bí mật "SECRET DATA" dạng đĩa mềm vàng phát sáng lơ lửng tại góc bản đồ `x = 750, y = 50`. Khi người chơi tới gần nhặt được, sẽ kích hoạt phần thưởng thành tựu kèm theo **Hộp thoại cảm ơn đặc biệt** từ tác giả.
     - Tích hợp âm thanh chúc mừng (Fanfare) thăng âm (C5 -> E5 -> G5 -> C6) tự động synth bằng Web Audio API khi mở khóa thành tựu.
     - Lưu giữ tiến trình mở khóa thành tựu bằng `localStorage`.
+  - **Tự động hóa Vận hành & DevOps (CI/CD, Docker Multi-Container):**
+    - Thiết lập GitHub Actions workflow trong `.github/workflows/deploy.yml` để tự động hóa quy trình CI/CD: Tự động chạy build ứng dụng và deploy thẳng lên VPS cá nhân qua SSH/SCP (sử dụng các Docker action của appleboy) hoặc kích hoạt Webhook deploy trên các nền tảng PaaS (Render, Railway) khi có code push mới lên nhánh `main` hoặc `master`.
+    - Chuyển đổi tệp `docker-compose.yml` hiện tại sang dạng **Multi-Container Architecture**: Kết hợp container ứng dụng Web Node.js (`app`) chạy cô lập phía sau mạng cầu ảo (`cyber_network`) với một container **Nginx Proxy Manager** làm nhiệm vụ Reverse Proxy, nhận request ở cổng `80`/`443` và tự động quản lý Let's Encrypt SSL HTTPS.
+  - **Khắc phục lỗi Chatbot (Local cURL & Deprecated Gemini API Model):**
+    - Khắc phục lỗi cURL HTTPS trên máy chủ cục bộ bằng cách thêm tùy chọn `CURLOPT_SSL_VERIFYPEER => false` và `CURLOPT_SSL_VERIFYHOST => false` trong `api/chat.php`, ngăn chặn lỗi chặn SSL thường gặp trên XAMPP Windows.
+    - Cập nhật model Gemini API từ bản cũ đã bị Google deprecate là `gemini-1.5-flash` lên model mới nhất là `gemini-3.5-flash` (đồng bộ với tệp `server.ts`).
+    - Khắc phục lỗi nút Làm mới cuộc hội thoại (`btn_reset_chat`): Thêm logic dọn sạch nội dung hiển thị trong DOM (`#chatbot_messages_viewport`) khi reset, thay vì chỉ xóa mảng lưu lịch sử trong JavaScript.
+    - Tích hợp cơ chế Lưu giữ Lịch sử Trò chuyện (Chat History Persistence): Sử dụng `localStorage` (`cyber_portfolio_chat_history`) để tự động lưu mọi tin nhắn gửi/nhận. Khi người dùng reload trang hoặc gặp sự cố mất mạng phải F5, lịch sử trò chuyện vẫn được khôi phục nguyên vẹn thay vì biến mất.
+  - **Bổ sung tùy chọn Giọng đọc/Ngôn ngữ đọc & Bật/tắt giọng nói cho Chatbot:**
+    - Tích hợp thẻ chọn `<select id="ai_voice_select">` trên thanh Header của Chatbot, tự động tải các giọng đọc có sẵn trên thiết bị tương ứng với ngôn ngữ đang chọn (Tiếng Việt/Tiếng Anh). Cho phép người dùng chuyển giọng (VD: Giọng nam, giọng nữ, giọng vùng miền) tùy theo sở thích và lưu trữ lựa chọn này trong trạng thái hoạt động của phiên.
+    - Thiết kế thêm nút Bật/Tắt giọng nói AI (`btn_toggle_ai_voice` dạng icon chiếc loa) ngay bên cạnh ô chọn giọng nói, cho phép người dùng tắt tiếng đọc của AI hoàn toàn khi đang ở môi trường công cộng và ghi nhớ trạng thái này qua `localStorage` (`cyber_portfolio_ai_voice_enabled`).
+    - Khắc phục lỗi phát giọng Tiếng Anh lỗi âm cho Tiếng Việt: Thêm logic kiểm tra so khớp ngôn ngữ nghiêm ngặt (case-insensitive `toLowerCase().startsWith('vi')`). Nếu trong `vi` mode mà không tìm thấy giọng Tiếng Việt tương thích trên hệ thống, AI sẽ chủ động im lặng thay vì dùng giọng đọc Tiếng Anh để phát chữ tiếng Việt.
+  - **Chú thích chi tiết (Commenting Code):**
+    - Hoàn tất viết chú thích Tiếng Việt chi tiết (từng dòng mã nguồn) cho tất cả các file xử lý backend cốt lõi: `api/chat.php`, `api/admin.php`, `api/guestbook.php`, `api/config/Database.php`, `api/controllers/GuestbookController.php`, `api/utils/TOTP.php`, và `api/utils/Mailer.php`.
 - Edited files:
+  - `api/guestbook.php`
+  - `api/config/Database.php`
+  - `api/controllers/GuestbookController.php`
+  - `api/utils/TOTP.php`
   - `index.html`
+  - `css/style.css`
   - `js/app.js`
+  - `docker-compose.yml`
+  - `.github/workflows/deploy.yml`
   - `api/chat.php`
   - `api/utils/Mailer.php`
   - `api/admin.php`
@@ -50,4 +71,4 @@
   - `ai-memory.md`
 - TODO:
   - Kiểm thử giao diện Admin Dashboard (`/admin/index.html` và `/admin/admin.js`) với luồng đăng nhập 2FA TOTP và duyệt/xóa các lời nhắn Guestbook.
-  - Kiểm tra kết nối cơ sở dữ liệu MySQL và kiểm thử tích hợp toàn bộ hệ thống bằng Docker.
+  - Chạy thử nghiệm Docker Compose với Nginx Proxy Manager trên VPS thực tế và thiết lập Proxy Host trỏ đến container `app:3000`.

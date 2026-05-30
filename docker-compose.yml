@@ -1,9 +1,35 @@
+version: '3.8'
+
 services:
-  cyber-portfolio:
+  # 1. Ứng dụng Web Node.js/Express chính (Chỉ expose nội bộ cổng 3000, không public ra ngoài)
+  app:
     build: .
     container_name: cyber_portfolio_app
-    ports:
-      - "3000:3000"
+    expose:
+      - "3000"
     env_file:
       - .env
     restart: always
+    networks:
+      - cyber_network
+
+  # 2. Nginx Proxy Manager (Reverse Proxy, Web GUI Dashboard, Let's Encrypt Auto-SSL)
+  nginx-proxy-manager:
+    image: 'jc21/nginx-proxy-manager:latest'
+    container_name: cyber_portfolio_npm
+    restart: always
+    ports:
+      - '80:80'     # Nhận traffic HTTP
+      - '443:443'   # Nhận traffic HTTPS
+      - '81:81'     # Cổng truy cập giao diện quản trị Web Admin UI
+    volumes:
+      - ./npm/data:/data
+      - ./npm/letsencrypt:/etc/letsencrypt
+    depends_on:
+      - app
+    networks:
+      - cyber_network
+
+networks:
+  cyber_network:
+    driver: bridge
