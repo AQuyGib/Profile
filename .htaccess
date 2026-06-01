@@ -1,0 +1,13 @@
+# Ngăn chặn truy cập vào các file cấu hình và thông tin nhạy cảm của hệ thống
+<FilesMatch "^\.env|composer\.(json|lock)|Dockerfile|docker-compose\.yml|ai-memory\.md$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+# Vô hiệu hóa việc duyệt danh mục thư mục trực tiếp (Directory Browsing)
+Options -Indexes

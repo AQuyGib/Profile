@@ -64,59 +64,116 @@ if (empty($message)) {
     exit;
 }
 
-// Bio info
-$QUY_BIO = <<<TEXT
-Họ và tên: Nguyễn Anh Quý
-Vị trí ứng tuyển: Thực tập sinh Web Developer / UI-focused Full-stack Developer
-Số điện thoại: 0338 740 475
-Email: nguyquy67@gmail.com
-Địa chỉ: Thủ Đức, TP.HCM
-GitHub: https://github.com/AQuyGib
+/**
+ * Loại bỏ dấu tiếng Việt để phục vụ so khớp từ khóa không dấu
+ */
+function stripVietnameseDiacritics($str) {
+    $unicode = [
+        'a' => 'á|à|ả|ã|ạ|ă|ắ|ằ|ẳ|ẵ|ặ|â|ấ|ầ|ẩ|ẫ|ậ',
+        'd' => 'đ',
+        'e' => 'é|è|ẻ|ẽ|ẹ|ê|ế|ề|ể|ễ|ệ',
+        'i' => 'í|ì|ỉ|ĩ|ị',
+        'o' => 'ó|ò|ỏ|õ|ọ|ô|ố|ồ|ổ|ỗ|ộ|ơ|ớ|ờ|ở|ỡ|ợ',
+        'u' => 'ú|ù|ủ|ũ|ụ|ư|ứ|ừ|ử|ữ|ự',
+        'y' => 'ý|ỳ|ỷ|ỹ|ỵ',
+        'A' => 'Á|À|Ả|Ã|Ạ|Ă|Ắ|Ằ|Ẳ|Ẵ|Ặ|Â|Ấ|Ầ|Ẩ|Ẫ|Ậ',
+        'D' => 'Đ',
+        'E' => 'É|È|Ẻ|Ẽ|Ẹ|Ê|Ế|Ề|Ể|Ễ|Ệ',
+        'I' => 'Í|Ì|Ỉ|Ĩ|Ị',
+        'O' => 'Ó|Ò|Ỏ|Õ|Ọ|Ô|Ố|Ồ|Ổ|Ỗ|Ộ|Ơ|Ớ|Ờ|Ở|Ỡ|Ợ',
+        'U' => 'Ú|Ù|Ủ|Ũ|Ụ|Ư|Ứ|Ừ|Ử|Ữ|Ự',
+        'Y' => 'Ý|Ỳ|Ỷ|Ỹ|Ỵ'
+    ];
+    foreach ($unicode as $nonDiacritic => $diacritic) {
+        $str = preg_replace("/($diacritic)/u", $nonDiacritic, $str);
+    }
+    return $str;
+}
 
-Mục Tiêu Nghề Nghiệp:
-"Mong muốn đảm nhận vị trí Thực tập sinh Web Developer để rèn luyện kỹ năng xây dựng và tối ưu hóa hệ thống. Với tinh thần chủ động học hỏi qua các dự án thực tế, tôi định hướng liên tục nâng cao tư duy giải quyết vấn đề và từng bước phát triển thành một Full-stack Developer vững chuyên môn trong 2-3 năm tới."
+// Hàm RAG: Lọc dữ liệu phù hợp từ data.json dựa trên từ khóa trong câu hỏi của người dùng
+function getRelevantContext($userQuery) {
+    $filePath = __DIR__ . '/../data.json';
+    if (!file_exists($filePath)) {
+        return '';
+    }
+    
+    $jsonData = json_decode(file_get_contents($filePath), true);
+    if (!$jsonData || !isset($jsonData['zones'])) {
+        return '';
+    }
+    
+    $normalizedQuery = mb_strtolower($userQuery, 'UTF-8');
+    $cleanQuery = stripVietnameseDiacritics($normalizedQuery);
+    
+    // Từ điển từ khóa ánh xạ tới các Zone ID
+    $mapping = [
+        'home' => ['quý', 'quy', 'bản thân', 'gioi thieu', 'hồ sơ', 'ho so', 'giới thiệu', 'tuổi', 'sinh năm', 'facebook', 'tên', 'ten', 'quê', 'que', 'địa chỉ', 'dia chi'],
+        'academy' => ['học vấn', 'hoc van', 'học tập', 'hoc tap', 'trường', 'truong', 'cao đẳng', 'cao dang', 'tdc', 'thủ đức', 'thu duc', 'gpa', 'điểm', 'diem', 'học bổng', 'hoc bong', 'ngành', 'nganh', 'chuyên ngành', 'khoa'],
+        'lab' => ['kỹ năng', 'ky nang', 'skills', 'frontend', 'backend', 'php', 'mysql', 'laravel', 'service-repository', 'pattern', 'design', 'tailwind', 'javascript', 'js', 'flutter', 'dart', 'api', 'bảo mật', 'bao mat', '2fa', 'totp', 'bcrypt', 'prepared statement', 'sql injection', 'csrf'],
+        'museum' => ['dự án', 'du an', 'project', 'dienmaypro', 'điện máy pro', 'website', 'app', 'mobile', 'thanh toán', 'payos', 'vietqr', 'webhook', 'giải thưởng', 'giai thuong', 'thành tích', 'thanh tich', 'portfolio', 'cũ', 'cu'],
+        'library' => ['triết lý', 'triet ly', 'tư duy', 'tu duy', 'châm ngôn', 'cham ngon', 'làm việc', 'lam viec', 'suy nghĩ', 'suy nghi', 'philosophy', 'cá nhân', 'ca nhan'],
+        'portal' => ['liên hệ', 'lien he', 'contact', 'sđt', 'sdt', 'điện thoại', 'dien thoai', 'email', 'thư', 'thu', 'github', 'zalo', 'lời nhắn', 'loi nhan', 'guestbook', 'gửi', 'gui']
+    ];
+    
+    $matchedZoneIds = [];
+    foreach ($mapping as $zoneId => $keywords) {
+        foreach ($keywords as $keyword) {
+            $normalizedKeyword = mb_strtolower($keyword, 'UTF-8');
+            $cleanKeyword = stripVietnameseDiacritics($normalizedKeyword);
+            
+            // So khớp linh hoạt cả có dấu và không dấu
+            if (mb_strpos($normalizedQuery, $normalizedKeyword, 0, 'UTF-8') !== false ||
+                mb_strpos($cleanQuery, $cleanKeyword, 0, 'UTF-8') !== false) {
+                $matchedZoneIds[] = $zoneId;
+                break;
+            }
+        }
+    }
+    
+    // Nếu không khớp từ khóa nào, chọn Home, Lab và Museum làm ngữ cảnh cốt lõi
+    if (empty($matchedZoneIds)) {
+        $matchedZoneIds = ['home', 'lab', 'museum'];
+    }
+    
+    $contextParts = [];
+    foreach ($jsonData['zones'] as $zone) {
+        if (in_array($zone['id'], $matchedZoneIds)) {
+            $contextParts[] = "== ZONE: " . strtoupper($zone['id']) . " (" . $zone['vietnameseName'] . ") ==";
+            $contextParts[] = "Mô tả ngắn: " . $zone['description_vi'];
+            if (isset($zone['details_vi'])) {
+                $contextParts[] = "Thông tin chi tiết: " . json_encode($zone['details_vi'], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+            }
+        }
+    }
+    
+    return implode("\n\n", $contextParts);
+}
 
-Học Vấn:
-- Trường: Trường Cao Đẳng Công Nghệ Thủ Đức (TDC)
-- Thời gian: 2024 - 2027
-- Chuyên ngành: Công nghệ Thông tin (Định hướng Web Developer)
-- Thành tích: Học bổng Khuyến khích Học tập - Học kỳ 1 (Năm học 2024 - 2025)
-- GPA Tích lũy: 3.1/4.0
+// Thông tin liên hệ cơ bản cố định
+$coreBio = "Họ và tên: Nguyễn Anh Quý\n"
+         . "Vị trí ứng tuyển: Thực tập sinh Web Developer\n"
+         . "Số điện thoại: 0338 740 475\n"
+         . "Email: nguyquy67@gmail.com\n"
+         . "GitHub: https://github.com/AQuyGib\n"
+         . "Học vấn: Trường Cao Đẳng Công Nghệ Thủ Đức (2024-2027), GPA: 3.1/4.0\n";
 
-Kỹ Năng Chuyên Môn:
-1. Frontend & UI/UX: HTML/CSS, TailwindCSS, JavaScript, Responsive Design. Thiết kế giao diện mang phong cách Premium tối giản.
-2. Backend & Kiến trúc: PHP (OOP), MySQL (PDO), mô hình Service-Repository Pattern.
-3. Mobile & Tích hợp: Dart (Flutter, Riverpod, Clean Architecture), Xây dựng RESTful API, Tích hợp Gemini AI, Cổng thanh toán PayOS/VietQR.
-4. Bảo mật hệ thống: Xác thực 2 lớp (2FA TOTP), mã hóa Bcrypt, chống SQL Injection (Prepared Statements) & CSRF.
-5. Công cụ & Quy trình: Git/GitHub, Docker, cấu hình Apache, Agile/Scrum, AI-Assisted Coding (Cursor, GitHub Copilot, Prompt Engineering).
-6. Kỹ năng mềm: Làm việc nhóm phối hợp chéo, Tư duy giải quyết vấn đề (Debugging), Viết tài liệu kỹ thuật (SRS), Tự nghiên cứu (Self-learning).
-
-Dự Án Tiêu Biểu: DIENMAYPRO (Hệ thống quản lý cửa hàng đồ gia dụng thông minh)
-- Thời gian: 03/2026 - 05/2026
-- Link trải nghiệm: https://dienmaypro.nguyenanhquy.id.vn
-- Tech Stack: PHP (PDO), MySQL, Docker, Flutter (Riverpod, Clean Architecture), Gemini AI API, PayOS API.
-- Vai trò & Quy mô: Lập trình viên Backend & Mobile App (Team 3 người).
-- Chi tiết công việc:
-  + Kiến trúc & Bảo mật: Áp dụng mô hình Service - Repository để tối ưu và dễ dàng bảo trì mã nguồn. Triển khai xác thực 2 lớp (2FA TOTP), đăng nhập Google OAuth2 và bảo mật chống SQL Injection bằng 100% Prepared Statements.
-  + Phát triển Backend cốt lõi: Viết thuật toán lọc sản phẩm nâng cao đa chiều (Dynamic SQL) kết hợp phân trang AJAX. Xây dựng phân hệ Admin quản lý lịch sử đăng nhập và khóa tài khoản tự động. Tích hợp cổng thanh toán tự động qua Webhook (PayOS/VietQR).
-  + Tích hợp AI & App Mobile: Xây dựng luồng RAG tích hợp Google Gemini AI Chatbot giúp tư vấn sản phẩm theo ngữ cảnh. Trực tiếp phát triển và build file APK ứng ứng dụng di động bằng Flutter.
-  + Vận hành & Triển khai: Đóng gói môi trường phát triển bằng Docker. Cấu hình máy chủ Apache, xử lý tường lửa WAF và trực tiếp đưa hệ thống lên hosting thực tế.
-- Kết quả đạt được: Hoàn thành 100% tiến độ dự án. Đạt điểm đồ án 8.0/10, hệ thống hoạt động ổn định và mượt mà trên môi trường Internet.
-
-Tư Duy Làm Việc & Định Hướng (Working Philosophy):
-"Là một Kỹ sư phần mềm ứng dụng AI (AI-Augmented Developer), tôi chú trọng vào tư duy hệ thống (System Thinking) và thiết kế kiến trúc phần mềm trước khi bắt tay vào viết mã. Tôi sử dụng hiệu quả các công cụ AI để gia tăng tốc độ lập trình (Vibe Coding), đồng thời luôn làm chủ mã nguồn thông qua kỹ năng tự đọc hiểu, debug và tối ưu hóa hệ thống để đảm bảo chất lượng và tính bảo mật của sản phẩm cuối cùng."
-TEXT;
+$dynamicContext = getRelevantContext($message);
 
 $systemInstruction = <<<TEXT
 Bạn là trợ lý ảo AI đại diện cho Nguyễn Anh Quý - một lập trình viên xuất sắc đang ứng tuyển ở vị trí Thực tập sinh Web Developer (Full-stack Web Intern Candidate).
-Hãy trả lời câu hỏi của nhà tuyển dụng hoặc khách truy cập dựa trên thông tin tiểu sử của Quý dưới đây. Hãy trả lời thân thiện, lịch sự, cực kỳ chuyên nghiệp, tự tin nhưng khiêm tốn học hỏi, ngắn gọn và mạch lạc.
+Hãy trả lời câu hỏi của nhà tuyển dụng hoặc khách truy cập dựa trên thông tin tiểu sử cơ bản và các khối thông tin ngữ cảnh động được truy xuất từ file data.json dưới đây.
+Hãy trả lời một cách thân thiện, lịch sự, cực kỳ chuyên nghiệp, tự tin nhưng khiêm tốn học hỏi, ngắn gọn và mạch lạc.
 Khi giao tiếp, hãy giữ vững tâm thế của một ứng viên Thực tập sinh nhiệt huyết, có khả năng học hỏi cực nhanh qua thực tế, am hiểu sâu sắc mô hình kiến trúc Service-Repository và ứng dụng AI (AI-Augmented Developer).
 
 Nếu khách hỏi về kỹ năng, dự án DIENMAYPRO hoặc học vấn tại trường TDC, hãy nêu chi tiết một cách tự hào và đầy đủ số liệu thuyết phục. Nếu họ hỏi những câu hỏi mở rộng ngoài thông tin trong tiểu sử có sẵn, hãy khéo léo trả lời đại diện cho Quý, ví dụ: "Em rất mong có cơ hội được tham gia phỏng vấn trực tiếp để trao đổi chi tiết hơn về vấn đề này và chứng minh khả năng đóng góp của mình ạ."
 
-Thông tin của Nguyễn Anh Quý:
-{$QUY_BIO}
+Thông tin cơ bản cố định của Nguyễn Anh Quý:
+{$coreBio}
+
+Ngữ cảnh chi tiết liên quan truy xuất từ dữ liệu hệ thống (RAG):
+{$dynamicContext}
 TEXT;
+
 
 // Format history for Gemini API
 $contents = [];
@@ -137,48 +194,75 @@ $contents[] = [
     ]
 ];
 
-// Payload matching Gemini API spec
+// Thiết lập cấu trúc dữ liệu Payload (body request) theo đúng đặc tả của Google Gemini API
 $payload = [
-    "contents" => $contents,
-    "systemInstruction" => [
+    "contents" => $contents, // Mảng chứa lịch sử trò chuyện và tin nhắn hiện tại của người dùng
+    "systemInstruction" => [ // Hướng dẫn hệ thống (System Prompt) điều chỉnh tính cách, vai trò và giới hạn của AI
         "parts" => [
-            ["text" => $systemInstruction]
+            ["text" => $systemInstruction] // Nội dung chỉ thị hệ thống dạng văn bản (text)
         ]
     ]
 ];
 
-// Call Gemini API (using stable gemini-1.5-flash as the fallback)
-$url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" . $apiKey;
+// Khởi tạo URL endpoint của Gemini API bản v1beta với model mới nhất gemini-3.5-flash và đính kèm API Key
+$url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=" . $apiKey;
 
+// Khởi tạo phiên làm việc cURL để thực hiện gửi request HTTP đến máy chủ Google
 $ch = curl_init($url);
+
+// Cấu hình cURL: Trả về kết quả dưới dạng chuỗi (string) thay vì xuất trực tiếp ra màn hình
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+
+// Cấu hình cURL: Thiết lập phương thức gửi request là POST
 curl_setopt($ch, CURLOPT_POST, true);
+
+// Cấu hình cURL: Chuyển payload mảng PHP thành chuỗi định dạng JSON và đính kèm vào body request
 curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
+
+// Cấu hình cURL: Thiết lập Header cho request là kiểu dữ liệu JSON (application/json)
 curl_setopt($ch, CURLOPT_HTTPHEADER, [
     'Content-Type: application/json'
 ]);
 
+// Cấu hình cURL: Tắt kiểm tra chứng chỉ SSL của đối tác (Bắt buộc khi chạy local trên Windows/XAMPP để tránh lỗi SSL handshake)
+curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+
+// Cấu hình cURL: Tắt đối chiếu tên miền trong chứng chỉ SSL với tên miền máy chủ gọi tới để tránh bị cản trở kết nối
+curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+
+// Thực thi phiên cURL và nhận kết quả thô (JSON string) trả về từ Gemini API
 $response = curl_exec($ch);
+
+// Kiểm tra nếu cURL xảy ra lỗi kết nối mạng vật lý (ví dụ: DNS lỗi, sập mạng, không tìm thấy máy chủ)
 if (curl_errno($ch)) {
-    http_response_code(500);
-    echo json_encode(["error" => curl_error($ch)]);
-    exit;
+    http_response_code(500); // Thiết lập HTTP status code là 500 (Internal Server Error)
+    echo json_encode(["error" => curl_error($ch)]); // Trả về thông tin lỗi chi tiết của cURL dưới dạng JSON
+    exit; // Dừng chương trình ngay lập tức
 }
 
+// Lấy mã phản hồi HTTP Status Code từ API (200 là thành công, 400/404/500 là lỗi cấu hình/API Key)
 $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+
+// Đóng kết nối cURL để giải phóng tài nguyên hệ thống tránh rò rỉ bộ nhớ
 curl_close($ch);
 
+// Xử lý khi API Google trả về mã lỗi phản hồi (khác 200)
 if ($httpCode !== 200) {
-    http_response_code($httpCode);
-    $errorData = json_decode($response, true);
+    http_response_code($httpCode); // Đồng bộ mã lỗi HTTP của API về cho Client hiển thị
+    $errorData = json_decode($response, true); // Giải mã JSON thông điệp lỗi nhận từ Google
     echo json_encode([
-        "error" => $errorData['error']['message'] ?? "Error calling Gemini API",
-        "raw_response" => $errorData
+        "error" => $errorData['error']['message'] ?? "Error calling Gemini API", // Lấy câu báo lỗi chi tiết từ Google
+        "raw_response" => $errorData // Đính kèm phản hồi thô của Google giúp nhà phát triển dễ dàng gỡ lỗi (debug)
     ]);
-    exit;
+    exit; // Dừng chương trình
 }
 
+// Giải mã JSON kết quả thành công nhận được từ Gemini API thành mảng PHP
 $resData = json_decode($response, true);
+
+// Truy xuất văn bản câu trả lời của AI từ cấu trúc phản hồi nhiều cấp của Gemini API
+// Cấu trúc mặc định của Google: candidates -> content -> parts -> text
 $replyText = $resData['candidates'][0]['content']['parts'][0]['text'] ?? 'Xin lỗi, tôi gặp khó khăn khi xử lý yêu cầu của bạn.';
 
+// Trả kết quả cuối cùng về cho ứng dụng Client (Frontend Javascript) dưới dạng JSON chuẩn
 echo json_encode(["response" => $replyText]);

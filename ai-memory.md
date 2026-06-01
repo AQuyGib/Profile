@@ -1,12 +1,98 @@
 # Project Memory
 
+<<<<<<< HEAD
 - Current state: 3D mode now supports a stronger full-screen transition intent and a floating glassmorphism info card near the astronaut when approaching zones.
 - Fixes applied:
   - Kept the astronaut on a visible surface by using `0.2` as the fallback ground height.
   - Added a scene overlay/card layer for 3D zone hints.
   - Added first-person/cinematic camera state handling for the 3D view toggle flow.
+=======
+- Current updates & fixes:
+  - **Triển khai 3D Holographic Proximity Cards tương tác cao:**
+    - **Chuyển đổi sang Phát hiện Va chạm Lân cận (Proximity Collision):** Thay thế logic Box3 cứng nhắc trong `detect3DZoneCollision` bằng tính toán khoảng cách Euclidean (X, Z) giữa nhân vật và tâm mỗi đảo với bán kính phát hiện là `2.5` đơn vị. Khi nhân vật đi vào vùng này, hệ thống sẽ tự động kích hoạt hiển thị Hologram Card tương ứng.
+    - **CSS Glassmorphism & Tương tác chuột:** Thêm class `.holo-interactive` (đặt pointer-events thành auto và cho phép chọn văn bản) và `.holo-scroll-container` (thanh cuộn mờ, mỏng, cuộn mượt) vào [style.css](file:///D:/Sever/htdocs/FE2CV/Profile/css/style.css) để phục vụ hiển thị nội dung chi tiết.
+    - **Nâng cấp Hàm render updateHologramCard:**
+      - **Chống render lại liên tục (Focus Preservation):** Sử dụng biến trạng thái `state.lastRendered3DZoneId` trong [js/app.js](file:///D:/Sever/htdocs/FE2CV/Profile/js/app.js) để ghi nhớ phân khu vừa render. Nếu nhân vật vẫn ở trong cùng một phân khu ở frame tiếp theo, hàm chỉ cập nhật vị trí card chứ không vẽ lại HTML. Điều này giúp giữ focus vào input, không bị reset form khi đang gõ chữ.
+      - **Nội dung Chi tiết đa dạng:** Đổ dữ liệu chi tiết phong phú (giống Bento UI 2D) cho cả 5 hòn đảo: Home (Họ tên, info cơ bản), Academy (Trường, chuyên ngành, GPA, học bổng), Lab (Mô tả kỹ năng kèm icon SVG), Museum (Dự án DienMayPro phát sáng neon, nút click trải nghiệm, thành tựu), Library (Các triết lý làm việc), Portal (Các nút liên lạc phát sáng Cyberpunk và Form Sổ lưu niệm).
+      - **Tích hợp Form Sổ lưu niệm (Guestbook) 3D:** Form Guestbook AJAX trên Hologram Card hoạt động hoàn chỉnh, gửi POST dữ liệu và load danh sách lời nhắn đã duyệt thời gian thực mà không cần tải lại trang.
+      - **Nút đóng tiện lợi:** Thêm nút Close (`×`) nhỏ ở góc trên bên phải Hologram Card khi ở 3D để người dùng chủ động tắt card khi cần.
+      - **Định vị lệch thông minh & Chống tràn màn hình:** Khi ở 3D, card được đặt lệch sang phải nhân vật 45px và căn giữa dọc. Nếu card bị tràn rìa phải màn hình, nó sẽ tự động được đẩy sang bên trái nhân vật. Hệ thống cũng tự động kẹp vị trí trục Y trong khoảng an toàn để card không bao giờ bị cắt xén ở mép trên hoặc mép dưới màn hình.
+      - **Tự động khôi phục (Reset Layout):** Khi ẩn card hoặc quay lại giao diện 2D, card tự động reset cấu trúc HTML và class CSS về giao diện cơ bản (pointer-events-none, rút gọn) để tránh xung đột hành vi click chuột trên 2D Bento.
+  - **Khôi phục Cổng dịch chuyển Tự động 2D/3D & Sửa lỗi treo nạp (Deadlock) mô hình 3D:**
+    - **Khôi phục Cổng dịch chuyển Tự động:** Đã khôi phục cơ chế tự động kích hoạt `enter3DMode()` khi nhân vật 2D đi vào Cổng Space 3D (tọa độ `415, 80` với khoảng cách < 28), và tự động kích hoạt `exit3DMode()` khi nhân vật 3D đi vào tâm Đảo Portal (tọa độ `0, 24` với khoảng cách < 1.5).
+    - **Sửa lỗi Treo nạp (Deadlock) nhân vật:** Khắc phục lỗi nạp mô hình nhân vật 3D bị treo vô hạn ở màn hình chờ nạp (`waitForCore()`) khi tải mô hình `.glb` thất bại bằng cách gán `threePlayerMesh = placeholder;` ngay khi kích hoạt mô hình thay thế trong callback lỗi của GLTFLoader.
+    - **Khắc phục lỗi Vòng lặp Nỗ lực Tải vô hạn:** Trong trường hợp nạp scene 3D hoặc CDN bị lỗi/timeout, hàm `failBackTo2D()` hiện tại sẽ tự động đẩy nhân vật 2D lùi xa Cổng dịch chuyển (`player.x = 415; player.y = 145;`) để tránh rơi vào vòng lặp gọi `enter3DMode()` vô tận làm giật lag trình duyệt.
+    - **Bổ sung UI Loading 3D:** Thêm phần tử `#threejs_loading_overlay` bị thiếu vào [index.html](file:///D:/Sever/htdocs/FE2CV/Profile/index.html) để hiển thị giao diện nạp màn hình 3D đẹp mắt, mượt mà.
+  - **Nâng cấp bảng thông tin Hologram mờ:**
+    - **Hologram Proximity Card Cyberpunk/Iron Man:** Nâng cấp cấu trúc HTML của `#hologram_proximity_card` trong [index.html](file:///D:/Sever/htdocs/FE2CV/Profile/index.html) và bổ sung các style, keyframes `hologramSweep`, cùng dải quét laser động `.cyber-scanner-line` trong [style.css](file:///D:/Sever/htdocs/FE2CV/Profile/css/style.css) để tạo cảm giác giao diện HUD viễn tưởng Iron Man/Cyberpunk.
+    - **Logic hiển thị thông minh:** Khi nhân vật đến gần Cổng 3D trong chế độ 2D, một Hologram Card ảo (`portal_3d_gate`) sẽ xuất hiện phía trên đầu nhân vật hướng dẫn bấm nút để dịch chuyển. Tương tự, khi đứng tại Portal Island trong chế độ 3D, card sẽ hướng dẫn cách click nút ở góc trái để thoát.
+    - **Đồng bộ màu sắc động:** Sử dụng CSS variables (`--scan-color` và `--scan-color-alpha`) trong [js/app.js](file:///D:/Sever/htdocs/FE2CV/Profile/js/app.js) để đổi màu sắc tia quét laser và bóng tỏa neon của Hologram Card đồng bộ theo màu sắc chủ đạo của từng phân khu (Zone).
+    - **Bảo vệ Vòng lặp Game (Fault Tolerance):** Bọc toàn bộ thân hàm `updateHologramCard` trong khối `try-catch` để phòng ngừa rủi ro xảy ra ngoại lệ runtime (do đồng bộ dữ liệu hoặc các phiên bản trình duyệt cũ), đảm bảo vòng lặp `gameLoop` chính vẽ canvas 2D không bao giờ bị dừng đột ngột và người dùng luôn có thể di chuyển phi hành gia.
+  - **Triển khai các đề xuất cải tiến bảo mật và tối ưu hóa hệ thống:**
+    - **Bảo mật file .env:** Tạo tệp tin [.htaccess](file:///D:/Sever/htdocs/FE2CV/Profile/.htaccess) trong thư mục gốc để ngăn chặn truy cập trực tiếp từ trình duyệt vào file cấu hình nhạy cảm (`.env`, `composer.json`, `Dockerfile`, `docker-compose.yml`, `ai-memory.md`).
+    - **Chống nháy giao diện (FOUC):** Thêm CSS inline trực tiếp vào đầu phần `<head>` của [index.html](file:///D:/Sever/htdocs/FE2CV/Profile/index.html) để cố định màn hình loading với nền tối tuyệt đối trước khi Tailwind CSS CDN được nạp và phân tích hoàn chỉnh.
+    - **Bảo mật Session:** Cấu hình các tham số bảo mật nâng cao cho Session Cookie (`HttpOnly`, `SameSite=Lax`, `Secure` khi có HTTPS, `Use Only Cookies`) trong các file khởi tạo session là [admin.php](file:///D:/Sever/htdocs/FE2CV/Profile/api/admin.php) và [AdminController.php](file:///D:/Sever/htdocs/FE2CV/Profile/api/controllers/AdminController.php) để giảm thiểu rủi ro bị tấn công Session Hijacking và CSRF.
+    - **Tối ưu hóa RAG Chatbot:** Viết thêm hàm loại bỏ dấu tiếng Việt `stripVietnameseDiacritics()` trong [chat.php](file:///D:/Sever/htdocs/FE2CV/Profile/api/chat.php), cho phép AI Chatbot so khớp thông minh cả từ khóa tiếng Việt có dấu và không dấu từ câu hỏi của người dùng với cơ sở dữ liệu `data.json`.
+  - Thay thế phương án cài chuyển động xương (Skeletal Animation) phức tạp bằng cơ chế **Bay lơ lửng (Hover/Flying Mode)** lập trình trực tiếp bằng Three.js.
+  - Thiết lập phi hành gia tự động nghiêng người 20 độ về phía trước và nhấp nhô lướt đi khi di chuyển (phím WASD / mũi tên). Lắc lư nhẹ nhàng không trọng lực khi đứng yên.
+  - Tích hợp hệ thống hạt tia lửa phản lực Cyberpunk (Jetpack Thruster Spark Particles) với màu sắc neon rực rỡ phun ra từ 2 bên ống xả sau lưng balo nhân vật khi di chuyển, tự giải phóng bộ nhớ để tối ưu 60FPS.
+  - Thiết lập môi trường Docker hóa (Dockerization) cho dự án: tạo `Dockerfile` sử dụng Node.js v24 Alpine, `.dockerignore` bảo mật thông tin nhạy cảm và `docker-compose.yml` để dễ dàng quản trị container.
+  - Xây dựng hệ thống Guestbook (Sổ lưu niệm) kết nối với MySQL trong Zone Portal:
+    - Thiết kế giao diện phân tab "LIÊN HỆ" và "SỔ LƯU NIỆM" đẹp mắt trong màn hình portal HUD.
+    - Xử lý gửi lời nhắn AJAX không cần tải lại trang tới `api/guestbook.php`.
+    - Hiển thị danh sách các lời nhắn đã được duyệt của khách hàng nạp bằng AJAX mượt mà.
+    - Tối ưu hóa UI đột phá: Nâng chiều cao Details Card lên `h-[580px]`, thu nhỏ padding (`p-4 md:p-5`), thu nhỏ khoảng cách tiêu đề và chân trang để mở rộng không gian cuộn cho nội dung. Đồng thời loại bỏ đường viền lồng hộp (double nested box) của Guestbook form, biến form thành dạng glassmorphic mờ tích hợp thẳng vào card, giúp giao diện rộng rãi, cao cấp và không bị co cụm hay cắt xén dữ liệu.
+    - Sửa lỗi không gõ được phím trong Form nhập liệu: Cập nhật các trình lắng nghe phím điều khiển di chuyển 2D và 3D để bỏ qua sự kiện phím khi người dùng đang tập trung vào `INPUT` và `TEXTAREA`.
+  - Nâng cấp bảo mật Admin Dashboard bằng **Mã OTP Email thật**:
+    - Sử dụng `Composer` cài đặt thư viện `phpmailer/phpmailer` chính chủ phục vụ kết nối SMTP gửi thư điện tử.
+    - Tạo lớp `Utils\Mailer` sử dụng PHPMailer để gửi thư tự động qua SMTP (mặc định cấu hình tương thích tốt với Gmail).
+    - Cập nhật hàm `login()` trong `AdminController.php` theo quy trình xác thực 2 bước:
+      - Bước 1: Nhập Username/Password hợp lệ -> Hệ thống sinh mã OTP 6 chữ số ngẫu nhiên lưu trong Session (thời hạn 5 phút) và gửi email trực tiếp tới địa chỉ quản trị viên.
+      - Bước 2: Hiển thị trường nhập OTP trên giao diện và yêu cầu người dùng điền mã xác thực từ hòm thư để đăng nhập thành công.
+    - Cấu hình `.env` hỗ trợ các biến cấu hình máy chủ SMTP gửi thư và email nhận mã OTP (`ADMIN_EMAIL="nguyquy67@gmail.com"`).
+  - Tích hợp tính năng AI Voice Chat (Speech-to-Text & Text-to-Speech) vào Chatbot:
+    - Sử dụng Web Speech API (SpeechRecognition) để tự động nhận dạng giọng nói từ micro người dùng và chuyển thành văn bản để gửi đi.
+    - Phát ra âm thanh đọc phản hồi của Gemini AI sau khi lọc bỏ ký tự markdown bằng Web Speech API (SpeechSynthesis).
+    - Thiết kế giao diện Sóng âm (Audio Waveform) chuyển động mượt mà khi AI đang nói để tăng trải nghiệm tương tác trực quan.
+  - Nâng cấp cơ chế RAG (Retrieval-Augmented Generation) thông minh trong `api/chat.php`:
+    - Đọc file dữ liệu `data.json` ở phía máy chủ.
+    - Lọc thông tin các Zone phù hợp với từ khóa của người dùng trước khi gửi làm ngữ cảnh cho Gemini API để tăng độ chính xác của chatbot và tối ưu hóa số lượng token.
+  - **Nâng cấp Đồ họa 3D & Âm thanh nền:**
+    - Tích hợp **UnrealBloomPass** và **EffectComposer** vào Three.js để tạo hiệu ứng phát sáng Neon Glow Cyberpunk mờ ảo cho đường lưới và các khu vực trong bản đồ 3D (Đã tinh chỉnh giảm cường độ sáng strength xuống 0.35-0.45 và tăng threshold lên 0.45-0.55 giúp giao diện êm dịu, không bị chói mắt hay cháy sáng).
+    - Tích hợp **DRACOLoader** vào luồng tải mô hình GLTFLoader của Three.js để sẵn sàng giải mã các mô hình 3D nén Draco siêu nhẹ (1-2MB).
+    - Phát triển bộ phát **Nhạc nền Ambient Space Synth** tự động bằng Web Audio API siêu nhẹ, không tốn băng thông tải file audio, hỗ trợ nút bấm Bật/Tắt nhạc nền đa ngôn ngữ đặt ngay cạnh mục chọn ngôn ngữ ở header.
+  - **Hệ thống Gamification & Thành tựu RPG:**
+    - Tạo popup toast thông báo khi đạt thành tựu: hiệu ứng kính mờ (glassmorphic), viền neon xanh lá cây chuyển động bắt mắt.
+    - Thành tựu "Nhà Khám Phá": Mở khóa khi đi qua đủ 5 vùng 2D (lưu vết danh sách vùng qua `localStorage`).
+    - Thành tựu "Du Hành Không Gian": Mở khóa khi lần đầu kích hoạt giao diện 3D qua cổng Teleport.
+    - Thành tựu "Hỏi Đáp Cùng AI": Mở khóa khi gửi tin nhắn cho AI Chatbot.
+    - Thành tựu "Easter Egg": Giấu ổ dữ liệu bí mật "SECRET DATA" dạng đĩa mềm vàng phát sáng lơ lửng tại góc bản đồ `x = 750, y = 50`. Khi người chơi tới gần nhặt được, sẽ kích hoạt phần thưởng thành tựu kèm theo **Hộp thoại cảm ơn đặc biệt** từ tác giả.
+    - Tích hợp âm thanh chúc mừng (Fanfare) thăng âm (C5 -> E5 -> G5 -> C6) tự động synth bằng Web Audio API khi mở khóa thành tựu.
+    - Lưu giữ tiến trình mở khóa thành tựu bằng `localStorage`.
+  - **Tự động hóa Vận hành & DevOps (CI/CD, Docker Multi-Container):**
+    - Thiết lập GitHub Actions workflow trong `.github/workflows/deploy.yml` để tự động hóa quy trình CI/CD: Tự động chạy build ứng dụng và deploy thẳng lên VPS cá nhân qua SSH/SCP (sử dụng các Docker action của appleboy) hoặc kích hoạt Webhook deploy trên các nền tảng PaaS (Render, Railway) khi có code push mới lên nhánh `main` hoặc `master`.
+    - Chuyển đổi tệp `docker-compose.yml` hiện tại sang dạng **Multi-Container Architecture**: Kết hợp container ứng dụng Web Node.js (`app`) chạy cô lập phía sau mạng cầu ảo (`cyber_network`) với một container **Nginx Proxy Manager** làm nhiệm vụ Reverse Proxy, nhận request ở cổng `80`/`443` và tự động quản lý Let's Encrypt SSL HTTPS.
+  - **Khắc phục lỗi Chatbot (Local cURL & Deprecated Gemini API Model):**
+    - Khắc phục lỗi cURL HTTPS trên máy chủ cục bộ bằng cách thêm tùy chọn `CURLOPT_SSL_VERIFYPEER => false` và `CURLOPT_SSL_VERIFYHOST => false` trong `api/chat.php`, ngăn chặn lỗi chặn SSL thường gặp trên XAMPP Windows.
+    - Cập nhật model Gemini API từ bản cũ đã bị Google deprecate là `gemini-1.5-flash` lên model mới nhất là `gemini-3.5-flash` (đồng bộ với tệp `server.ts`).
+    - Khắc phục lỗi nút Làm mới cuộc hội thoại (`btn_reset_chat`): Thêm logic dọn sạch nội dung hiển thị trong DOM (`#chatbot_messages_viewport`) khi reset, thay vì chỉ xóa mảng lưu lịch sử trong JavaScript.
+    - Tích hợp cơ chế Lưu giữ Lịch sử Trò chuyện (Chat History Persistence): Sử dụng `localStorage` (`cyber_portfolio_chat_history`) để tự động lưu mọi tin nhắn gửi/nhận. Khi người dùng reload trang hoặc gặp sự cố mất mạng phải F5, lịch sử trò chuyện vẫn được khôi phục nguyên vẹn thay vì biến mất.
+  - **Bổ sung tùy chọn Giọng đọc/Ngôn ngữ đọc & Bật/tắt giọng nói cho Chatbot:**
+    - Tích hợp thẻ chọn `<select id="ai_voice_select">` trên thanh Header của Chatbot, tự động tải các giọng đọc có sẵn trên thiết bị tương ứng với ngôn ngữ đang chọn (Tiếng Việt/Tiếng Anh). Cho phép người dùng chuyển giọng (VD: Giọng nam, giọng nữ, giọng vùng miền) tùy theo sở thích và lưu trữ lựa chọn này trong trạng thái hoạt động của phiên.
+    - Thiết kế thêm nút Bật/Tắt giọng nói AI (`btn_toggle_ai_voice` dạng icon chiếc loa) ngay bên cạnh ô chọn giọng nói, cho phép người dùng tắt tiếng đọc của AI hoàn toàn khi đang ở môi trường công cộng và ghi nhớ trạng thái này qua `localStorage` (`cyber_portfolio_ai_voice_enabled`).
+    - Khắc phục lỗi phát giọng Tiếng Anh lỗi âm cho Tiếng Việt: Thêm logic kiểm tra so khớp ngôn ngữ nghiêm ngặt (case-insensitive `toLowerCase().startsWith('vi')`). Nếu trong `vi` mode mà không tìm thấy giọng Tiếng Việt tương thích trên hệ thống, AI sẽ chủ động im lặng thay vì dùng giọng đọc Tiếng Anh để phát chữ tiếng Việt.
+  - **Chú thích chi tiết (Commenting Code):**
+    - Hoàn tất viết chú thích Tiếng Việt chi tiết (từng dòng mã nguồn) cho tất cả các file xử lý backend cốt lõi: `api/chat.php`, `api/admin.php`, `api/guestbook.php`, `api/config/Database.php`, `api/controllers/GuestbookController.php`, `api/utils/TOTP.php`, và `api/utils/Mailer.php`.
+>>>>>>> 87feb4a32c706e1d7e2032238c9214bb8bbfb10d
 - Edited files:
+  - `api/guestbook.php`
+  - `api/config/Database.php`
+  - `api/controllers/GuestbookController.php`
+  - `api/utils/TOTP.php`
+  - `index.html`
+  - `css/style.css`
   - `js/app.js`
+<<<<<<< HEAD
   - `index.html`
   - `css/style.css`
   - `ai-memory.md`
@@ -14,3 +100,20 @@
   - The zone info card is positioned from the 3D player screen projection and uses a glassmorphism style.
   - The existing zone details panel remains intact and still updates with the active area.
   - No unrelated refactors were introduced.
+=======
+  - `docker-compose.yml`
+  - `.github/workflows/deploy.yml`
+  - `api/chat.php`
+  - `api/utils/Mailer.php`
+  - `api/admin.php`
+  - `api/controllers/AdminController.php`
+  - `admin/index.html`
+  - `admin/admin.js`
+  - `.env`
+  - `.htaccess`
+  - `ai-memory.md`
+- TODO:
+  - Kiểm thử trải nghiệm di chuyển phi hành gia 3D trên cả 5 hòn đảo bằng trình duyệt để kiểm tra việc hiện/ẩn Hologram Card mượt mà và tương tác bình thường.
+  - Kiểm thử giao diện Admin Dashboard (`/admin/index.html` và `/admin/admin.js`) với luồng đăng nhập 2FA TOTP và duyệt/xóa các lời nhắn Guestbook.
+  - Chạy thử nghiệm Docker Compose với Nginx Proxy Manager trên VPS thực tế và thiết lập Proxy Host trỏ đến container `app:3000`.
+>>>>>>> 87feb4a32c706e1d7e2032238c9214bb8bbfb10d
