@@ -289,3 +289,142 @@ body {
   color: #a1a1aa;
   line-height: 1.3;
 }
+
+/* === Cyberpunk Scanner and Card Glitch/Glow Effects === */
+@keyframes cyberScan {
+  0% { top: -10%; }
+  100% { top: 110%; }
+}
+
+.cyber-scanner-line {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: linear-gradient(to right, transparent, var(--scan-color, #10b981), transparent);
+  opacity: 0.85;
+  pointer-events: none;
+  z-index: 10;
+  animation: cyberScan 1s cubic-bezier(0.15, 0.85, 0.45, 1) forwards;
+}
+
+@keyframes neonGlitchBorder {
+  0%, 100% { 
+    border-color: rgba(63, 63, 70, 0.4); 
+    box-shadow: none; 
+  }
+  10% { 
+    border-color: var(--scan-color, #10b981); 
+    box-shadow: 0 0 15px var(--scan-color-alpha, rgba(16, 185, 129, 0.25)); 
+  }
+  15% { 
+    border-color: rgba(63, 63, 70, 0.4); 
+    box-shadow: none; 
+  }
+  30% { 
+    border-color: var(--scan-color, #10b981); 
+    box-shadow: 0 0 20px var(--scan-color-alpha, rgba(16, 185, 129, 0.35)); 
+  }
+  45% { 
+    border-color: rgba(63, 63, 70, 0.4); 
+    box-shadow: none; 
+  }
+}
+
+.card-glow-active {
+  animation: neonGlitchBorder 1.2s ease-out forwards;
+}
+
+/* === HUD Layout For Full-screen 3D Overlay Mode === */
+/* Ẩn Header, Footer, Bản đồ 2D và Bảng chi tiết Bento khi ở chế độ 3D toàn màn hình */
+body.mode-3d-active #app_header,
+body.mode-3d-active footer,
+body.mode-3d-active main > div > section:first-of-type > div:first-of-type,
+body.mode-3d-active #details_hud_card {
+  display: none !important;
+}
+
+body.mode-3d-active #threejs_3d_viewport {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  z-index: 10 !important;
+  display: block !important;
+  border-radius: 0 !important;
+}
+
+body.mode-3d-active #container_exit_3d {
+  position: fixed !important;
+  top: 24px !important;
+  left: 24px !important;
+  right: auto !important;
+  z-index: 30 !important;
+}
+
+body.mode-3d-active #radar_minimap_container {
+  position: fixed !important;
+  bottom: 24px !important;
+  left: 24px !important;
+  z-index: 30 !important;
+  display: block !important;
+}
+
+body.mode-3d-active #dpad_container {
+  position: fixed !important;
+  bottom: 24px !important;
+  right: 24px !important; /* Đặt lại sát mép phải vì details card đã ẩn */
+  z-index: 30 !important;
+}
+
+/* Responsive HUD layout for mobile screens */
+@media (max-width: 1024px) {
+  body.mode-3d-active #dpad_container {
+    right: 16px !important;
+    bottom: 24px !important;
+  }
+  body.mode-3d-active #radar_minimap_container {
+    display: none !important;
+  }
+}
+
+/* === Advanced Holographic HUD Elements === */
+@keyframes hologramSweep {
+  0% { 
+    top: -5%; 
+    opacity: 0; 
+  }
+  15% { 
+    opacity: 0.8; 
+  }
+  85% { 
+    opacity: 0.8; 
+  }
+  100% { 
+    top: 105%; 
+    opacity: 0; 
+  }
+}
+
+.cyber-scanner-line {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(to right, transparent, var(--scan-color, #10b981), transparent);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 10;
+  animation: hologramSweep 2.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+#hologram_proximity_card {
+  background: rgba(9, 9, 11, 0.82) !important;
+  backdrop-filter: blur(12px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(12px) saturate(180%) !important;
+  border-width: 1px !important;
+  border-style: solid !important;
+  border-radius: 16px !important;
+  transition: opacity 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+}

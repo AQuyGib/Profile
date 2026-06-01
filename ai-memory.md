@@ -1,6 +1,16 @@
 # Project Memory
 
 - Current updates & fixes:
+  - **Khôi phục Cổng dịch chuyển Tự động 2D/3D & Sửa lỗi treo nạp (Deadlock) mô hình 3D:**
+    - **Khôi phục Cổng dịch chuyển Tự động:** Đã khôi phục cơ chế tự động kích hoạt `enter3DMode()` khi nhân vật 2D đi vào Cổng Space 3D (tọa độ `415, 80` với khoảng cách < 28), và tự động kích hoạt `exit3DMode()` khi nhân vật 3D đi vào tâm Đảo Portal (tọa độ `0, 24` với khoảng cách < 1.5).
+    - **Sửa lỗi Treo nạp (Deadlock) nhân vật:** Khắc phục lỗi nạp mô hình nhân vật 3D bị treo vô hạn ở màn hình chờ nạp (`waitForCore()`) khi tải mô hình `.glb` thất bại bằng cách gán `threePlayerMesh = placeholder;` ngay khi kích hoạt mô hình thay thế trong callback lỗi của GLTFLoader.
+    - **Khắc phục lỗi Vòng lặp Nỗ lực Tải vô hạn:** Trong trường hợp nạp scene 3D hoặc CDN bị lỗi/timeout, hàm `failBackTo2D()` hiện tại sẽ tự động đẩy nhân vật 2D lùi xa Cổng dịch chuyển (`player.x = 415; player.y = 145;`) để tránh rơi vào vòng lặp gọi `enter3DMode()` vô tận làm giật lag trình duyệt.
+    - **Bổ sung UI Loading 3D:** Thêm phần tử `#threejs_loading_overlay` bị thiếu vào [index.html](file:///D:/Sever/htdocs/FE2CV/Profile/index.html) để hiển thị giao diện nạp màn hình 3D đẹp mắt, mượt mà.
+  - **Nâng cấp bảng thông tin Hologram mờ:**
+    - **Hologram Proximity Card Cyberpunk/Iron Man:** Nâng cấp cấu trúc HTML của `#hologram_proximity_card` trong [index.html](file:///D:/Sever/htdocs/FE2CV/Profile/index.html) và bổ sung các style, keyframes `hologramSweep`, cùng dải quét laser động `.cyber-scanner-line` trong [style.css](file:///D:/Sever/htdocs/FE2CV/Profile/css/style.css) để tạo cảm giác giao diện HUD viễn tưởng Iron Man/Cyberpunk.
+    - **Logic hiển thị thông minh:** Khi nhân vật đến gần Cổng 3D trong chế độ 2D, một Hologram Card ảo (`portal_3d_gate`) sẽ xuất hiện phía trên đầu nhân vật hướng dẫn bấm nút để dịch chuyển. Tương tự, khi đứng tại Portal Island trong chế độ 3D, card sẽ hướng dẫn cách click nút ở góc trái để thoát.
+    - **Đồng bộ màu sắc động:** Sử dụng CSS variables (`--scan-color` và `--scan-color-alpha`) trong [js/app.js](file:///D:/Sever/htdocs/FE2CV/Profile/js/app.js) để đổi màu sắc tia quét laser và bóng tỏa neon của Hologram Card đồng bộ theo màu sắc chủ đạo của từng phân khu (Zone).
+    - **Bảo vệ Vòng lặp Game (Fault Tolerance):** Bọc toàn bộ thân hàm `updateHologramCard` trong khối `try-catch` để phòng ngừa rủi ro xảy ra ngoại lệ runtime (do đồng bộ dữ liệu hoặc các phiên bản trình duyệt cũ), đảm bảo vòng lặp `gameLoop` chính vẽ canvas 2D không bao giờ bị dừng đột ngột và người dùng luôn có thể di chuyển phi hành gia.
   - **Triển khai các đề xuất cải tiến bảo mật và tối ưu hóa hệ thống:**
     - **Bảo mật file .env:** Tạo tệp tin [.htaccess](file:///D:/Sever/htdocs/FE2CV/Profile/.htaccess) trong thư mục gốc để ngăn chặn truy cập trực tiếp từ trình duyệt vào file cấu hình nhạy cảm (`.env`, `composer.json`, `Dockerfile`, `docker-compose.yml`, `ai-memory.md`).
     - **Chống nháy giao diện (FOUC):** Thêm CSS inline trực tiếp vào đầu phần `<head>` của [index.html](file:///D:/Sever/htdocs/FE2CV/Profile/index.html) để cố định màn hình loading với nền tối tuyệt đối trước khi Tailwind CSS CDN được nạp và phân tích hoàn chỉnh.

@@ -541,29 +541,73 @@ function initGameEngine() {
 
   canvas.addEventListener('click', handleCanvasClick);
 
-  // Setup D-pad triggers
-  document.getElementById('btn_move_up').addEventListener('click', () => moveManual('up'));
-  document.getElementById('btn_move_down').addEventListener('click', () => moveManual('down'));
-  document.getElementById('btn_move_left').addEventListener('click', () => moveManual('left'));
-  document.getElementById('btn_move_right').addEventListener('click', () => moveManual('right'));
+  // Setup D-pad triggers with hold support for mobile compatibility
+  const bindDpadButton = (id, keyCode) => {
+    const btn = document.getElementById(id);
+    if (!btn) return;
+    
+    const startMove = (e) => {
+      e.preventDefault();
+      mouseTarget = null; // Keyboard cancels click movement
+      keysPressed[keyCode] = true;
+      playClickSound();
+    };
+    
+    const endMove = (e) => {
+      e.preventDefault();
+      keysPressed[keyCode] = false;
+    };
+    
+    // Mouse Events
+    btn.addEventListener('mousedown', startMove);
+    btn.addEventListener('mouseup', endMove);
+    btn.addEventListener('mouseleave', endMove);
+    
+    // Touch Events
+    btn.addEventListener('touchstart', startMove, { passive: false });
+    btn.addEventListener('touchend', endMove, { passive: false });
+    btn.addEventListener('touchcancel', endMove, { passive: false });
+  };
+  
+  bindDpadButton('btn_move_up', 'KeyW');
+  bindDpadButton('btn_move_down', 'KeyS');
+  bindDpadButton('btn_move_left', 'KeyA');
+  bindDpadButton('btn_move_right', 'KeyD');
 
   // Toggle D-Pad
   const btnToggleDpad = document.getElementById('btn_toggle_dpad');
-  const dpadContainer = document.querySelector('.absolute.bottom-4.right-4');
+  const dpadContainer = document.getElementById('dpad_container');
   if (btnToggleDpad && dpadContainer) {
     btnToggleDpad.addEventListener('click', () => {
       playClickSound();
       const label = btnToggleDpad.querySelector('span');
-      if (dpadContainer.classList.contains('hidden-panel')) {
-        dpadContainer.classList.remove('hidden-panel');
+      if (dpadContainer.classList.contains('hidden')) {
+        dpadContainer.classList.remove('hidden');
         btnToggleDpad.classList.add('bg-zinc-900/80', 'text-emerald-400');
         if (label) label.textContent = 'ẨN ĐIỀU KHIỂN';
       } else {
-        dpadContainer.classList.add('hidden-panel');
+        dpadContainer.classList.add('hidden');
         btnToggleDpad.classList.remove('bg-zinc-900/80', 'text-emerald-400');
         if (label) label.textContent = 'HIỆN ĐIỀU KHIỂN';
       }
     });
+  }
+
+  // Tự động phát hiện thiết bị di động và hiển thị D-pad điều khiển
+  const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 1024;
+  if (isMobileDevice) {
+    const canvasControlsFooter = document.getElementById('canvas_controls_footer');
+    if (canvasControlsFooter) {
+      canvasControlsFooter.classList.remove('hidden');
+    }
+    if (dpadContainer) {
+      dpadContainer.classList.remove('hidden');
+    }
+    if (btnToggleDpad) {
+      btnToggleDpad.classList.add('bg-zinc-900/80', 'text-emerald-400');
+      const label = btnToggleDpad.querySelector('span');
+      if (label) label.textContent = 'ẨN ĐIỀU KHIỂN';
+    }
   }
 
   // Exit 3D Button Event
@@ -777,6 +821,9 @@ function gameLoop() {
 
   // 6. Draw everything
   drawScene();
+
+  // Cập nhật vị trí tấm card hologram bay trên đầu nhân vật
+  updateHologramCard();
 
   animationFrameId = requestAnimationFrame(gameLoop);
 }
@@ -1414,15 +1461,15 @@ function updateUIForActiveZone() {
           ${details.highlight}
         </p>
 
-        <div class="flex flex-wrap gap-2">
+        <div class="flex flex-col sm:flex-row gap-2.5 w-full">
           <a 
             href="${details.link}" 
             target="_blank" 
             rel="noreferrer" 
-            class="inline-flex items-center gap-2 text-xs font-mono text-purple-400 hover:text-white transition-colors bg-purple-500/10 hover:bg-purple-500/20 px-3.5 py-2 rounded-xl border border-purple-500/30"
+            class="flex-grow inline-flex items-center justify-center gap-2 text-xs font-mono text-zinc-950 font-bold transition-all bg-purple-500 hover:bg-purple-400 px-4 py-2.5 rounded-xl border border-purple-400 shadow-[0_0_15px_rgba(168,85,247,0.35)] hover:shadow-[0_0_25px_rgba(168,85,247,0.6)] hover:scale-[1.02] active:scale-95 duration-200"
           >
-            ${state.language === 'vi' ? 'Trải Nghiệm DIENMAYPRO' : 'Explore DIENMAYPRO'} 
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+            <span>${state.language === 'vi' ? 'TRẢI NGHIỆM DIENMAYPRO NGAY' : 'EXPLORE DIENMAYPRO NOW'}</span>
+            <svg class="w-3.5 h-3.5 text-zinc-950" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
           </a>
 
           ${details.oldPortfolioLink ? `
@@ -1430,9 +1477,9 @@ function updateUIForActiveZone() {
               href="${details.oldPortfolioLink}" 
               target="_blank" 
               rel="noreferrer" 
-              class="inline-flex items-center gap-2 text-xs font-mono text-indigo-400 hover:text-white transition-colors bg-indigo-500/10 hover:bg-indigo-500/20 px-3.5 py-2 rounded-xl border border-indigo-500/30"
+              class="inline-flex items-center justify-center gap-2 text-xs font-mono text-indigo-300 hover:text-white transition-colors bg-indigo-500/10 hover:bg-indigo-500/25 px-4 py-2.5 rounded-xl border border-indigo-500/30 hover:border-indigo-500/60 active:scale-95 duration-200"
             >
-              ${details.oldPortfolioTitle} 
+              <span>${details.oldPortfolioTitle}</span>
               <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
             </a>
           ` : ''}
@@ -1502,23 +1549,36 @@ function updateUIForActiveZone() {
             ${details.intro}
           </p>
 
-          <div class="space-y-2 text-xs font-mono">
-            ${(details.contacts || []).map(con => `
-              <a 
-                href="${con.url}" 
-                target="_blank"
-                class="flex items-center justify-between p-3 bg-zinc-900/60 rounded-xl border border-zinc-800/80 hover:border-pink-500/40 transition-colors group"
-              >
-                <div class="flex items-center gap-3 font-sans">
-                  ${getContactIcon(con.type)}
-                  <span class="text-zinc-400 font-mono text-[10px]">${con.label}</span>
-                </div>
-                <span class="text-zinc-200 group-hover:text-pink-400 transition-colors flex items-center gap-1 font-mono text-[10px]">
-                  ${con.value} 
-                  <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
-                </span>
-              </a>
-            `).join('')}
+          <div class="space-y-2.5 text-xs font-mono">
+            ${(details.contacts || []).map(con => {
+              let btnClass = "bg-zinc-900/60 border-zinc-800/80 hover:border-pink-500/40 text-zinc-200 hover:text-pink-400";
+              let shadowClass = "";
+              
+              if (con.type === "Phone") {
+                btnClass = "bg-pink-500/10 border-pink-500/35 hover:bg-pink-500/25 hover:border-pink-500 text-pink-300 hover:text-white";
+                shadowClass = "shadow-[0_0_12px_rgba(236,72,153,0.15)] hover:shadow-[0_0_20px_rgba(236,72,153,0.3)] hover:scale-[1.01]";
+              } else if (con.type === "Github") {
+                btnClass = "bg-purple-500/10 border-purple-500/35 hover:bg-purple-500/25 hover:border-purple-500 text-purple-300 hover:text-white";
+                shadowClass = "shadow-[0_0_12px_rgba(168,85,247,0.15)] hover:shadow-[0_0_20px_rgba(168,85,247,0.3)] hover:scale-[1.01]";
+              }
+              
+              return `
+                <a 
+                  href="${con.url}" 
+                  target="_blank"
+                  class="flex items-center justify-between p-3.5 rounded-xl border transition-all duration-200 group ${btnClass} ${shadowClass}"
+                >
+                  <div class="flex items-center gap-3 font-sans">
+                    ${getContactIcon(con.type)}
+                    <span class="font-mono text-[10px] uppercase tracking-wider font-semibold">${con.label}</span>
+                  </div>
+                  <span class="transition-colors flex items-center gap-1 font-mono text-[10px] font-bold">
+                    ${con.value} 
+                    <svg class="w-3.5 h-3.5 text-current group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+                  </span>
+                </a>
+              `;
+            }).join('')}
           </div>
 
           <div class="bg-pink-500/5 border border-pink-500/10 rounded-2xl p-4 text-[10px] text-pink-400/80 leading-relaxed font-mono">
@@ -1558,6 +1618,40 @@ function updateUIForActiveZone() {
   }
 
     container.innerHTML = html;
+
+    // Kích hoạt hiệu ứng visual feedback nạp dữ liệu quét sóng cho Details Card
+    const detailsCard = document.getElementById('details_hud_card');
+    if (detailsCard) {
+      const zoneColorMapping = {
+        'home': { color: '#f59e0b', alpha: 'rgba(245, 158, 11, 0.25)' },
+        'academy': { color: '#10b981', alpha: 'rgba(16, 185, 129, 0.25)' },
+        'lab': { color: '#3b82f6', alpha: 'rgba(59, 130, 246, 0.25)' },
+        'museum': { color: '#a855f7', alpha: 'rgba(168, 85, 247, 0.25)' },
+        'library': { color: '#6366f1', alpha: 'rgba(99, 102, 241, 0.25)' },
+        'portal': { color: '#ec4899', alpha: 'rgba(236, 72, 153, 0.25)' }
+      };
+      
+      const theme = zoneColorMapping[zone.id] || { color: '#10b981', alpha: 'rgba(16, 185, 129, 0.25)' };
+      
+      detailsCard.style.setProperty('--scan-color', theme.color);
+      detailsCard.style.setProperty('--scan-color-alpha', theme.alpha);
+      detailsCard.classList.remove('card-glow-active');
+      void detailsCard.offsetWidth; // Force Reflow để reset animation
+      detailsCard.classList.add('card-glow-active');
+      
+      const existingScanner = detailsCard.querySelector('.cyber-scanner-line');
+      if (existingScanner) existingScanner.remove();
+      
+      const scannerLine = document.createElement('div');
+      scannerLine.className = 'cyber-scanner-line';
+      detailsCard.appendChild(scannerLine);
+      
+      setTimeout(() => {
+        if (scannerLine.parentNode) {
+          scannerLine.remove();
+        }
+      }, 1000);
+    }
 
     // Attach listeners for Portal Tabs
     if (zone.id === 'portal') {
@@ -3820,7 +3914,8 @@ async function load3DModels() {
     setThreeReadiness({ reason: 'astronaut-loaded' });
   }, undefined, (err) => {
     registerAssetFailure('3d/character/3d_cute_astronaut_made_in_blender.glb', err, 'astronaut', { layer: 'player', fallback: 'placeholder' });
-    createPlayerPlaceholder();
+    const placeholder = createPlayerPlaceholder();
+    threePlayerMesh = placeholder; // Assign placeholder to threePlayerMesh to escape the waitForCore deadlock
     threeReadiness.playerLoaded = false;
     setThreeReadiness({ reason: 'astronaut-placeholder' });
   });
@@ -4947,6 +5042,9 @@ function animate3D() {
     updateZoneTransitionFX();
     // 6. Minimap
     updateRadarMinimap();
+    
+    // Cập nhật vị trí tấm card hologram bay trên đầu nhân vật
+    updateHologramCard();
   }
 
   // Cập nhật luồng tia lửa phản lực của phi hành gia
@@ -5129,7 +5227,6 @@ function detect3DZoneCollision() {
       break;
     }
   }
-
   // 3. If on Portal island, only trigger 3D exit when stepping directly into the gateway center (< 1.5 units)
   if (detectedZoneId === 'portal') {
     const distToPortalCenter = Math.sqrt(
@@ -5340,6 +5437,9 @@ async function enter3DMode() {
   if (state.is3DActive) return;
   state.is3DActive = true;
 
+  // Thêm trạng thái 3D toàn màn hình cho body
+  document.body.classList.add('mode-3d-active');
+
   // Mở khóa thành tựu du hành không gian 3D
   unlockAchievement('space');
 
@@ -5355,11 +5455,20 @@ async function enter3DMode() {
   const failBackTo2D = (message, error) => {
     console.error('[3D] Enter failed:', message, error);
     state.is3DActive = false;
+    document.body.classList.remove('mode-3d-active');
     if (loadingOverlay) loadingOverlay.classList.add('hidden');
     if (viewport) viewport.classList.add('hidden');
     gameCanvas?.classList.remove('hidden');
     document.getElementById('container_exit_3d')?.classList.add('hidden');
     document.getElementById('radar_minimap_container')?.classList.add('hidden');
+    
+    // Reset player position safely away from the portal zone trigger to prevent enter3DMode loop on failure
+    player.x = 415;
+    player.y = 145;
+    player.vx = 0;
+    player.vy = 0;
+    mouseTarget = null;
+    
     if (animationFrameId == null) gameLoop();
   };
 
@@ -5477,6 +5586,9 @@ function exit3DMode() {
   if (!state.is3DActive) return;
   state.is3DActive = false;
 
+  // Xóa trạng thái 3D toàn màn hình trên body
+  document.body.classList.remove('mode-3d-active');
+
   playTeleportSound();
 
   const container = document.getElementById('retro_game_map_canvas').parentElement;
@@ -5515,6 +5627,163 @@ function exit3DMode() {
   setTimeout(() => {
     container.classList.remove('transition-dimension');
   }, 600);
+}
+
+/**
+ * Cập nhật vị trí và nội dung của Proximity Hologram Card (Bảng thông tin mờ bay trên đầu nhân vật)
+ */
+function updateHologramCard() {
+  try {
+    const card = document.getElementById('hologram_proximity_card');
+    if (!card) return;
+
+    let currentZoneId = state.activeZoneId;
+    let isNear3DPortalGate = false;
+    
+    if (state.is3DActive) {
+      currentZoneId = active3DZoneId || state.activeZoneId;
+    } else {
+      // Ở chế độ 2D, kiểm tra xem có ở gần Cổng Dịch Chuyển 3D (415, 80) không
+      const portalCenterX = 415;
+      const portalCenterY = 80;
+      const distToPortal = Math.sqrt((player.x - portalCenterX) ** 2 + (player.y - portalCenterY) ** 2);
+      if (distToPortal < 28) {
+        isNear3DPortalGate = true;
+        currentZoneId = 'portal_3d_gate';
+      }
+    }
+
+    let zone;
+    if (isNear3DPortalGate) {
+      zone = {
+        id: 'portal_3d_gate',
+        name: '3D Space Portal Gateway',
+        vietnameseName: 'Cổng Không Gian 3D',
+        icon: 'Rocket',
+        description_vi: 'Kích hoạt chiều không gian 3D đắm chìm. Hãy bấm nút [XEM KHÔNG GIAN 3D] phía trên bản đồ để dịch chuyển.',
+        description_en: 'Activate immersive 3D dimension. Press the [VIEW 3D SPACE] button above the map to teleport.'
+      };
+    } else {
+      zone = state.zones.find(z => z.id === currentZoneId);
+    }
+    
+    // Ẩn card nếu không tìm thấy zone, hoặc đang ở Home nhưng không di chuyển (chế độ 2D)
+    if (!zone || (zone.id === 'home' && !player.isMoving && !state.is3DActive)) {
+      if (!card.classList.contains('hidden')) {
+        card.classList.add('opacity-0', 'scale-95');
+        card.classList.remove('opacity-100', 'scale-100');
+        setTimeout(() => {
+          if (state.activeZoneId !== zone?.id) {
+            card.classList.add('hidden');
+          }
+        }, 300);
+      }
+      return;
+    }
+
+    const titleEl = document.getElementById('holo_title');
+    const descEl = document.getElementById('holo_description');
+    const iconEl = document.getElementById('holo_icon_holder');
+    
+    if (titleEl) titleEl.textContent = state.language === 'vi' ? zone.vietnameseName : zone.name;
+    
+    // Điều chỉnh mô tả động khi đứng ở Portal Zone trong chế độ 3D để hướng dẫn thoát
+    if (zone.id === 'portal' && state.is3DActive) {
+      if (descEl) {
+        descEl.textContent = state.language === 'vi' 
+          ? 'CỔNG DỊCH CHUYỂN 2D. Hãy nhấn nút [THOÁT 3D (VỀ 2D)] ở góc trên bên trái để quay lại giao diện Bento 2D.' 
+          : '2D PORTAL GATEWAY. Press [EXIT 3D] at the top-left to return to the 2D layout.';
+      }
+    } else {
+      if (descEl) descEl.textContent = state.language === 'vi' ? zone.description_vi : zone.description_en;
+    }
+    
+    if (iconEl) iconEl.innerHTML = getHeaderIconHtml(zone.icon);
+
+    const zoneColors = {
+      'home': { border: 'border-amber-500/40', shadow: 'rgba(245, 158, 11, 0.25)', text: 'text-amber-400', hex: '#f59e0b' },
+      'academy': { border: 'border-emerald-500/40', shadow: 'rgba(16, 185, 129, 0.25)', text: 'text-emerald-400', hex: '#10b981' },
+      'lab': { border: 'border-blue-500/40', shadow: 'rgba(59, 130, 246, 0.25)', text: 'text-blue-400', hex: '#3b82f6' },
+      'museum': { border: 'border-purple-500/40', shadow: 'rgba(168, 85, 247, 0.25)', text: 'text-purple-400', hex: '#a855f7' },
+      'library': { border: 'border-indigo-500/40', shadow: 'rgba(99, 102, 241, 0.25)', text: 'text-indigo-400', hex: '#6366f1' },
+      'portal': { border: 'border-pink-500/40', shadow: 'rgba(236, 72, 153, 0.25)', text: 'text-pink-400', hex: '#ec4899' },
+      'portal_3d_gate': { border: 'border-fuchsia-500/40', shadow: 'rgba(217, 70, 239, 0.25)', text: 'text-fuchsia-400', hex: '#d946ef' }
+    };
+    
+    const theme = zoneColors[zone.id] || zoneColors.home;
+    
+    card.className = card.className.replace(/border-[a-z0-9\/-]+/g, theme.border);
+    card.style.boxShadow = `0 0 25px ${theme.shadow}, inset 0 0 10px ${theme.shadow.replace('0.25', '0.05')}`;
+    
+    // Thiết lập biến CSS cho tia quét màu sắc
+    card.style.setProperty('--scan-color', theme.hex);
+    card.style.setProperty('--scan-color-alpha', theme.shadow);
+    
+    if (iconEl) {
+      iconEl.className = theme.text;
+    }
+    const statusIndicator = card.querySelector('.mt-2.5 span:first-of-type');
+    if (statusIndicator) {
+      statusIndicator.className = `w-1.5 h-1.5 rounded-full animate-ping ${theme.text.replace('text', 'bg')}`;
+    }
+    const statusText = document.getElementById('holo_status_text');
+    if (statusText) {
+      statusText.textContent = state.language === 'vi' ? `HỆ THỐNG: KHU VỰC HOẠT ĐỘNG` : `SYSTEM: ACTIVE ZONE`;
+      statusText.className = `font-mono text-[9px] ${theme.text}`;
+    }
+
+    let screenX = 0;
+    let screenY = 0;
+    let offsetTop = 135; 
+
+    if (state.is3DActive) {
+      const viewport = document.getElementById('threejs_3d_viewport');
+      if (viewport && threePlayerMesh && threeCamera) {
+        const pos = new THREE.Vector3();
+        threePlayerMesh.getWorldPosition(pos);
+        pos.y += 1.95; 
+        pos.project(threeCamera);
+        
+        const rect = viewport.getBoundingClientRect();
+        screenX = (pos.x * 0.5 + 0.5) * rect.width;
+        screenY = (-(pos.y * 0.5) + 0.5) * rect.height;
+        offsetTop = 45; 
+      }
+    } else {
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = rect.width / canvas.width;
+      const scaleY = rect.height / canvas.height;
+      
+      screenX = player.x * scaleX;
+      screenY = player.y * scaleY;
+    }
+
+    const cardWidth = card.clientWidth || 240;
+    const cardHeight = card.clientHeight || 120;
+    
+    let leftPos = screenX - (cardWidth / 2);
+    let topPos = screenY - offsetTop - (state.is3DActive ? cardHeight : 0);
+
+    const rectBound = state.is3DActive 
+      ? document.getElementById('threejs_3d_viewport').getBoundingClientRect()
+      : canvas.getBoundingClientRect();
+
+    if (leftPos < 10) leftPos = 10;
+    if (leftPos + cardWidth > rectBound.width - 10) leftPos = rectBound.width - cardWidth - 10;
+    if (topPos < 10) topPos = 10;
+
+    card.style.left = `${leftPos}px`;
+    card.style.top = `${topPos}px`;
+
+    if (card.classList.contains('hidden')) {
+      card.classList.remove('hidden');
+      void card.offsetWidth;
+    }
+    card.classList.remove('opacity-0', 'scale-95');
+    card.classList.add('opacity-100', 'scale-100');
+  } catch (err) {
+    console.error("Error in updateHologramCard:", err);
+  }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
