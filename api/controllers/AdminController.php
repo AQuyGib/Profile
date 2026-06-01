@@ -47,8 +47,14 @@ class AdminController {
             // Lấy email của quản trị viên từ cấu hình môi trường (.env)
             $adminEmail = getenv('ADMIN_EMAIL') ?: getenv('MAIL_USERNAME') ?: 'your_email@gmail.com';
 
-            // Khởi chạy session nếu chưa có
+            // Khởi chạy session an toàn nếu chưa có
             if (session_status() === PHP_SESSION_NONE) {
+                ini_set('session.cookie_httponly', 1);
+                ini_set('session.use_only_cookies', 1);
+                ini_set('session.cookie_samesite', 'Lax');
+                if (isset($_SERVER['HTTPS']) && ($_SERVER['HTTPS'] === 'on' || $_SERVER['HTTPS'] === 1 || $_SERVER['SERVER_PORT'] == 443)) {
+                    ini_set('session.cookie_secure', 1);
+                }
                 session_start();
             }
 
@@ -124,6 +130,12 @@ class AdminController {
      */
     public function logout() {
         if (session_status() === PHP_SESSION_NONE) {
+            ini_set('session.cookie_httponly', 1);
+            ini_set('session.use_only_cookies', 1);
+            ini_set('session.cookie_samesite', 'Lax');
+            if (isset($_SERVER['HTTPS']) && ($_SERVER['HTTPS'] === 'on' || $_SERVER['HTTPS'] === 1 || $_SERVER['SERVER_PORT'] == 443)) {
+                ini_set('session.cookie_secure', 1);
+            }
             session_start();
         }
         $_SESSION = [];
@@ -240,6 +252,12 @@ class AdminController {
      */
     private function requireAuth() {
         if (session_status() === PHP_SESSION_NONE) {
+            ini_set('session.cookie_httponly', 1);
+            ini_set('session.use_only_cookies', 1);
+            ini_set('session.cookie_samesite', 'Lax');
+            if (isset($_SERVER['HTTPS']) && ($_SERVER['HTTPS'] === 'on' || $_SERVER['HTTPS'] === 1 || $_SERVER['SERVER_PORT'] == 443)) {
+                ini_set('session.cookie_secure', 1);
+            }
             session_start();
         }
         if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true) {

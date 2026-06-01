@@ -1,6 +1,11 @@
 # Project Memory
 
 - Current updates & fixes:
+  - **Triển khai các đề xuất cải tiến bảo mật và tối ưu hóa hệ thống:**
+    - **Bảo mật file .env:** Tạo tệp tin [.htaccess](file:///D:/Sever/htdocs/FE2CV/Profile/.htaccess) trong thư mục gốc để ngăn chặn truy cập trực tiếp từ trình duyệt vào file cấu hình nhạy cảm (`.env`, `composer.json`, `Dockerfile`, `docker-compose.yml`, `ai-memory.md`).
+    - **Chống nháy giao diện (FOUC):** Thêm CSS inline trực tiếp vào đầu phần `<head>` của [index.html](file:///D:/Sever/htdocs/FE2CV/Profile/index.html) để cố định màn hình loading với nền tối tuyệt đối trước khi Tailwind CSS CDN được nạp và phân tích hoàn chỉnh.
+    - **Bảo mật Session:** Cấu hình các tham số bảo mật nâng cao cho Session Cookie (`HttpOnly`, `SameSite=Lax`, `Secure` khi có HTTPS, `Use Only Cookies`) trong các file khởi tạo session là [admin.php](file:///D:/Sever/htdocs/FE2CV/Profile/api/admin.php) và [AdminController.php](file:///D:/Sever/htdocs/FE2CV/Profile/api/controllers/AdminController.php) để giảm thiểu rủi ro bị tấn công Session Hijacking và CSRF.
+    - **Tối ưu hóa RAG Chatbot:** Viết thêm hàm loại bỏ dấu tiếng Việt `stripVietnameseDiacritics()` trong [chat.php](file:///D:/Sever/htdocs/FE2CV/Profile/api/chat.php), cho phép AI Chatbot so khớp thông minh cả từ khóa tiếng Việt có dấu và không dấu từ câu hỏi của người dùng với cơ sở dữ liệu `data.json`.
   - Thay thế phương án cài chuyển động xương (Skeletal Animation) phức tạp bằng cơ chế **Bay lơ lửng (Hover/Flying Mode)** lập trình trực tiếp bằng Three.js.
   - Thiết lập phi hành gia tự động nghiêng người 20 độ về phía trước và nhấp nhô lướt đi khi di chuyển (phím WASD / mũi tên). Lắc lư nhẹ nhàng không trọng lực khi đứng yên.
   - Tích hợp hệ thống hạt tia lửa phản lực Cyberpunk (Jetpack Thruster Spark Particles) với màu sắc neon rực rỡ phun ra từ 2 bên ống xả sau lưng balo nhân vật khi di chuyển, tự giải phóng bộ nhớ để tối ưu 60FPS.
@@ -68,6 +73,7 @@
   - `admin/index.html`
   - `admin/admin.js`
   - `.env`
+  - `.htaccess`
   - `ai-memory.md`
 - TODO:
   - Kiểm thử giao diện Admin Dashboard (`/admin/index.html` và `/admin/admin.js`) với luồng đăng nhập 2FA TOTP và duyệt/xóa các lời nhắn Guestbook.

@@ -7,6 +7,13 @@ header("Content-Type: application/json"); // Chỉ định dữ liệu trả v�
 
 // Khởi chạy Session của PHP để theo dõi trạng thái đăng nhập của Admin (nếu chưa được khởi chạy)
 if (session_status() === PHP_SESSION_NONE) {
+    // Thiết lập cấu hình Session Cookie an toàn chống Session Hijacking
+    ini_set('session.cookie_httponly', 1);
+    ini_set('session.use_only_cookies', 1);
+    ini_set('session.cookie_samesite', 'Lax');
+    if (isset($_SERVER['HTTPS']) && ($_SERVER['HTTPS'] === 'on' || $_SERVER['HTTPS'] === 1 || $_SERVER['SERVER_PORT'] == 443)) {
+        ini_set('session.cookie_secure', 1);
+    }
     session_start();
 }
 

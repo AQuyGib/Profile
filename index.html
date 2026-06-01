@@ -5,6 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Nguyễn Anh Quý - Cyber-Oasis Portfolio</title>
     
+    <!-- Chống nháy giao diện (FOUC) cho màn hình Loading khi chưa tải xong Tailwind CSS CDN -->
+    <style>
+      #loading_screen_container {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        background-color: #09090b !important;
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: center !important;
+        align-items: center !important;
+        z-index: 9999 !important;
+      }
+    </style>
+    
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
