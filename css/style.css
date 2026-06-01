@@ -428,3 +428,49 @@ body.mode-3d-active #dpad_container {
   border-radius: 16px !important;
   transition: opacity 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
 }
+
+/* === Chế độ Hologram Card Tương Tác 3D === */
+.holo-interactive {
+  pointer-events: auto !important;
+  select-text: auto !important;
+  user-select: text !important;
+  max-width: 360px !important;
+  width: 360px !important;
+  max-height: 420px !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+@media (min-width: 768px) {
+  .holo-interactive {
+    max-width: 380px !important;
+    width: 380px !important;
+  }
+}
+
+/* Vùng cuộn thông tin mượt mà trong Hologram Card */
+.holo-scroll-container {
+  max-height: 280px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+/* Custom Scrollbar siêu mỏng cho Hologram Card */
+.holo-scroll-container::-webkit-scrollbar {
+  width: 3px;
+}
+
+.holo-scroll-container::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 4px;
+}
+
+.holo-scroll-container::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+}
+
+.holo-scroll-container::-webkit-scrollbar-thumb:hover {
+  background: var(--scan-color, rgba(16, 185, 129, 0.4));
+}
+

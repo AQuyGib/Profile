@@ -1,6 +1,16 @@
 # Project Memory
 
 - Current updates & fixes:
+  - **Triển khai 3D Holographic Proximity Cards tương tác cao:**
+    - **Chuyển đổi sang Phát hiện Va chạm Lân cận (Proximity Collision):** Thay thế logic Box3 cứng nhắc trong `detect3DZoneCollision` bằng tính toán khoảng cách Euclidean (X, Z) giữa nhân vật và tâm mỗi đảo với bán kính phát hiện là `2.5` đơn vị. Khi nhân vật đi vào vùng này, hệ thống sẽ tự động kích hoạt hiển thị Hologram Card tương ứng.
+    - **CSS Glassmorphism & Tương tác chuột:** Thêm class `.holo-interactive` (đặt pointer-events thành auto và cho phép chọn văn bản) và `.holo-scroll-container` (thanh cuộn mờ, mỏng, cuộn mượt) vào [style.css](file:///D:/Sever/htdocs/FE2CV/Profile/css/style.css) để phục vụ hiển thị nội dung chi tiết.
+    - **Nâng cấp Hàm render updateHologramCard:**
+      - **Chống render lại liên tục (Focus Preservation):** Sử dụng biến trạng thái `state.lastRendered3DZoneId` trong [js/app.js](file:///D:/Sever/htdocs/FE2CV/Profile/js/app.js) để ghi nhớ phân khu vừa render. Nếu nhân vật vẫn ở trong cùng một phân khu ở frame tiếp theo, hàm chỉ cập nhật vị trí card chứ không vẽ lại HTML. Điều này giúp giữ focus vào input, không bị reset form khi đang gõ chữ.
+      - **Nội dung Chi tiết đa dạng:** Đổ dữ liệu chi tiết phong phú (giống Bento UI 2D) cho cả 5 hòn đảo: Home (Họ tên, info cơ bản), Academy (Trường, chuyên ngành, GPA, học bổng), Lab (Mô tả kỹ năng kèm icon SVG), Museum (Dự án DienMayPro phát sáng neon, nút click trải nghiệm, thành tựu), Library (Các triết lý làm việc), Portal (Các nút liên lạc phát sáng Cyberpunk và Form Sổ lưu niệm).
+      - **Tích hợp Form Sổ lưu niệm (Guestbook) 3D:** Form Guestbook AJAX trên Hologram Card hoạt động hoàn chỉnh, gửi POST dữ liệu và load danh sách lời nhắn đã duyệt thời gian thực mà không cần tải lại trang.
+      - **Nút đóng tiện lợi:** Thêm nút Close (`×`) nhỏ ở góc trên bên phải Hologram Card khi ở 3D để người dùng chủ động tắt card khi cần.
+      - **Định vị lệch thông minh & Chống tràn màn hình:** Khi ở 3D, card được đặt lệch sang phải nhân vật 45px và căn giữa dọc. Nếu card bị tràn rìa phải màn hình, nó sẽ tự động được đẩy sang bên trái nhân vật. Hệ thống cũng tự động kẹp vị trí trục Y trong khoảng an toàn để card không bao giờ bị cắt xén ở mép trên hoặc mép dưới màn hình.
+      - **Tự động khôi phục (Reset Layout):** Khi ẩn card hoặc quay lại giao diện 2D, card tự động reset cấu trúc HTML và class CSS về giao diện cơ bản (pointer-events-none, rút gọn) để tránh xung đột hành vi click chuột trên 2D Bento.
   - **Khôi phục Cổng dịch chuyển Tự động 2D/3D & Sửa lỗi treo nạp (Deadlock) mô hình 3D:**
     - **Khôi phục Cổng dịch chuyển Tự động:** Đã khôi phục cơ chế tự động kích hoạt `enter3DMode()` khi nhân vật 2D đi vào Cổng Space 3D (tọa độ `415, 80` với khoảng cách < 28), và tự động kích hoạt `exit3DMode()` khi nhân vật 3D đi vào tâm Đảo Portal (tọa độ `0, 24` với khoảng cách < 1.5).
     - **Sửa lỗi Treo nạp (Deadlock) nhân vật:** Khắc phục lỗi nạp mô hình nhân vật 3D bị treo vô hạn ở màn hình chờ nạp (`waitForCore()`) khi tải mô hình `.glb` thất bại bằng cách gán `threePlayerMesh = placeholder;` ngay khi kích hoạt mô hình thay thế trong callback lỗi của GLTFLoader.
@@ -86,5 +96,6 @@
   - `.htaccess`
   - `ai-memory.md`
 - TODO:
+  - Kiểm thử trải nghiệm di chuyển phi hành gia 3D trên cả 5 hòn đảo bằng trình duyệt để kiểm tra việc hiện/ẩn Hologram Card mượt mà và tương tác bình thường.
   - Kiểm thử giao diện Admin Dashboard (`/admin/index.html` và `/admin/admin.js`) với luồng đăng nhập 2FA TOTP và duyệt/xóa các lời nhắn Guestbook.
   - Chạy thử nghiệm Docker Compose với Nginx Proxy Manager trên VPS thực tế và thiết lập Proxy Host trỏ đến container `app:3000`.

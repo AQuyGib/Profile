@@ -16,7 +16,8 @@ const state = {
   is3DActive: false,
   threeInstance: null,
   isAiVoiceEnabled: localStorage.getItem('cyber_portfolio_ai_voice_enabled') !== 'false',
-  selectedVoiceURI: localStorage.getItem('cyber_portfolio_selected_voice_uri') || ''
+  selectedVoiceURI: localStorage.getItem('cyber_portfolio_selected_voice_uri') || '',
+  lastRendered3DZoneId: null
 };
 
 // Web Audio API Synthesizer
@@ -5216,18 +5217,25 @@ function updateZoneTransitionFX() {
 function detect3DZoneCollision() {
   if (!threePlayerMesh) return;
 
-  // 1. Create a dynamic 3D bounds box around the player's custom model geometry
-  const playerBox = new THREE.Box3().setFromObject(threePlayerMesh);
   let detectedZoneId = null;
+  let minDistance = Infinity;
+  const proximityThreshold = 2.5; // Ngưỡng khoảng cách lân cận (đơn vị 3D) để coi là đến gần hòn đảo
 
-  // 2. Perform a highly accurate 3D spatial intersection search using THREE.Box3
-  for (const item of zoneBoxes) {
-    if (item.box.intersectsBox(playerBox)) {
-      detectedZoneId = item.id;
-      break;
+  const px = threePlayerMesh.position.x;
+  const pz = threePlayerMesh.position.z;
+
+  // 1. Tính toán khoảng cách Euclidean mặt phẳng X-Z đến từng đảo 3D và tìm đảo gần nhất trong ngưỡng lân cận
+  ZONES_3D.forEach(zone => {
+    const dist = Math.sqrt((px - zone.x) ** 2 + (pz - zone.z) ** 2);
+    if (dist < zone.radius + proximityThreshold) {
+      if (dist < minDistance) {
+        minDistance = dist;
+        detectedZoneId = zone.id;
+      }
     }
-  }
-  // 3. If on Portal island, only trigger 3D exit when stepping directly into the gateway center (< 1.5 units)
+  });
+
+  // 2. Nếu ở trên đảo Portal, chỉ kích hoạt cơ chế thoát 3D khi đi vào tâm cổng dịch chuyển (< 1.5)
   if (detectedZoneId === 'portal') {
     const distToPortalCenter = Math.sqrt(
       (threePlayerMesh.position.x - 0) ** 2 + 
@@ -5245,24 +5253,28 @@ function detect3DZoneCollision() {
     }
   }
 
-  if (detectedZoneId && active3DZoneId !== detectedZoneId) {
+  // 3. Xử lý thay đổi Zone hoạt động trong 3D
+  if (detectedZoneId !== active3DZoneId) {
     active3DZoneId = detectedZoneId;
-    playNewZoneSound();
-    applyZoneTheme3D(detectedZoneId);
 
-    if (threeControls && threePlayerMesh) {
-      const zone = ZONES_3D.find(z => z.id === detectedZoneId);
-      if (zone) {
-        const focusPos = new THREE.Vector3(zone.x * 0.55, 1.9, zone.z * 0.55);
-        threeControls.target.lerp(focusPos, 0.3);
-        const focusCamPos = focusPos.clone().add(new THREE.Vector3(0, zone.id === 'portal' ? 22 : 18, zone.id === 'portal' ? 30 : 20));
-        threeCamera.position.lerp(focusCamPos, 0.22);
+    if (detectedZoneId) {
+      playNewZoneSound();
+      applyZoneTheme3D(detectedZoneId);
+
+      if (threeControls && threePlayerMesh) {
+        const zone = ZONES_3D.find(z => z.id === detectedZoneId);
+        if (zone) {
+          const focusPos = new THREE.Vector3(zone.x * 0.55, 1.9, zone.z * 0.55);
+          threeControls.target.lerp(focusPos, 0.3);
+          const focusCamPos = focusPos.clone().add(new THREE.Vector3(0, zone.id === 'portal' ? 22 : 18, zone.id === 'portal' ? 30 : 20));
+          threeCamera.position.lerp(focusCamPos, 0.22);
+        }
       }
-    }
 
-    // Load Bento Info details
-    state.activeZoneId = detectedZoneId;
-    updateUIForActiveZone();
+      // Cập nhật trạng thái Bento UI 2D bên dưới và tải dữ liệu tương ứng
+      state.activeZoneId = detectedZoneId;
+      updateUIForActiveZone();
+    }
   }
 }
 
@@ -5629,20 +5641,125 @@ function exit3DMode() {
   }, 600);
 }
 
+// -------------------------------------------------------------
+// Advanced Interactive Proximity Hologram HUD System (3D Exclusive)
+// -------------------------------------------------------------
+
+function getSkillIconHtml(cat) {
+  if (cat.includes("Frontend")) return `<svg class="w-3.5 h-3.5 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>`;
+  if (cat.includes("Backend")) return `<svg class="w-3.5 h-3.5 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"/></svg>`;
+  if (cat.includes("Mobile")) return `<svg class="w-3.5 h-3.5 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>`;
+  return `<svg class="w-3.5 h-3.5 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>`;
+}
+
+function getPhilIconHtml(titleStr) {
+  if (titleStr.includes("AI-Augmented")) return `<svg class="text-indigo-400 w-4 h-4 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>`;
+  if (titleStr.includes("Làm Chủ") || titleStr.includes("Ownership")) return `<svg class="text-indigo-400 w-4 h-4 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>`;
+  return `<svg class="text-indigo-400 w-4 h-4 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg>`;
+}
+
+function getContactIconHtml(type) {
+  if (type === "Phone") return `<svg class="text-pink-400 w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.94.725l.548 2.2a1 1 0 01-.321.988l-1.305.98a10.582 10.582 0 004.872 4.872l.98-1.305a1 1 0 01.988-.321l2.2.548a1 1 0 01.725.94V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>`;
+  if (type === "Mail") return `<svg class="text-pink-400 w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>`;
+  return `<svg class="text-pink-400 w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.166 6.839 9.489.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.603-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.464-1.11-1.464-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.831.092-.646.35-1.086.636-1.336-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.577.688.479C19.138 20.162 22 16.418 22 12c0-5.523-4.477-10-10-10z"/></svg>`;
+}
+
+function resetHologramCardTo2D(card) {
+  card.className = "absolute pointer-events-none opacity-0 scale-95 transition-all duration-300 z-30 bg-zinc-950/85 border border-emerald-500/35 rounded-2xl p-4 shadow-[0_0_20px_rgba(16,185,129,0.2)] backdrop-blur-md max-w-[280px] text-xs font-mono select-none hidden overflow-hidden";
+  card.style.boxShadow = "";
+  card.style.removeProperty('--scan-color');
+  card.style.removeProperty('--scan-color-alpha');
+  
+  card.innerHTML = `
+    <!-- Cyber scanner sweep line inside the card -->
+    <div class="cyber-scanner-line"></div>
+    <!-- Mini futuristic corner bracket decorations -->
+    <div class="absolute top-0 left-0 w-2.5 h-2.5 border-t-2 border-l-2 border-emerald-500/60 rounded-tl-md"></div>
+    <div class="absolute top-0 right-0 w-2.5 h-2.5 border-t-2 border-r-2 border-emerald-500/60 rounded-tr-md"></div>
+    <div class="absolute bottom-0 left-0 w-2.5 h-2.5 border-b-2 border-l-2 border-emerald-500/60 rounded-bl-md"></div>
+    <div class="absolute bottom-0 right-0 w-2.5 h-2.5 border-b-2 border-r-2 border-emerald-500/60 rounded-br-md"></div>
+
+    <div class="flex items-center gap-2 border-b border-zinc-850 pb-2 mb-2 relative z-20">
+      <div id="holo_icon_holder" class="text-emerald-400"></div>
+      <span id="holo_title" class="font-display font-semibold text-zinc-100 uppercase tracking-wider text-[11px]"></span>
+    </div>
+    <p id="holo_description" class="text-zinc-400 font-light leading-relaxed font-sans text-[11px] relative z-20"></p>
+    <div class="mt-2.5 text-[9px] text-emerald-500/75 flex items-center gap-1.5 border-t border-zinc-850/50 pt-2 relative z-20">
+      <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span>
+      <span id="holo_status_text">DETECTOR: ACTIVE ZONE</span>
+    </div>
+  `;
+  
+  state.lastRendered3DZoneId = null;
+}
+
+// Hàm tải danh sách tin nhắn guestbook trong card 3D
+async function loadHoloGuestbook() {
+  const listEl = document.getElementById('holo_gb_messages_list');
+  if (!listEl) return;
+
+  listEl.innerHTML = `
+    <div class="flex items-center justify-center py-3 text-zinc-500 font-mono text-[9px] animate-pulse">
+      ${state.language === 'vi' ? 'ĐANG TẢI TIN NHẮN...' : 'LOADING MESSAGES...'}
+    </div>
+  `;
+
+  try {
+    const res = await fetch('api/guestbook.php');
+    const data = await res.json();
+
+    if (data.status === 'success' && Array.isArray(data.data)) {
+      if (data.data.length === 0) {
+        listEl.innerHTML = `
+          <div class="text-center py-3 text-zinc-550 font-mono text-[9px] border border-dashed border-zinc-800/60 rounded-xl">
+            ${state.language === 'vi' ? 'Chưa có lời nhắn nào.' : 'No messages yet.'}
+          </div>
+        `;
+        return;
+      }
+
+      listEl.innerHTML = data.data.slice(0, 5).map(item => {
+        const safeName = item.name.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        const safeMsg = item.message.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        const date = new Date(item.created_at).toLocaleDateString(
+          state.language === 'vi' ? 'vi-VN' : 'en-US',
+          { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }
+        );
+
+        return `
+          <div class="p-2 bg-zinc-950/45 border border-zinc-850 rounded-xl space-y-0.5 font-mono text-[9px]">
+            <div class="flex justify-between items-center text-[9px]">
+              <span class="text-pink-400 font-semibold">${safeName}</span>
+              <span class="text-zinc-600 text-[8px]">${date}</span>
+            </div>
+            <p class="text-[9.5px] text-zinc-400 leading-relaxed font-sans">${safeMsg}</p>
+          </div>
+        `;
+      }).join('');
+    } else {
+      listEl.innerHTML = `<div class="text-center py-1.5 text-rose-450 text-[9px] font-mono">Lỗi tải dữ liệu.</div>`;
+    }
+  } catch (err) {
+    console.error('Failed to load holo guestbook:', err);
+    listEl.innerHTML = `<div class="text-center py-1.5 text-rose-450 text-[9px] font-mono">Lỗi kết nối.</div>`;
+  }
+}
+
 /**
- * Cập nhật vị trí và nội dung của Proximity Hologram Card (Bảng thông tin mờ bay trên đầu nhân vật)
+ * Cập nhật vị trí và nội dung của Proximity Hologram Card (Bảng thông tin mờ bay trên đầu hoặc cạnh nhân vật)
  */
 function updateHologramCard() {
   try {
     const card = document.getElementById('hologram_proximity_card');
     if (!card) return;
 
-    let currentZoneId = state.activeZoneId;
+    let currentZoneId = null;
     let isNear3DPortalGate = false;
     
     if (state.is3DActive) {
-      currentZoneId = active3DZoneId || state.activeZoneId;
+      currentZoneId = active3DZoneId; // Chỉ hiển thị khi phát hiện lân cận 3D cụ thể
     } else {
+      currentZoneId = state.activeZoneId;
       // Ở chế độ 2D, kiểm tra xem có ở gần Cổng Dịch Chuyển 3D (415, 80) không
       const portalCenterX = 415;
       const portalCenterY = 80;
@@ -5673,56 +5790,417 @@ function updateHologramCard() {
         card.classList.add('opacity-0', 'scale-95');
         card.classList.remove('opacity-100', 'scale-100');
         setTimeout(() => {
-          if (state.activeZoneId !== zone?.id) {
+          const checkId = state.is3DActive ? active3DZoneId : state.activeZoneId;
+          if (!checkId || (checkId === 'home' && !player.isMoving && !state.is3DActive)) {
             card.classList.add('hidden');
           }
         }, 300);
       }
+      if (state.lastRendered3DZoneId !== null) {
+        resetHologramCardTo2D(card);
+      }
       return;
     }
 
-    const titleEl = document.getElementById('holo_title');
-    const descEl = document.getElementById('holo_description');
-    const iconEl = document.getElementById('holo_icon_holder');
-    
-    if (titleEl) titleEl.textContent = state.language === 'vi' ? zone.vietnameseName : zone.name;
-    
-    // Điều chỉnh mô tả động khi đứng ở Portal Zone trong chế độ 3D để hướng dẫn thoát
-    if (zone.id === 'portal' && state.is3DActive) {
-      if (descEl) {
-        descEl.textContent = state.language === 'vi' 
-          ? 'CỔNG DỊCH CHUYỂN 2D. Hãy nhấn nút [THOÁT 3D (VỀ 2D)] ở góc trên bên trái để quay lại giao diện Bento 2D.' 
-          : '2D PORTAL GATEWAY. Press [EXIT 3D] at the top-left to return to the 2D layout.';
-      }
-    } else {
-      if (descEl) descEl.textContent = state.language === 'vi' ? zone.description_vi : zone.description_en;
-    }
-    
-    if (iconEl) iconEl.innerHTML = getHeaderIconHtml(zone.icon);
-
     const zoneColors = {
-      'home': { border: 'border-amber-500/40', shadow: 'rgba(245, 158, 11, 0.25)', text: 'text-amber-400', hex: '#f59e0b' },
-      'academy': { border: 'border-emerald-500/40', shadow: 'rgba(16, 185, 129, 0.25)', text: 'text-emerald-400', hex: '#10b981' },
-      'lab': { border: 'border-blue-500/40', shadow: 'rgba(59, 130, 246, 0.25)', text: 'text-blue-400', hex: '#3b82f6' },
-      'museum': { border: 'border-purple-500/40', shadow: 'rgba(168, 85, 247, 0.25)', text: 'text-purple-400', hex: '#a855f7' },
-      'library': { border: 'border-indigo-500/40', shadow: 'rgba(99, 102, 241, 0.25)', text: 'text-indigo-400', hex: '#6366f1' },
-      'portal': { border: 'border-pink-500/40', shadow: 'rgba(236, 72, 153, 0.25)', text: 'text-pink-400', hex: '#ec4899' },
-      'portal_3d_gate': { border: 'border-fuchsia-500/40', shadow: 'rgba(217, 70, 239, 0.25)', text: 'text-fuchsia-400', hex: '#d946ef' }
+      'home': { border: 'border-amber-500/40', shadow: 'rgba(245, 158, 11, 0.25)', text: 'text-amber-400', hex: '#f59e0b', color: 'amber' },
+      'academy': { border: 'border-emerald-500/40', shadow: 'rgba(16, 185, 129, 0.25)', text: 'text-emerald-400', hex: '#10b981', color: 'emerald' },
+      'lab': { border: 'border-blue-500/40', shadow: 'rgba(59, 130, 246, 0.25)', text: 'text-blue-400', hex: '#3b82f6', color: 'blue' },
+      'museum': { border: 'border-purple-500/40', shadow: 'rgba(168, 85, 247, 0.25)', text: 'text-purple-400', hex: '#a855f7', color: 'purple' },
+      'library': { border: 'border-indigo-500/40', shadow: 'rgba(99, 102, 241, 0.25)', text: 'text-indigo-400', hex: '#6366f1', color: 'indigo' },
+      'portal': { border: 'border-pink-500/40', shadow: 'rgba(236, 72, 153, 0.25)', text: 'text-pink-400', hex: '#ec4899', color: 'pink' },
+      'portal_3d_gate': { border: 'border-fuchsia-500/40', shadow: 'rgba(217, 70, 239, 0.25)', text: 'text-fuchsia-400', hex: '#d946ef', color: 'fuchsia' }
     };
     
     const theme = zoneColors[zone.id] || zoneColors.home;
-    
+
+    // === XỬ LÝ RENDER THEO CHẾ ĐỘ 3D VÀ 2D ===
+    if (state.is3DActive) {
+      // Chỉ render lại HTML khi có thay đổi zone để giữ trạng thái input/focus và giảm tải CPU
+      if (state.lastRendered3DZoneId !== zone.id) {
+        state.lastRendered3DZoneId = zone.id;
+
+        // Bật pointer-events để có thể bấm và nhập liệu
+        card.classList.remove('pointer-events-none', 'select-none');
+        if (!card.classList.contains('holo-interactive')) {
+          card.classList.add('holo-interactive');
+        }
+
+        const details = state.language === 'vi' ? zone.details_vi : (zone.details_en || zone.details_vi);
+
+        let holoDetailHtml = '';
+        if (zone.id === 'home' && details) {
+          holoDetailHtml = `
+            <div class="space-y-3 font-sans">
+              <div>
+                <h4 class="text-sm font-display font-semibold text-zinc-100 leading-none mb-1">${details.fullName}</h4>
+                <p class="text-xs text-amber-400 font-mono font-medium">${details.role}</p>
+              </div>
+              <p class="text-zinc-300 font-light leading-relaxed text-[11px] font-sans">${details.welcomeMessage}</p>
+              <div class="space-y-1.5 pt-1">
+                <span class="text-[8px] font-mono text-zinc-500 uppercase block">${state.language === 'vi' ? 'THÔNG TIN CƠ BẢN' : 'ESSENTIAL INFO'}</span>
+                <div class="grid grid-cols-2 gap-2 text-[10px] font-mono">
+                  ${(details.basicInfo || []).map(info => `
+                    <div class="bg-zinc-900/50 p-2.5 rounded-xl border border-zinc-800/60 font-sans">
+                      <span class="text-zinc-600 block text-[8px] uppercase tracking-wider font-mono">${info.label}</span>
+                      <span class="text-zinc-300 block font-medium mt-0.5">${info.value}</span>
+                    </div>
+                  `).join('')}
+                </div>
+              </div>
+              <div class="bg-amber-500/5 p-3 rounded-xl border border-amber-500/20 text-[10px] text-amber-400 font-sans leading-relaxed">
+                ${details.promoMessage}
+              </div>
+            </div>
+          `;
+        } else if (zone.id === 'academy' && details) {
+          holoDetailHtml = `
+            <div class="space-y-3 font-sans">
+              <div>
+                <h4 class="text-xs font-display font-semibold text-emerald-400 leading-tight">${details.institution}</h4>
+                <p class="text-[9px] font-mono text-zinc-500 mt-0.5">${details.period}</p>
+              </div>
+              <div class="bg-zinc-900/50 p-3 rounded-xl border border-zinc-800/60 flex justify-between items-start gap-2">
+                <div>
+                  <span class="text-[8px] font-mono text-zinc-650 uppercase block">${state.language === 'vi' ? 'CHUYÊN NGÀNH CHÍNH' : 'PRIMARY MAJOR'}</span>
+                  <p class="text-xs text-zinc-200 font-medium">${details.major}</p>
+                  <p class="text-[10px] text-zinc-400 font-light mt-0.5 font-sans">${details.majorDesc}</p>
+                </div>
+              </div>
+              <div class="grid grid-cols-2 gap-2 font-mono text-[10px]">
+                <div class="bg-zinc-900/50 p-2 rounded-xl border border-zinc-800/60 text-center">
+                  <span class="text-zinc-650 block text-[8px]">${state.language === 'vi' ? 'GPA TÍCH LŨY' : 'GPA'}</span>
+                  <span class="text-base text-zinc-200 font-bold block mt-0.5">${details.gpa}</span>
+                </div>
+                <div class="bg-zinc-900/50 p-2 rounded-xl border border-zinc-800/60 text-center flex flex-col justify-center items-center">
+                  <span class="text-zinc-650 block text-[8px]">${state.language === 'vi' ? 'HỌC BỔNG' : 'SCHOLARSHIP'}</span>
+                  <span class="text-[10px] text-emerald-400 font-bold block mt-0.5">${details.scholarship}</span>
+                </div>
+              </div>
+              <div class="border border-zinc-850 p-3 rounded-xl bg-zinc-900/20 text-xs font-light text-zinc-400 leading-relaxed font-sans">
+                ${details.summary}
+              </div>
+            </div>
+          `;
+        } else if (zone.id === 'lab' && details) {
+          holoDetailHtml = `
+            <div class="space-y-3 font-sans">
+              <p class="text-xs text-zinc-400 leading-relaxed font-light font-sans">${details.intro}</p>
+              <div class="space-y-2">
+                ${(details.skills || []).map(skill => `
+                  <div class="bg-zinc-900/40 p-3 rounded-xl border border-zinc-800/60">
+                    <div class="flex items-center gap-1.5 mb-1.5 text-blue-400">
+                      ${getSkillIconHtml(skill.category)}
+                      <h5 class="text-xs font-semibold text-zinc-250">${skill.category}</h5>
+                    </div>
+                    <p class="text-[10.5px] text-zinc-400 leading-relaxed font-light font-sans">${skill.desc}</p>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          `;
+        } else if (zone.id === 'museum' && details) {
+          holoDetailHtml = `
+            <div class="space-y-3 font-sans">
+              <div class="flex justify-between items-baseline gap-1 border-b border-zinc-850 pb-1.5">
+                <h4 class="text-xs font-bold text-purple-400 font-display">${details.title}</h4>
+                <span class="text-[9px] font-mono text-zinc-500">${details.period}</span>
+              </div>
+              <p class="text-[10.5px] text-emerald-400 font-medium leading-relaxed font-mono">${details.highlight}</p>
+              
+              <div class="flex flex-col gap-2">
+                <a 
+                  href="${details.link}" 
+                  target="_blank" 
+                  rel="noreferrer" 
+                  class="inline-flex items-center justify-center gap-1.5 text-xs font-mono text-zinc-950 font-bold transition-all bg-purple-500 hover:bg-purple-400 px-3 py-2 rounded-xl border border-purple-400 shadow-[0_0_10px_rgba(168,85,247,0.3)] hover:scale-[1.02] cursor-pointer"
+                >
+                  <span>${state.language === 'vi' ? 'TRẢI NGHIỆM DIENMAYPRO' : 'EXPLORE DIENMAYPRO'}</span>
+                  <svg class="w-3.5 h-3.5 text-zinc-950" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                </a>
+                ${details.oldPortfolioLink ? `
+                  <a 
+                    href="${details.oldPortfolioLink}" 
+                    target="_blank" 
+                    rel="noreferrer" 
+                    class="inline-flex items-center justify-center gap-1.5 text-[10px] font-mono text-indigo-300 hover:text-white transition-colors bg-indigo-500/10 hover:bg-indigo-500/25 px-3 py-2 rounded-xl border border-indigo-500/30 hover:border-indigo-500/60 cursor-pointer"
+                  >
+                    <span>${details.oldPortfolioTitle}</span>
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                  </a>
+                ` : ''}
+              </div>
+
+              <div class="space-y-2 text-[10.5px]">
+                ${(details.accomplishments || []).map(acc => `
+                  <div class="bg-zinc-900/50 p-2.5 rounded-xl border border-zinc-800/60">
+                    <strong class="text-zinc-200 block mb-0.5">${acc.title}</strong>
+                    <p class="text-zinc-400 font-light leading-relaxed font-sans">${acc.desc}</p>
+                  </div>
+                `).join('')}
+              </div>
+              <div class="bg-purple-400/5 border border-purple-400/20 rounded-xl p-3 text-[10px] text-zinc-350 font-sans leading-relaxed">
+                <span class="text-purple-400 font-semibold uppercase block mb-0.5">${details.resultTitle}</span>
+                ${details.resultDesc}
+              </div>
+            </div>
+          `;
+        } else if (zone.id === 'library' && details) {
+          holoDetailHtml = `
+            <div class="space-y-3 font-sans">
+              <h4 class="text-[9px] font-mono text-zinc-500 uppercase tracking-widest border-b border-zinc-850 pb-1">${details.filename}</h4>
+              <div class="space-y-3 font-light text-xs text-zinc-300 leading-relaxed font-sans">
+                ${(details.philosophies || []).map(phil => `
+                  <div class="p-3 bg-zinc-900/40 rounded-xl border border-zinc-850 flex gap-2.5 items-start">
+                    ${getPhilIconHtml(phil.title)}
+                    <div>
+                      <h5 class="font-semibold text-zinc-200 mb-0.5">${phil.title}</h5>
+                      <p class="text-[10.5px] text-zinc-400 font-sans leading-relaxed">${phil.desc}</p>
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          `;
+        } else if (zone.id === 'portal' && details) {
+          holoDetailHtml = `
+            <div class="space-y-3 font-sans">
+              <!-- Tabs Header -->
+              <div class="flex border-b border-zinc-850 gap-4 text-[10.5px] font-mono pb-px">
+                <button id="holo_tab_contact" class="pb-1.5 border-b-2 border-pink-500 text-pink-400 font-semibold focus:outline-none cursor-pointer">
+                  ${state.language === 'vi' ? 'LIÊN HỆ' : 'CONTACT'}
+                </button>
+                <button id="holo_tab_guestbook" class="pb-1.5 border-b-2 border-transparent text-zinc-500 hover:text-zinc-300 focus:outline-none cursor-pointer">
+                  ${state.language === 'vi' ? 'SỔ LƯU NIỆM' : 'GUESTBOOK'}
+                </button>
+              </div>
+
+              <!-- Tab 1: Contact -->
+              <div id="holo_tab_content_contact" class="space-y-3">
+                <p class="text-[10px] text-zinc-400 leading-relaxed font-light font-mono">
+                  ${details.intro}
+                </p>
+
+                <div class="space-y-2 text-[10px] font-mono">
+                  ${(details.contacts || []).map(con => {
+                    let btnClass = "bg-zinc-900/60 border-zinc-800/80 hover:border-pink-500/40 text-zinc-200 hover:text-pink-400";
+                    let shadowClass = "";
+                    
+                    if (con.type === "Phone") {
+                      btnClass = "bg-pink-500/10 border-pink-500/35 hover:bg-pink-500/25 hover:border-pink-500 text-pink-300 hover:text-white";
+                      shadowClass = "shadow-[0_0_10px_rgba(236,72,153,0.15)] hover:scale-[1.01]";
+                    } else if (con.type === "Github") {
+                      btnClass = "bg-purple-500/10 border-purple-500/35 hover:bg-purple-500/25 hover:border-purple-500 text-purple-300 hover:text-white";
+                      shadowClass = "shadow-[0_0_10px_rgba(168,85,247,0.15)] hover:scale-[1.01]";
+                    }
+                    
+                    return `
+                      <a 
+                        href="${con.url}" 
+                        target="_blank"
+                        class="flex items-center justify-between p-3 rounded-xl border transition-all duration-200 group ${btnClass} ${shadowClass} cursor-pointer"
+                      >
+                        <div class="flex items-center gap-2 font-sans">
+                          ${getContactIconHtml(con.type)}
+                          <span class="font-mono text-[9px] uppercase tracking-wider font-semibold">${con.label}</span>
+                        </div>
+                        <span class="transition-colors flex items-center gap-1 font-mono text-[9.5px] font-bold">
+                          ${con.value} 
+                          <svg class="w-3 h-3 text-current group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+                        </span>
+                      </a>
+                    `;
+                  }).join('')}
+                </div>
+
+                <div class="bg-pink-500/5 border border-pink-500/10 rounded-xl p-3 text-[9px] text-pink-400/80 leading-relaxed font-mono">
+                  ${details.notice}
+                </div>
+              </div>
+
+              <!-- Tab 2: Guestbook -->
+              <div id="holo_tab_content_guestbook" class="hidden space-y-3 flex flex-col">
+                <form id="holo_gb_form" class="space-y-2 flex-shrink-0 pt-0.5">
+                  <div class="grid grid-cols-2 gap-1.5 text-[10px]">
+                    <input type="text" id="holo_gb_name" required placeholder="${state.language === 'vi' ? 'Tên của bạn...' : 'Your name...'}" class="bg-zinc-950/45 border border-zinc-850 text-zinc-200 px-2.5 py-1.5 rounded-xl focus:outline-none focus:border-pink-500/40 transition-colors font-mono text-[10px] placeholder-zinc-550">
+                    <input type="email" id="holo_gb_email" required placeholder="${state.language === 'vi' ? 'Email liên hệ...' : 'Contact email...'}" class="bg-zinc-950/45 border border-zinc-850 text-zinc-200 px-2.5 py-1.5 rounded-xl focus:outline-none focus:border-pink-500/40 transition-colors font-mono text-[10px] placeholder-zinc-550">
+                  </div>
+                  <textarea id="holo_gb_message" required rows="2" placeholder="${state.language === 'vi' ? 'Để lại lời nhắn gửi tới Quý...' : 'Write a message to Quy...'}" class="w-full bg-zinc-950/45 border border-zinc-850 text-zinc-200 p-2 rounded-xl focus:outline-none focus:border-pink-500/40 transition-colors font-sans text-xs resize-none placeholder-zinc-550 h-14"></textarea>
+                  <div class="flex justify-between items-center">
+                    <span id="holo_gb_status" class="hidden text-[9px] font-mono"></span>
+                    <button type="submit" id="btn_holo_submit_guestbook" class="px-3 py-1.5 bg-pink-600 hover:bg-pink-500 active:bg-pink-700 text-white rounded-xl text-[9px] font-mono font-semibold transition-all cursor-pointer border border-pink-500 shadow-md ml-auto">
+                      ${state.language === 'vi' ? 'GỬI LỜI NHẮN' : 'SEND MESSAGE'}
+                    </button>
+                  </div>
+                </form>
+
+                <div class="mt-2.5">
+                  <span class="text-[8px] font-mono text-zinc-550 block mb-1.5 uppercase tracking-wider">
+                    ${state.language === 'vi' ? 'CÁC LỜI NHẮN ĐÃ DUYỆT' : 'APPROVED MESSAGES'}
+                  </span>
+                  <div id="holo_gb_messages_list" class="space-y-1.5">
+                    <!-- AJAX messages list -->
+                  </div>
+                </div>
+              </div>
+            </div>
+          `;
+        }
+
+        card.innerHTML = `
+          <div class="cyber-scanner-line" style="--scan-color: ${theme.hex};"></div>
+          <div class="absolute top-0 left-0 w-2.5 h-2.5 border-t-2 border-l-2 ${theme.border.replace('border-', 'border-').replace('/40', '/60')} rounded-tl-md"></div>
+          <div class="absolute top-0 right-0 w-2.5 h-2.5 border-t-2 border-r-2 ${theme.border.replace('border-', 'border-').replace('/40', '/60')} rounded-tr-md"></div>
+          <div class="absolute bottom-0 left-0 w-2.5 h-2.5 border-b-2 border-l-2 ${theme.border.replace('border-', 'border-').replace('/40', '/60')} rounded-bl-md"></div>
+          <div class="absolute bottom-0 right-0 w-2.5 h-2.5 border-b-2 border-r-2 ${theme.border.replace('border-', 'border-').replace('/40', '/60')} rounded-br-md"></div>
+
+          <div class="flex items-center justify-between border-b border-zinc-850 pb-2 mb-3 relative z-20">
+            <div class="flex items-center gap-2">
+              <div id="holo_icon_holder" class="${theme.text}">${getHeaderIconHtml(zone.icon)}</div>
+              <span id="holo_title" class="font-display font-semibold text-zinc-100 uppercase tracking-wider text-[11px]">
+                ${state.language === 'vi' ? zone.vietnameseName : zone.name}
+              </span>
+            </div>
+            <button id="btn_holo_close" class="text-zinc-500 hover:text-zinc-355 font-mono text-sm focus:outline-none cursor-pointer px-1.5 relative z-30 select-none">×</button>
+          </div>
+
+          <div class="holo-scroll-container pr-1 relative z-20">
+             ${holoDetailHtml}
+          </div>
+
+          <div class="mt-3 text-[9px] flex items-center gap-1.5 border-t border-zinc-850/50 pt-2.5 relative z-20">
+            <span class="w-1.5 h-1.5 rounded-full animate-ping ${theme.text.replace('text', 'bg')}"></span>
+            <span id="holo_status_text" class="font-mono ${theme.text}">
+              ${state.language === 'vi' ? 'HỆ THỐNG: KHU VỰC HOẠT ĐỘNG' : 'SYSTEM: ACTIVE ZONE'}
+            </span>
+          </div>
+        `;
+
+        // Gắn sự kiện đóng card
+        const btnClose = document.getElementById('btn_holo_close');
+        if (btnClose) {
+          btnClose.addEventListener('click', () => {
+            playClickSound();
+            active3DZoneId = null;
+            updateHologramCard();
+          });
+        }
+
+        // Gắn sự kiện tab và submit cho Sổ lưu niệm (Guestbook)
+        if (zone.id === 'portal') {
+          const holoTabContact = document.getElementById('holo_tab_contact');
+          const holoTabGuestbook = document.getElementById('holo_tab_guestbook');
+          const holoContentContact = document.getElementById('holo_tab_content_contact');
+          const holoContentGuestbook = document.getElementById('holo_tab_content_guestbook');
+
+          if (holoTabContact && holoTabGuestbook && holoContentContact && holoContentGuestbook) {
+            holoTabContact.addEventListener('click', () => {
+              playClickSound();
+              holoTabContact.className = 'pb-1.5 border-b-2 border-pink-500 text-pink-400 font-semibold focus:outline-none cursor-pointer';
+              holoTabGuestbook.className = 'pb-1.5 border-b-2 border-transparent text-zinc-500 hover:text-zinc-350 focus:outline-none cursor-pointer';
+              holoContentContact.classList.remove('hidden');
+              holoContentGuestbook.classList.add('hidden');
+            });
+
+            holoTabGuestbook.addEventListener('click', () => {
+              playClickSound();
+              holoTabGuestbook.className = 'pb-1.5 border-b-2 border-pink-500 text-pink-400 font-semibold focus:outline-none cursor-pointer';
+              holoTabContact.className = 'pb-1.5 border-b-2 border-transparent text-zinc-500 hover:text-zinc-350 focus:outline-none cursor-pointer';
+              holoContentContact.classList.add('hidden');
+              holoContentGuestbook.classList.remove('hidden');
+              loadHoloGuestbook();
+            });
+          }
+
+          const holoForm = document.getElementById('holo_gb_form');
+          if (holoForm) {
+            holoForm.addEventListener('submit', async (e) => {
+              e.preventDefault();
+              const nameInput = document.getElementById('holo_gb_name');
+              const emailInput = document.getElementById('holo_gb_email');
+              const messageInput = document.getElementById('holo_gb_message');
+              const statusEl = document.getElementById('holo_gb_status');
+              const submitBtn = document.getElementById('btn_holo_submit_guestbook');
+
+              if (!nameInput || !emailInput || !messageInput || !statusEl || !submitBtn) return;
+
+              const name = nameInput.value.trim();
+              const email = emailInput.value.trim();
+              const message = messageInput.value.trim();
+
+              submitBtn.disabled = true;
+              submitBtn.textContent = state.language === 'vi' ? 'ĐANG GỬI...' : 'SENDING...';
+              statusEl.classList.add('hidden');
+
+              try {
+                const res = await fetch('api/guestbook.php', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ name, email, message })
+                });
+                const data = await res.json();
+
+                statusEl.classList.remove('hidden');
+                if (data.status === 'success') {
+                  statusEl.textContent = data.message;
+                  statusEl.className = 'text-[9px] text-emerald-450 font-mono';
+                  holoForm.reset();
+                  playTeleportSound();
+                  loadHoloGuestbook();
+                } else {
+                  statusEl.textContent = data.message || 'Lỗi gửi tin nhắn.';
+                  statusEl.className = 'text-[9px] text-rose-450 font-mono';
+                }
+              } catch (err) {
+                statusEl.classList.remove('hidden');
+                statusEl.textContent = 'Lỗi kết nối.';
+                statusEl.className = 'text-[9px] text-rose-400 font-mono';
+              } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = state.language === 'vi' ? 'GỬI LỜI NHẮN' : 'SEND MESSAGE';
+              }
+            });
+          }
+        }
+      }
+    } else {
+      // Chế độ 2D: Reset layout về bản gốc nếu trước đó hoạt động ở 3D
+      if (state.lastRendered3DZoneId !== null) {
+        resetHologramCardTo2D(card);
+      }
+
+      // Nạp thông tin cơ bản cho card 2D
+      const titleEl = document.getElementById('holo_title');
+      const descEl = document.getElementById('holo_description');
+      const iconEl = document.getElementById('holo_icon_holder');
+      
+      if (titleEl) titleEl.textContent = state.language === 'vi' ? zone.vietnameseName : zone.name;
+      
+      if (zone.id === 'portal' && state.is3DActive) {
+        // Dự phòng cho trường hợp trạng thái trễ
+        if (descEl) {
+          descEl.textContent = state.language === 'vi' 
+            ? 'CỔNG DỊCH CHUYỂN 2D. Hãy nhấn nút [THOÁT 3D (VỀ 2D)] ở góc trên bên trái để quay lại giao diện Bento 2D.' 
+            : '2D PORTAL GATEWAY. Press [EXIT 3D] at the top-left to return to the 2D layout.';
+        }
+      } else {
+        if (descEl) descEl.textContent = state.language === 'vi' ? zone.description_vi : zone.description_en;
+      }
+      
+      if (iconEl) iconEl.innerHTML = getHeaderIconHtml(zone.icon);
+    }
+
+    // === THIẾT LẬP CÁC HIỆU ỨNG THEME PHÁT SÁNG CHO CARD ===
     card.className = card.className.replace(/border-[a-z0-9\/-]+/g, theme.border);
     card.style.boxShadow = `0 0 25px ${theme.shadow}, inset 0 0 10px ${theme.shadow.replace('0.25', '0.05')}`;
-    
-    // Thiết lập biến CSS cho tia quét màu sắc
     card.style.setProperty('--scan-color', theme.hex);
     card.style.setProperty('--scan-color-alpha', theme.shadow);
     
-    if (iconEl) {
-      iconEl.className = theme.text;
+    const iconHolder = document.getElementById('holo_icon_holder');
+    if (iconHolder) {
+      iconHolder.className = theme.text;
     }
-    const statusIndicator = card.querySelector('.mt-2.5 span:first-of-type');
+    const statusIndicator = card.querySelector('.mt-3 span:first-of-type, .mt-2.5 span:first-of-type');
     if (statusIndicator) {
       statusIndicator.className = `w-1.5 h-1.5 rounded-full animate-ping ${theme.text.replace('text', 'bg')}`;
     }
@@ -5732,9 +6210,17 @@ function updateHologramCard() {
       statusText.className = `font-mono text-[9px] ${theme.text}`;
     }
 
+    // === TÍNH TOÁN VỊ TRÍ CHỐNG TRÀN BÊN CẠNH NHÂN VẬT ===
     let screenX = 0;
     let screenY = 0;
     let offsetTop = 135; 
+
+    const rectBound = state.is3DActive 
+      ? document.getElementById('threejs_3d_viewport').getBoundingClientRect()
+      : canvas.getBoundingClientRect();
+
+    const cardWidth = state.is3DActive ? 360 : (card.clientWidth || 240);
+    const cardHeight = state.is3DActive ? 320 : (card.clientHeight || 120);
 
     if (state.is3DActive) {
       const viewport = document.getElementById('threejs_3d_viewport');
@@ -5744,36 +6230,47 @@ function updateHologramCard() {
         pos.y += 1.95; 
         pos.project(threeCamera);
         
-        const rect = viewport.getBoundingClientRect();
-        screenX = (pos.x * 0.5 + 0.5) * rect.width;
-        screenY = (-(pos.y * 0.5) + 0.5) * rect.height;
-        offsetTop = 45; 
+        screenX = (pos.x * 0.5 + 0.5) * rectBound.width;
+        screenY = (-(pos.y * 0.5) + 0.5) * rectBound.height;
       }
+
+      // Đặt card lệch sang bên phải nhân vật 45px và căn giữa dọc
+      let leftPos = screenX + 45;
+      let topPos = screenY - (cardHeight / 2);
+
+      // Chống tràn rìa phải: đẩy sang bên trái nhân vật nếu bị khuất
+      if (leftPos + cardWidth > rectBound.width - 20) {
+        leftPos = screenX - cardWidth - 45;
+      }
+      if (leftPos < 15) leftPos = 15;
+
+      // Chống tràn trên dưới
+      if (topPos < 20) topPos = 20;
+      if (topPos + cardHeight > rectBound.height - 20) {
+        topPos = rectBound.height - cardHeight - 20;
+      }
+
+      card.style.left = `${leftPos}px`;
+      card.style.top = `${topPos}px`;
     } else {
+      // 2D: Căn giữa trên đầu nhân vật giống như cũ
       const rect = canvas.getBoundingClientRect();
       const scaleX = rect.width / canvas.width;
       const scaleY = rect.height / canvas.height;
       
       screenX = player.x * scaleX;
       screenY = player.y * scaleY;
+
+      let leftPos = screenX - (cardWidth / 2);
+      let topPos = screenY - offsetTop;
+
+      if (leftPos < 10) leftPos = 10;
+      if (leftPos + cardWidth > rectBound.width - 10) leftPos = rectBound.width - cardWidth - 10;
+      if (topPos < 10) topPos = 10;
+
+      card.style.left = `${leftPos}px`;
+      card.style.top = `${topPos}px`;
     }
-
-    const cardWidth = card.clientWidth || 240;
-    const cardHeight = card.clientHeight || 120;
-    
-    let leftPos = screenX - (cardWidth / 2);
-    let topPos = screenY - offsetTop - (state.is3DActive ? cardHeight : 0);
-
-    const rectBound = state.is3DActive 
-      ? document.getElementById('threejs_3d_viewport').getBoundingClientRect()
-      : canvas.getBoundingClientRect();
-
-    if (leftPos < 10) leftPos = 10;
-    if (leftPos + cardWidth > rectBound.width - 10) leftPos = rectBound.width - cardWidth - 10;
-    if (topPos < 10) topPos = 10;
-
-    card.style.left = `${leftPos}px`;
-    card.style.top = `${topPos}px`;
 
     if (card.classList.contains('hidden')) {
       card.classList.remove('hidden');
