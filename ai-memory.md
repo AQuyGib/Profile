@@ -51,8 +51,9 @@
     - Khắc phục lỗi phát giọng Tiếng Anh lỗi âm cho Tiếng Việt: Thêm logic kiểm tra so khớp ngôn ngữ nghiêm ngặt (case-insensitive `toLowerCase().startsWith('vi')`). Nếu trong `vi` mode mà không tìm thấy giọng Tiếng Việt tương thích trên hệ thống, AI sẽ chủ động im lặng thay vì dùng giọng đọc Tiếng Anh để phát chữ tiếng Việt.
   - **Chú thích chi tiết (Commenting Code):**
     - Hoàn tất viết chú thích Tiếng Việt chi tiết (từng dòng mã nguồn) cho tất cả các file xử lý backend cốt lõi: `api/chat.php`, `api/admin.php`, `api/guestbook.php`, `api/config/Database.php`, `api/controllers/GuestbookController.php`, `api/utils/TOTP.php`, và `api/utils/Mailer.php`.
+  - **Git Merge:** Đã tiến hành merge thành công toàn bộ mã nguồn từ nhánh `profile_3d_html` vào nhánh `master` không gặp xung đột (conflicts).
 - Edited files:
-  - `api/guestbook.php`
+  - `ai-memory.md`
   - `api/config/Database.php`
   - `api/controllers/GuestbookController.php`
   - `api/utils/TOTP.php`
