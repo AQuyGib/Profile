@@ -1,7 +1,63 @@
 # Project Memory
 
 - Current updates & fixes:
+  - **[NÂNG CẤP PORTFOLIO 3D - CINEMATIC SET DESIGN & THEME SWITCHER]**
+    - Tạo file `js/state-manager.js` để quản lý trạng thái toàn cục và **themeManager singleton** với 2 theme chính:
+      - **Cyberpunk Theme**: Ánh sáng Tím/Cyan lạnh lùng, huyền ảo (#8a2be2 dirLight, #06b6d4 pointLight), fogColor #020208, bloomEnabled, shadowsEnabled.
+      - **Warm Studio Theme**: Ánh sáng vàng ấm áp mặt trời hoàng hôn (#ffaa44 dirLight, #ffdd88 pointLight), fogColor #0d0805, phù hợp Set Design Cinematic.
+    - Cơ chế **chuyển đổi theme mượt mà với GSAP** (1.5s transition): Tất cả các màu sắc ánh sáng (ambient, directional, point, fog) được interpolate mềm mà giữa themes bằng gsap.to() để tránh chuyển đổi bất ngờ.
+    - Hỗ trợ **toggleBloom()**, **toggleShadows()**, và **setEcoMode()** để người dùng tùy chỉnh hiệu ứng đồ họa thời gian thực trên Control Panel.
+    - Lưu lựa chọn theme vào `localStorage` (` portfolio_theme_preference`) để tái sử dụng khi quay lại.
+    - Tạo file `js/control-panel-handler.js` để xử lý toàn bộ tương tác với **3D Control Panel UI**:
+      - Quản lý hiển thị/ẩn control panel.
+      - Xử lý sự kiện click cho 2 nút theme (Cyberpunk & Warm Studio) với UI update động.
+      - Xử lý toggle Bloom, Shadows, Eco Mode với switch component CSS-driven (data-enabled attribute).
+      - Cập nhật thống kê FPS, Objects, Memory Usage mỗi giây từ performance metrics.
+    - Thiết kế giao diện **3D Control Panel** trong `index.html` (left-side panel, 400px max-width):
+      - Header với nút đóng và tiêu đề "⚙ TỪ CHỈNH" (Settings).
+      - **Theme Selector**: 2 nút Cyberpunk & Warm Studio với active-theme styling.
+      - **Graphics Settings**: 3 toggle switches (Bloom Glow, Bóng Mềm, Tiết Kiệm 30FPS) với CSS animation mượt mà.
+      - **Status Info**: Hiển thị FPS, Objects, Memory dạng tabular-nums font.
+    - Thêm CSS trong `css/style.css` cho:
+      - `#threejs_control_panel` animation slideInLeft.
+      - `.toggle-switch` styling với data-enabled attribute binding.
+      - `.active-theme` pulse animation khi theme được chọn.
+    - Tích hợp **themeManager.init()** vào `initThreeJS()` trong app.js:
+      - Pass scene, camera, renderer, composer, lights, fog tới themeManager.
+      - Load saved theme preference từ localStorage khi khởi động 3D scene.
+      - Apply theme tức thời (no transition) trên lần đầu tiên để tránh giật.
+    - Gọi **initControlPanel()** trong `enter3DMode()` để kích hoạt Control Panel khi vào 3D.
   - Thay thế phương án cài chuyển động xương (Skeletal Animation) phức tạp bằng cơ chế **Bay lơ lửng (Hover/Flying Mode)** lập trình trực tiếp bằng Three.js.
+  - Thiết lập phi hành gia tự động nghiêng người 20 độ về phía trước và nhấp nhô lướt đi khi di chuyển (phím WASD / mũi tên). Lắc lư nhẹ nhàng không trọng lực khi đứng yên.
+  - Tích hợp hệ thống hạt tia lửa phản lực Cyberpunk (Jetpack Thruster Spark Particles) với màu sắc neon rực rỡ phun ra từ 2 bên ống xả sau lưng balo nhân vật khi di chuyển, tự giải phóng bộ nhớ để tối ưu 60FPS.
+  - Thiết lập môi trường Docker hóa (Dockerization) cho dự án: tạo `Dockerfile` sử dụng Node.js v24 Alpine, `.dockerignore` bảo mật thông tin nhạy cảm và `docker-compose.yml` để dễ dàng quản trị container.
+  - Xây dựng hệ thống Guestbook (Sổ lưu niệm) kết nối với MySQL trong Zone Portal.
+  - Nâng cấp bảo mật Admin Dashboard bằng **Mã OTP Email thật** sử dụng PHPMailer.
+  - Tích hợp tính năng AI Voice Chat (Speech-to-Text & Text-to-Speech) vào Chatbot.
+  - Nâng cấp cơ chế RAG (Retrieval-Augmented Generation) thông minh trong `api/chat.php`.
+  - **Nâng cấp Đồ họa 3D & Âm thanh nền:** Tích hợp UnrealBloomPass, DRACOLoader, và Ambient Space Synth bằng Web Audio API.
+  - **Hệ thống Gamification & Thành tựu RPG** với 4 thành tựu khác nhau.
+  - **Tự động hóa Vận hành & DevOps (CI/CD, Docker Multi-Container)** với GitHub Actions.
+  - **Khắc phục lỗi Chatbot** (Local cURL, Deprecated Gemini API Model, Chat History Persistence).
+  - **Bổ sung tùy chọn Giọng đọc/Ngôn ngữ đọc & Bật/tắt giọng nói cho Chatbot**.
+  - **Chú thích chi tiết (Commenting Code)** cho tất cả các file xử lý backend cốt lõi.
+  - **Git Merge:** Đã tiến hành merge thành công toàn bộ mã nguồn từ nhánh `profile_3d_html` vào nhánh `master` không gặp xung đột (conflicts).
+- Edited files:
+  - `js/state-manager.js` (NEW)
+  - `js/control-panel-handler.js` (NEW)
+  - `index.html` (thêm 3D Control Panel UI, script tags)
+  - `css/style.css` (thêm control panel styles)
+  - `js/app.js` (tích hợp themeManager init, gọi initControlPanel)
+  - `ai-memory.md`
+- TODO:
+  - Tái cấu trúc 4 bối cảnh 3D (Desk Setup, Studio Phim, Timeline Quy trình, Portal).
+  - Tích hợp Cinematic Camera transitions & Depth of Field (DoF) effect.
+  - Xây dựng Timeline 3D interative cho "Quy trình làm việc tối ưu hóa 3D" (Blender -> Low-poly -> Lightmap -> Interactive Programming).
+  - Kiểm thử Control Panel trên các thiết bị di động (responsive design).
+  - Tối ưu hóa FPS trên di động bằng Eco Mode (giảm renderTarget resolution, disable post-processing).
+  - Kiểm thử giao diện Admin Dashboard (`/admin/index.html` và `/admin/admin.js`) với luồng đăng nhập 2FA TOTP.
+  - Chạy thử nghiệm Docker Compose với Nginx Proxy Manager trên VPS thực tế.
+
   - Thiết lập phi hành gia tự động nghiêng người 20 độ về phía trước và nhấp nhô lướt đi khi di chuyển (phím WASD / mũi tên). Lắc lư nhẹ nhàng không trọng lực khi đứng yên.
   - Tích hợp hệ thống hạt tia lửa phản lực Cyberpunk (Jetpack Thruster Spark Particles) với màu sắc neon rực rỡ phun ra từ 2 bên ống xả sau lưng balo nhân vật khi di chuyển, tự giải phóng bộ nhớ để tối ưu 60FPS.
   - Thiết lập môi trường Docker hóa (Dockerization) cho dự án: tạo `Dockerfile` sử dụng Node.js v24 Alpine, `.dockerignore` bảo mật thông tin nhạy cảm và `docker-compose.yml` để dễ dàng quản trị container.

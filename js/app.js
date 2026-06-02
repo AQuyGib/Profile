@@ -3237,6 +3237,33 @@ function initThreeJS() {
   threeReadiness.coreBeacon = coreBeacon;
 
   zoneEnvironment = { ambientLight, dirLight, fillLight, skyMat };
+  
+  // ============================================
+  // Initialize Theme Manager with scene references
+  // ============================================
+  if (typeof themeManager !== 'undefined' && themeManager) {
+    themeManager.init({
+      scene: threeScene,
+      camera: threeCamera,
+      renderer: threeRenderer,
+      composer: threeComposer,
+      ambientLight: ambientLight,
+      dirLight: dirLight,
+      pointLight: fillLight,
+      fog: threeScene.fog
+    });
+    
+    // Load saved theme preference
+    const savedTheme = themeManager.loadPreference();
+    console.log(`[initThreeJS] Loaded theme preference: ${savedTheme}`);
+    
+    // Apply theme immediately (no transition on first load)
+    const currentThemeConfig = THEME_PRESETS[savedTheme];
+    if (currentThemeConfig) {
+      themeManager._switchThemeInstant(currentThemeConfig);
+    }
+  }
+  
   buildZoneParticles();
   applyZoneTheme3D(state.activeZoneId || 'home');
 
@@ -5456,6 +5483,12 @@ async function enter3DMode() {
     updateDimensionToggleBtnText();
     if (loadingOverlay) loadingOverlay.classList.add('hidden');
     setThreeReadiness({ reason: 'viewport-unhidden' });
+
+    // Initialize Control Panel for theme switching and graphics settings
+    if (typeof initControlPanel === 'function') {
+      initControlPanel();
+      console.log('[enter3DMode] Control Panel initialized');
+    }
 
     if (animationFrameId) {
       cancelAnimationFrame(animationFrameId);
