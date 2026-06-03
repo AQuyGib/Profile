@@ -58,6 +58,111 @@ function getHeaderIconHtml(iconName) {
   }
 }
 
+// Global state for Active Museum Project Tab
+window.activeMuseumProjectIndex = 0;
+window.switchMuseumProject = function(index) {
+  window.activeMuseumProjectIndex = index;
+  if (typeof updateUIForActiveZone === 'function') {
+    updateUIForActiveZone();
+    // If the 2D modal is open, refresh its content to show the active project tab
+    const modal = document.getElementById('zone_info_modal_2d');
+    if (modal && !modal.classList.contains('hidden')) {
+      const modalBody = document.getElementById('modal_2d_body_content');
+      const zoneDetail = document.getElementById('zone_detail_content');
+      if (modalBody && zoneDetail) {
+        modalBody.innerHTML = zoneDetail.innerHTML;
+      }
+    }
+  }
+};
+
+window.open2DZoneModal = function() {
+  const modal = document.getElementById('zone_info_modal_2d');
+  const modalBody = document.getElementById('modal_2d_body_content');
+  const modalTitle = document.getElementById('modal_2d_title');
+  const modalIcon = document.getElementById('modal_2d_icon_holder');
+  
+  const zoneDetail = document.getElementById('zone_detail_content');
+  const bannerTitle = document.getElementById('zone_banner_title');
+  const bannerIconHolder = document.getElementById('zone_banner_icon_holder');
+  
+  if (modal && modalBody && zoneDetail) {
+    // Copy content
+    modalBody.innerHTML = zoneDetail.innerHTML;
+    
+    // Copy title & icon
+    if (modalTitle && bannerTitle) {
+      modalTitle.textContent = bannerTitle.textContent;
+      if (state.activeZoneId === 'museum') {
+        const linkHtml = `
+          <a href="https://profile-5nkq.onrender.com" target="_blank" rel="noreferrer" class="inline-flex items-center gap-1.5 text-[10px] font-mono text-indigo-400 hover:text-white transition-all duration-200 bg-indigo-500/10 hover:bg-indigo-500/20 px-2.5 py-1 rounded-xl border border-indigo-500/20 ml-3.5 align-middle normal-case font-normal select-none">
+            Bản sử dụng (React/Render)
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+          </a>
+        `;
+        modalTitle.innerHTML = bannerTitle.textContent + linkHtml;
+      }
+    }
+    if (modalIcon && bannerIconHolder) {
+      modalIcon.innerHTML = bannerIconHolder.innerHTML;
+    }
+    
+    // Show modal
+    modal.classList.remove('hidden');
+    modal.offsetHeight; // Force reflow
+    modal.classList.add('active');
+    modal.style.opacity = '1';
+    const panel = modal.querySelector('.glass-panel');
+    if (panel) {
+      panel.style.transform = 'scale(1)';
+    }
+  }
+};
+
+window.close2DZoneModal = function() {
+  const modal = document.getElementById('zone_info_modal_2d');
+  if (modal) {
+    modal.classList.remove('active');
+    modal.style.opacity = '0';
+    const panel = modal.querySelector('.glass-panel');
+    if (panel) {
+      panel.style.transform = 'scale(0.95)';
+    }
+    setTimeout(() => {
+      modal.classList.add('hidden');
+    }, 300);
+  }
+};
+
+window.openGameplayInstructions = function() {
+  const modal = document.getElementById('gameplay_instructions_modal');
+  if (modal) {
+    modal.classList.remove('hidden');
+    modal.offsetHeight; // Force reflow
+    modal.classList.add('active');
+    modal.style.opacity = '1';
+    const panel = modal.querySelector('.glass-panel');
+    if (panel) {
+      panel.style.transform = 'scale(1)';
+    }
+  }
+};
+
+window.closeGameplayInstructions = function() {
+  const modal = document.getElementById('gameplay_instructions_modal');
+  if (modal) {
+    modal.classList.remove('active');
+    modal.style.opacity = '0';
+    const panel = modal.querySelector('.glass-panel');
+    if (panel) {
+      panel.style.transform = 'scale(0.95)';
+    }
+    setTimeout(() => {
+      modal.classList.add('hidden');
+    }, 300);
+  }
+};
+
 function updateUIForActiveZone() {
   try {
     const zone = state.zones.find(z => z.id === state.activeZoneId);
@@ -189,53 +294,76 @@ function updateUIForActiveZone() {
       </div>
     `;
   } else if (zone.id === 'museum' && details) {
+    const projects = details.projects || [];
+    const activeIdx = window.activeMuseumProjectIndex || 0;
+    const currentProj = projects[activeIdx] || projects[0] || {};
+
     html = `
-      <div class="space-y-6">
-        <div class="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1">
-          <h3 class="text-lg font-bold text-purple-400 font-display">${details.title}</h3>
-          <span class="text-xs font-mono text-zinc-500">${details.period}</span>
-        </div>
-
-        <p class="text-[13px] text-emerald-400 font-medium leading-relaxed font-mono">
-          ${details.highlight}
-        </p>
-
-        <div class="flex flex-wrap gap-2">
-          <a 
-            href="${details.link}" 
-            target="_blank" 
-            rel="noreferrer" 
-            class="inline-flex items-center gap-2 text-xs font-mono text-purple-400 hover:text-white transition-colors bg-purple-500/10 hover:bg-purple-500/20 px-3.5 py-2 rounded-xl border border-purple-500/30"
-          >
-            ${state.language === 'vi' ? 'Trải Nghiệm DIENMAYPRO' : 'Explore DIENMAYPRO'} 
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
-          </a>
-
-          ${details.oldPortfolioLink ? `
-            <a 
-              href="${details.oldPortfolioLink}" 
-              target="_blank" 
-              rel="noreferrer" 
-              class="inline-flex items-center gap-2 text-xs font-mono text-indigo-400 hover:text-white transition-colors bg-indigo-500/10 hover:bg-indigo-500/20 px-3.5 py-2 rounded-xl border border-indigo-500/30"
+      <div class="space-y-4">
+        <!-- Project Tabs -->
+        <div class="flex border-b border-zinc-800/60 gap-1 pb-px overflow-x-auto no-scrollbar">
+          ${projects.map((proj, idx) => `
+            <button 
+              onclick="window.switchMuseumProject(${idx})"
+              class="px-3.5 py-1.5 text-xs font-mono transition-all duration-200 border-b-2 whitespace-nowrap ${
+                idx === activeIdx 
+                  ? 'border-purple-500 text-purple-400 font-bold bg-purple-500/5' 
+                  : 'border-transparent text-zinc-500 hover:text-zinc-300'
+              }"
             >
-              ${details.oldPortfolioTitle} 
-              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
-            </a>
-          ` : ''}
-        </div>
-
-        <div class="space-y-3 text-xs max-h-[220px] overflow-y-auto pr-1">
-          ${(details.accomplishments || []).map(acc => `
-            <div class="bg-zinc-900/50 p-3 rounded-xl border border-zinc-800/60">
-              <strong class="text-zinc-200 block mb-1.5">${acc.title}</strong>
-              <p class="text-zinc-400 font-light leading-relaxed">${acc.desc}</p>
-            </div>
+              ${proj.title}
+            </button>
           `).join('')}
         </div>
 
-        <div class="bg-purple-400/5 border border-purple-400/20 rounded-2xl p-3.5 text-[11px] text-zinc-300">
-          <span class="text-purple-400 font-semibold uppercase block mb-1">${details.resultTitle}</span>
-          ${details.resultDesc}
+        <!-- Active Project Details -->
+        <div class="space-y-3.5">
+          <div class="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1">
+            <h3 class="text-sm font-bold text-zinc-100 font-display">${currentProj.title}</h3>
+            <span class="text-[10px] font-mono text-zinc-500 bg-zinc-900/60 px-2 py-0.5 rounded-full border border-zinc-800/80">${currentProj.period}</span>
+          </div>
+
+          <p class="text-xs text-emerald-400 leading-relaxed font-mono">
+            ${currentProj.highlight}
+          </p>
+
+          <div class="flex flex-wrap gap-2">
+            <a 
+              href="${currentProj.link}" 
+              target="_blank" 
+              rel="noreferrer" 
+              class="inline-flex items-center gap-1.5 text-[10px] font-mono text-purple-400 hover:text-white transition-all duration-200 bg-purple-500/10 hover:bg-purple-500/20 px-3 py-1.5 rounded-xl border border-purple-500/20"
+            >
+              ${state.language === 'vi' ? 'Trải Nghiệm Dự Án' : 'Explore Project'} 
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+            </a>
+
+            ${currentProj.oldPortfolioLink ? `
+              <a 
+                href="${currentProj.oldPortfolioLink}" 
+                target="_blank" 
+                rel="noreferrer" 
+                class="inline-flex items-center gap-1.5 text-[10px] font-mono text-indigo-400 hover:text-white transition-all duration-200 bg-indigo-500/10 hover:bg-indigo-500/20 px-3 py-1.5 rounded-xl border border-indigo-500/20"
+              >
+                ${currentProj.oldPortfolioTitle} 
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+              </a>
+            ` : ''}
+          </div>
+
+          <div class="space-y-2 text-xs max-h-[160px] overflow-y-auto pr-1">
+            ${(currentProj.accomplishments || []).map(acc => `
+              <div class="bg-zinc-900/40 p-2.5 rounded-xl border border-zinc-800/40 hover:border-zinc-700/40 transition-colors">
+                <strong class="text-zinc-200 block mb-0.5 font-medium text-[11px]">${acc.title}</strong>
+                <p class="text-zinc-400 font-light leading-relaxed text-[11px]">${acc.desc}</p>
+              </div>
+            `).join('')}
+          </div>
+
+          <div class="bg-purple-500/5 border border-purple-500/15 rounded-xl p-3 text-[11px] text-zinc-350 leading-relaxed font-sans">
+            <span class="text-purple-400 font-semibold uppercase block mb-0.5 text-[10px] tracking-wider font-mono">${currentProj.resultTitle}</span>
+            ${currentProj.resultDesc}
+          </div>
         </div>
       </div>
     `;
@@ -484,6 +612,9 @@ function initQuickTeleportButtons() {
           playTeleportSound();
           state.activeZoneId = z.id;
           updateUIForActiveZone();
+          if (typeof window.open2DZoneModal === 'function') {
+            window.open2DZoneModal();
+          }
         }
       });
     }
@@ -504,12 +635,31 @@ function switchLanguage(lang) {
   const btnVi = document.getElementById('btn_lang_vi');
   const btnEn = document.getElementById('btn_lang_en');
 
+  // Chatbot elements for tooltip translations
+  const btnToggleVoice = document.getElementById('btn_toggle_ai_voice');
+  const btnResetChat = document.getElementById('btn_reset_chat');
+  const btnMinChat = document.getElementById('btn_minimize_chat');
+  const btnMic = document.getElementById('btn_chatbot_mic');
+  const selectVoice = document.getElementById('ai_voice_select');
+
+  // Help Modal Elements
+  const lblHelpBtnText = document.getElementById('lbl_help_btn_text');
+  const lblHelpModalBadge = document.getElementById('lbl_help_modal_badge');
+  const lblHelpModalTitle = document.getElementById('lbl_help_modal_title');
+  const lblHelpModalDesc = document.getElementById('lbl_help_modal_desc');
+  const lblHelpKbdTitle = document.getElementById('lbl_help_kbd_title');
+  const lblHelpKbdDesc = document.getElementById('lbl_help_kbd_desc');
+  const lblHelpMouseTitle = document.getElementById('lbl_help_mouse_title');
+  const lblHelpMouseDesc = document.getElementById('lbl_help_mouse_desc');
+  const lblHelpTeleportDesc = document.getElementById('lbl_help_teleport_desc');
+  const btnHelpModalClose = document.getElementById('btn_help_modal_close');
+
   if (lang === 'vi') {
     btnVi.className = 'px-2.5 py-1 rounded-md text-[10px] font-bold transition-all cursor-pointer bg-emerald-500 text-zinc-950 font-extrabold shadow-md';
     btnEn.className = 'px-2.5 py-1 rounded-md text-[10px] font-bold transition-all cursor-pointer text-zinc-500 hover:text-zinc-300';
     
     document.getElementById('lbl_job_title').textContent = 'Ứng viên Thực tập sinh Web Developer (Full-stack Web Intern)';
-    document.getElementById('lbl_heading_map').textContent = 'Không Gian Vũ Trụ 3D (3D Space Map)';
+    document.getElementById('lbl_heading_map').textContent = 'Bản Đồ Tương Tác (Game Map)';
     document.getElementById('lbl_desc_map').textContent = 'Di chuyển phi hành gia bằng WASD / Mũi tên. Kéo chuột để xoay camera.';
     document.getElementById('lbl_heading_details').textContent = 'Chi Tiết Hồ Sơ';
     document.getElementById('lbl_desc_details').textContent = 'Nạp thông tin chi tiết một cách tự động khi nhân vật đi vào khu vực';
@@ -520,12 +670,31 @@ function switchLanguage(lang) {
     
     const btnExit3DText = document.getElementById('lbl_exit_3d_text');
     if (btnExit3DText) btnExit3DText.textContent = 'THOÁT 3D (VỀ 2D)';
+
+    // Chatbot Tooltips
+    if (btnToggleVoice) btnToggleVoice.title = state.isAiVoiceEnabled ? 'Tắt giọng nói AI' : 'Bật giọng nói AI';
+    if (btnResetChat) btnResetChat.title = 'Làm mới cuộc hội thoại';
+    if (btnMinChat) btnMinChat.title = 'Thu nhỏ';
+    if (btnMic) btnMic.title = 'Nói để đặt câu hỏi';
+    if (selectVoice) selectVoice.title = 'Chọn giọng đọc AI';
+
+    // Help Button & Modal
+    if (lblHelpBtnText) lblHelpBtnText.textContent = 'HƯỚNG DẪN';
+    if (lblHelpModalBadge) lblHelpModalBadge.textContent = 'HƯỚNG DẪN TRẢI NGHIỆM';
+    if (lblHelpModalTitle) lblHelpModalTitle.textContent = 'Khám Phá Cyber-Oasis Portfolio';
+    if (lblHelpModalDesc) lblHelpModalDesc.textContent = 'Chào mừng bạn đến với văn phòng ảo tương tác. Hãy chọn phương thức di chuyển yêu thích để khám phá các phân khu trong portfolio của tôi!';
+    if (lblHelpKbdTitle) lblHelpKbdTitle.textContent = 'BÀN PHÍM';
+    if (lblHelpKbdDesc) lblHelpKbdDesc.textContent = 'Hoặc phím mũi tên để di chuyển nhân vật';
+    if (lblHelpMouseTitle) lblHelpMouseTitle.textContent = 'CHUỘT / CLICK';
+    if (lblHelpMouseDesc) lblHelpMouseDesc.textContent = 'Nhấp chuột trực tiếp lên bản đồ để di chuyển';
+    if (lblHelpTeleportDesc) lblHelpTeleportDesc.innerHTML = '<strong class="text-zinc-200">Dịch chuyển nhanh:</strong> Click các nút bên dưới bản đồ để di chuyển tức thời qua lại giữa các khu vực.';
+    if (btnHelpModalClose) btnHelpModalClose.textContent = 'Bắt Đầu Khám Phá';
   } else {
     btnVi.className = 'px-2.5 py-1 rounded-md text-[10px] font-bold transition-all cursor-pointer text-zinc-500 hover:text-zinc-300';
     btnEn.className = 'px-2.5 py-1 rounded-md text-[10px] font-bold transition-all cursor-pointer bg-emerald-500 text-zinc-950 font-extrabold shadow-md';
     
     document.getElementById('lbl_job_title').textContent = 'Full-stack Web Intern Candidate & IT Specialist';
-    document.getElementById('lbl_heading_map').textContent = '3D Galaxy Space Map';
+    document.getElementById('lbl_heading_map').textContent = 'Interactive Game Map';
     document.getElementById('lbl_desc_map').textContent = 'Move astronaut with WASD / Arrows. Click & drag to rotate camera.';
     document.getElementById('lbl_heading_details').textContent = 'Profile Manifest Intel';
     document.getElementById('lbl_desc_details').textContent = 'Loads details dynamically once character steps on fields';
@@ -536,6 +705,25 @@ function switchLanguage(lang) {
     
     const btnExit3DText = document.getElementById('lbl_exit_3d_text');
     if (btnExit3DText) btnExit3DText.textContent = 'EXIT 3D (BACK TO 2D)';
+
+    // Chatbot Tooltips
+    if (btnToggleVoice) btnToggleVoice.title = state.isAiVoiceEnabled ? 'Disable AI Voice' : 'Enable AI Voice';
+    if (btnResetChat) btnResetChat.title = 'Reset Conversation';
+    if (btnMinChat) btnMinChat.title = 'Minimize';
+    if (btnMic) btnMic.title = 'Speak to ask question';
+    if (selectVoice) selectVoice.title = 'Select AI Voice';
+
+    // Help Button & Modal
+    if (lblHelpBtnText) lblHelpBtnText.textContent = 'GUIDE';
+    if (lblHelpModalBadge) lblHelpModalBadge.textContent = 'GAMEPLAY GUIDE';
+    if (lblHelpModalTitle) lblHelpModalTitle.textContent = 'Explore Cyber-Oasis Portfolio';
+    if (lblHelpModalDesc) lblHelpModalDesc.textContent = 'Welcome to the interactive virtual workspace. Choose your preferred movement method to explore the different zones of my portfolio!';
+    if (lblHelpKbdTitle) lblHelpKbdTitle.textContent = 'KEYBOARD';
+    if (lblHelpKbdDesc) lblHelpKbdDesc.textContent = 'Use WASD or Arrow keys to move the character';
+    if (lblHelpMouseTitle) lblHelpMouseTitle.textContent = 'MOUSE / CLICK';
+    if (lblHelpMouseDesc) lblHelpMouseDesc.textContent = 'Click anywhere on the map to navigate to that point';
+    if (lblHelpTeleportDesc) lblHelpTeleportDesc.innerHTML = '<strong class="text-zinc-200">Quick Teleport:</strong> Click the shortcut buttons under the map to travel instantly between zones.';
+    if (btnHelpModalClose) btnHelpModalClose.textContent = 'Start Exploration';
   }
 
   // Update dynamic elements
@@ -809,6 +997,11 @@ function startLoadingSequence() {
             
             // Initialize the 2D Mini-switcher button
             initCharacterSwitcherButton();
+
+            // Show gameplay instructions modal upon entrance
+            if (typeof window.openGameplayInstructions === 'function') {
+              window.openGameplayInstructions();
+            }
           }, 400);
         });
       });

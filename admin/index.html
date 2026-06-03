@@ -160,13 +160,17 @@
             </div>
 
             <!-- TAB 2: PORTFOLIO DATA EDITOR -->
-            <div id="tab_sec_portfolio" class="hidden space-y-4">
+            <div id="tab_sec_portfolio" class="hidden space-y-6">
                 <div class="flex justify-between items-center flex-wrap gap-3">
                     <div>
-                        <h3 class="text-base font-display font-medium text-zinc-200">Trình soạn thảo JSON (data.json)</h3>
-                        <p class="text-[10px] text-zinc-500 font-mono mt-0.5">Hệ thống tự động format và kiểm tra cú pháp trước khi lưu.</p>
+                        <h3 class="text-base font-display font-medium text-zinc-200">Quản lý nội dung Workspaces</h3>
+                        <p class="text-[10px] text-zinc-500 font-mono mt-0.5">Biên tập thông tin hiển thị tại các hòn đảo 3D và giao diện 2D.</p>
                     </div>
                     <div class="flex gap-2">
+                        <button id="btn_toggle_view_mode" class="px-4 py-2 border border-zinc-800 bg-zinc-900/50 hover:bg-zinc-850 text-zinc-300 rounded-xl text-xs font-mono transition-colors flex items-center gap-1.5 cursor-pointer">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
+                            CHẾ ĐỘ JSON THÔ
+                        </button>
                         <button id="btn_save_portfolio" class="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-zinc-950 rounded-xl text-xs font-display font-semibold transition-colors flex items-center gap-1.5 cursor-pointer border border-emerald-400">
                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
                             LƯU THAY ĐỔI
@@ -174,14 +178,47 @@
                     </div>
                 </div>
 
-                <div class="glass-panel p-4 rounded-3xl shadow-xl border border-zinc-850 flex flex-col">
-                    <textarea 
-                        id="portfolio_json_editor" 
-                        class="w-full h-[480px] bg-zinc-950/80 border border-zinc-900 text-emerald-400 p-6 rounded-2xl font-mono text-xs focus:outline-none focus:border-zinc-850 transition-colors leading-relaxed" 
-                        spellcheck="false"
-                    ></textarea>
-                    <div id="json_editor_error_msg" class="text-rose-400 text-xs font-mono mt-3 hidden bg-rose-500/5 border border-rose-500/10 p-3 rounded-xl"></div>
-                    <div id="json_editor_success_msg" class="text-emerald-400 text-xs font-mono mt-3 hidden bg-emerald-500/5 border border-emerald-500/10 p-3 rounded-xl"></div>
+                <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                    <!-- Left sidebar: Zone list -->
+                    <div class="lg:col-span-1 space-y-4">
+                        <div class="glass-panel p-4 rounded-2xl border border-zinc-900 space-y-2">
+                            <div class="text-[10px] font-mono text-zinc-500 uppercase tracking-wider px-2 mb-2">Không Gian Bản Đồ</div>
+                            <div id="zone_nav_list" class="space-y-1.5">
+                                <!-- Dynamic zone buttons -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right content: Form Editor / JSON Editor -->
+                    <div class="lg:col-span-3 space-y-4">
+                        <!-- JSON raw view (hidden by default) -->
+                        <div id="panel_json_raw" class="hidden glass-panel p-4 rounded-3xl shadow-xl border border-zinc-850 flex flex-col">
+                            <textarea 
+                                id="portfolio_json_editor" 
+                                class="w-full h-[520px] bg-zinc-950/80 border border-zinc-900 text-emerald-400 p-6 rounded-2xl font-mono text-xs focus:outline-none focus:border-zinc-850 transition-colors leading-relaxed" 
+                                spellcheck="false"
+                            ></textarea>
+                        </div>
+
+                        <!-- Form Editor (default) -->
+                        <div id="panel_form_editor" class="glass-panel p-6 rounded-3xl shadow-xl border border-zinc-850 space-y-6">
+                            <div class="border-b border-zinc-900 pb-4 flex justify-between items-center">
+                                <div>
+                                    <h4 id="editor_zone_title" class="text-base font-display font-bold text-zinc-100">Chọn một vùng để bắt đầu</h4>
+                                    <p id="editor_zone_subtitle" class="text-[10px] text-zinc-500 font-mono mt-0.5"></p>
+                                </div>
+                                <span id="editor_zone_badge" class="text-[9px] px-2 py-0.5 rounded font-mono uppercase"></span>
+                            </div>
+
+                            <!-- Dynamic fields container -->
+                            <div id="editor_fields_container" class="space-y-8 max-h-[500px] overflow-y-auto pr-2">
+                                <!-- Fields will be rendered here dynamically -->
+                            </div>
+                        </div>
+                        
+                        <div id="json_editor_error_msg" class="text-rose-400 text-xs font-mono mt-3 hidden bg-rose-500/5 border border-rose-500/10 p-3 rounded-xl"></div>
+                        <div id="json_editor_success_msg" class="text-emerald-400 text-xs font-mono mt-3 hidden bg-emerald-500/5 border border-emerald-500/10 p-3 rounded-xl"></div>
+                    </div>
                 </div>
             </div>
         </section>

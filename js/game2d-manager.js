@@ -8,8 +8,8 @@ let animationFrameId;
 let localFrame = 0;
 
 const player = {
-  x: 400,
-  y: 340,
+  x: 210,
+  y: 200,
   vx: 0,
   vy: 0,
   width: 24,
@@ -281,6 +281,9 @@ function gameLoop() {
     state.activeZoneId = detectedZone.id;
     playNewZoneSound();
     updateUIForActiveZone();
+    if (typeof window.open2DZoneModal === 'function') {
+      window.open2DZoneModal();
+    }
   }
 
   // Kích hoạt Cổng Dịch Chuyển 3D Chuyên Biệt (Phía trên cùng chính giữa)

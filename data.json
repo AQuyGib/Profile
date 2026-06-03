@@ -100,47 +100,71 @@
         "w": 120,
         "h": 100
       },
-      "description_vi": "Trung tâm đúc kết kỹ năng: Frontend (Tailwind, JS), Backend (PHP, MySQL), Mobile (Flutter), Bảo mật (2FA, WAF) và AI Assistance.",
-      "description_en": "Skillforge core: Frontend (Tailwind, JS), Backend (PHP, MySQL), Mobile (Flutter), security protocols (2FA, WAF), and AI integration.",
+      "description_vi": "Trung tâm đúc kết kỹ năng: Frontend (React, Tailwind), Backend (Laravel, PHP, MySQL), Mobile (Flutter), Bảo mật (2FA, SQLi) và AI Integration.",
+      "description_en": "Skillforge core: Frontend (React, Tailwind), Backend (Laravel, PHP, MySQL), Mobile (Flutter), security protocols (2FA, SQLi), and AI systems.",
       "details_vi": {
-        "intro": "Tập trung mạnh mẽ vào nghiên cứu các khối công nghệ hiện đại và cấu trúc bảo mật vững chắc cho sản phẩm phần mềm.",
+        "intro": "Tập trung nghiên cứu sâu các khối công nghệ hiện đại, kiến trúc hệ thống và bảo mật vững chắc cho sản phẩm phần mềm thực tế.",
         "skills": [
           {
-            "category": "Frontend & UI/UX",
-            "desc": "HTML/CSS, TailwindCSS, JavaScript, Responsive Design. Thiết kế giao diện mang phong cách Premium thanh lịch, khoa học."
+            "category": "Frontend",
+            "desc": "HTML5, CSS3, TailwindCSS, JavaScript, React.js, Responsive Web Design. Phát triển UI/UX tối ưu hóa trải nghiệm."
           },
           {
-            "category": "Backend & Kiến trúc",
-            "desc": "PHP (OOP), MySQL (PDO), trực tiếp thiết kế cấu trúc luồng mã nguồn tinh gọn an toàn với **Service-Repository Pattern**."
+            "category": "Backend & Architecture",
+            "desc": "PHP, Laravel 11, MySQL, Service-Repository Pattern. Thiết kế luồng dữ liệu an toàn và dễ bảo trì."
           },
           {
-            "category": "Mobile & Tích hợp API",
-            "desc": "Dart (Flutter, Riverpod, Clean Architecture), Thiết kế API nghỉ (RESTful), tích hợp Gemini AI và các hệ thống thanh toán như **PayOS/VietQR**."
+            "category": "Mobile & Integration",
+            "desc": "Dart (Flutter), RESTful APIs, PayOS Payment Gateway, Pusher WebSockets. Xây dựng ứng dụng di động đa nền tảng."
           },
           {
-            "category": "Bảo mật hệ thống",
-            "desc": "Xác thực 2 lớp mã OTP (2FA TOTP), mã hóa mật khẩu đầu vào với Bcrypt, chống SQL Injection bằng Prepared Statements và vô hiệu hóa CSRF."
+            "category": "Artificial Intelligence (AI)",
+            "desc": "Gemini API (Vision & RAG), Prompt Engineering. Tích hợp AI thông minh tối ưu hóa năng suất."
+          },
+          {
+            "category": "System & Security",
+            "desc": "Caching strategies, Queues, 2FA, Bcrypt hashing, SQL Injection (SQLi) & CSRF protection. Bảo mật và tối ưu hiệu năng."
+          },
+          {
+            "category": "Tools & Methodologies",
+            "desc": "Git, Docker, Apache, Agile/Scrum, AI-Assisted Development. Quy trình vận hành chuyên nghiệp."
+          },
+          {
+            "category": "Soft Skills (Kỹ năng mềm)",
+            "desc": "Teamwork (Agile/Scrum), Analytical & Problem-solving, Technical Documentation (SRS), Self-learning & Research."
           }
         ]
       },
       "details_en": {
-        "intro": "Strongly focused on modern technology exploration, technical performance, and structural security compliance for software products.",
+        "intro": "Deeply focused on researching modern frameworks, software architectures, security standards, and high-performance system execution.",
         "skills": [
           {
-            "category": "Frontend & UI/UX",
-            "desc": "HTML/CSS, TailwindCSS, JavaScript, Responsive Design. Elegant, geometric, clean aesthetic styled alongside smooth micro-flows."
+            "category": "Frontend",
+            "desc": "HTML5, CSS3, TailwindCSS, JavaScript, React.js, Responsive Web Design. High-fidelity UI/UX and interface engineering."
           },
           {
-            "category": "Backend & Architectures",
-            "desc": "PHP (OOP), MySQL (PDO), hands-on structuring of clean runtime layers through the professional **Service-Repository Pattern**."
+            "category": "Backend & Architecture",
+            "desc": "PHP, Laravel 11, MySQL, Service-Repository Pattern. Structured server architectures and clean routing."
           },
           {
-            "category": "Mobile & API Integrations",
-            "desc": "Dart (Flutter, Riverpod, Clean Architecture), RESTful API engineering, Gemini AI integration, and third-party payment getaways like **PayOS/VietQR**."
+            "category": "Mobile & Integration",
+            "desc": "Dart (Flutter), RESTful APIs, PayOS Payment Gateway, Pusher WebSockets. Cross-platform application delivery."
           },
           {
-            "category": "Cyber Security & Auditing",
-            "desc": "Two-factor authentication (2FA TOTP), Bcrypt hash security, 100% Prepared Statements preventing SQL injection, and custom CSRF protection tokens."
+            "category": "Artificial Intelligence (AI)",
+            "desc": "Gemini API (Vision & RAG), Prompt Engineering. Building intelligent RAG agents and multi-modal assistants."
+          },
+          {
+            "category": "System & Security",
+            "desc": "Caching strategies, Queues, 2FA, Bcrypt hashing, SQL Injection (SQLi) & CSRF protection. High availability and cybersecurity."
+          },
+          {
+            "category": "Tools & Methodologies",
+            "desc": "Git, Docker, Apache, Agile/Scrum, AI-Assisted Development. Professional deployment pipelines and modern workflows."
+          },
+          {
+            "category": "Soft Skills",
+            "desc": "Teamwork (Agile/Scrum), Analytical & Problem-solving, Technical Documentation (SRS), Self-learning & Research."
           }
         ]
       }
@@ -159,55 +183,123 @@
         "w": 130,
         "h": 100
       },
-      "description_vi": "Nơi trưng bày dự án DIENMAYPRO siêu đẳng cấp. Hệ sinh thái kết hợp cả Backend PHP, Webhook PayOS, AI RAG Chatbot và Mobile Flutter.",
-      "description_en": "Project showcase featuring DIENMAYPRO: an ecosystem combining PHP backend, PayOS webhooks, Gemini AI Chatbots, and Flutter mobile apps.",
+      "description_vi": "Nơi trưng bày các dự án thực chiến tiêu biểu: Website Điện Máy PRO & Hệ thống E-commerce & Mini-ERP Điện Máy Nâng Cao.",
+      "description_en": "Showcase of key production projects: Điện Máy PRO Website & Advanced E-commerce & Mini-ERP Platform.",
       "details_vi": {
-        "title": "DIENMAYPRO",
-        "period": "03/2026 — 05/2026",
-        "highlight": "Hệ thống quản lý cửa hàng đồ gia dụng thông minh tích hợp AI & Thanh toán tự động",
-        "link": "https://dienmaypro.nguyenanhquy.id.vn",
-        "oldPortfolioTitle": "Portfolio Bản sử dụng (React/Render)",
-        "oldPortfolioLink": "https://profile-5nkq.onrender.com",
-        "accomplishments": [
+        "projects": [
           {
-            "title": "Mô hình Service - Repository & Bảo mật",
-            "desc": "Xác thực 2 lớp (2FA TOTP), đăng nhập Google OAuth2, bảo mật chống SQL Injection bằng 100% Prepared Statements."
+            "title": "Website Điện Máy PRO",
+            "period": "03/2026 — 05/2026",
+            "highlight": "Website E-commerce tích hợp Gemini AI và cổng thanh toán tự động qua Webhook PayOS/VietQR.",
+            "link": "https://dienmaypro.nguyenanhquy.id.vn",
+            "oldPortfolioTitle": "Ứng dụng Android (APK)",
+            "oldPortfolioLink": "https://dienmaypro.nguyenanhquy.id.vn/app.apk",
+            "accomplishments": [
+              {
+                "title": "Kiến trúc & Bảo mật",
+                "desc": "Áp dụng mô hình Service - Repository để tối ưu và dễ dàng bảo trì mã nguồn. Triển khai xác thực 2 lớp (2FA TOTP), đăng nhập Google OAuth2 và bảo mật chống SQL Injection bằng 100% Prepared Statements."
+              },
+              {
+                "title": "Phát triển Backend cốt lõi",
+                "desc": "Viết thuật toán lọc sản phẩm nâng cao đa chiều (Dynamic SQL) kết hợp phân trang AJAX. Xây dựng phân hệ Admin quản lý lịch sử đăng nhập và khóa tài khoản tự động. Tích hợp cổng thanh toán tự động qua Webhook (PayOS/VietQR)."
+              },
+              {
+                "title": "Tích hợp AI & App Mobile",
+                "desc": "Xây dựng luồng RAG tích hợp Google Gemini AI Chatbot giúp tư vấn sản phẩm theo ngữ cảnh. Trực tiếp phát triển và build file APK ứng dụng di động bằng Flutter."
+              },
+              {
+                "title": "Vận hành & Triển khai",
+                "desc": "Đóng gói môi trường phát triển bằng Docker. Cấu hình máy chủ Apache, xử lý tường lửa WAF và trực tiếp đưa hệ thống lên hosting chạy thực tế."
+              }
+            ],
+            "resultTitle": "KẾT QUẢ ĐẠT ĐƯỢC",
+            "resultDesc": "Hoàn thành 100% tiến độ dự án. Đạt điểm số 8.0/10, hệ thống hoạt động ổn định và mượt mà trên môi trường Internet."
           },
           {
-            "title": "Bộ Lọc dynamic SQL & Thanh toán",
-            "desc": "Bộ lọc đa chiều thời gian thực với phân trang AJAX, tích hợp thanh toán Webhook tự động qua PayOS/VietQR."
-          },
-          {
-            "title": "Tích hợp AI & App di động Flutter",
-            "desc": "Xây dựng luồng RAG kết nối dữ liệu cửa hàng với Google Gemini Chatbot. Xây dựng ứng dụng di động Flutter bằng Riverpod."
+            "title": "Hệ thống E-commerce & Mini-ERP Điện Máy Nâng Cao",
+            "period": "02/2026 — 06/2026",
+            "highlight": "Nền tảng bán lẻ và quản trị doanh nghiệp tích hợp AI, được thiết kế để xử lý lượng lớn dữ liệu, tự động hóa nghiệp vụ và tối ưu tỷ lệ chuyển đổi.",
+            "link": "https://tmdtgroupg.nthanhhien.id.vn/Home",
+            "accomplishments": [
+              {
+                "title": "Xử lý đồng thời & Chống thất thoát (Concurrency)",
+                "desc": "Xây dựng chiến dịch Flash Sale và Ví điểm Loyalty. Áp dụng Khóa bi quan (Pessimistic Locking - sharedLock, lockForUpdate) để giải quyết triệt để lỗi Race Condition và Overselling khi có lượng lớn giao dịch diễn ra cùng lúc."
+              },
+              {
+                "title": "Tích hợp AI & Tự động hóa (Agentic & Multi-modal)",
+                "desc": "Xây dựng luồng RAG Chatbot tự động chốt đơn và tạo phiếu sửa chữa. Ứng dụng mô hình Gemini Vision chẩn đoán lỗi thiết bị qua hình ảnh. Tích hợp AI chấm điểm rủi ro đơn hàng (Risk Score) và tự động kiểm duyệt nội dung UGC."
+              },
+              {
+                "title": "Tối ưu hiệu năng (Performance)",
+                "desc": "Sử dụng Laravel Queue & Chunking để xử lý bất đồng bộ tiến trình gửi hàng ngàn thông báo đẩy (Notifications). Cấu hình Caching động để tối ưu tốc độ tải cho bộ lọc Faceted AJAX đa ngôn ngữ và thuật toán Gợi ý bán chéo (Cross-selling)."
+              },
+              {
+                "title": "Hạ tầng & Vận hành",
+                "desc": "Tự triển khai công cụ Customizer với kỹ thuật Live Iframe DOM Sync (React) để admin tùy biến giao diện thời gian thực. Viết script tự động hóa (CLI Batch) để setup môi trường và vận dụng Git Feature Branching chặt chẽ."
+              }
+            ],
+            "resultTitle": "KẾT QUẢ ĐẠT ĐƯỢC",
+            "resultDesc": "Hệ thống vận hành trơn tru, không xảy ra lỗi logic (bug-free) dưới áp lực tải lớn, đáp ứng toàn bộ các tiêu chuẩn kiểm thử khắt khe."
           }
-        ],
-        "resultTitle": "KẾT QUẢ ĐẠT ĐƯỢC",
-        "resultDesc": "Đạt điểm 8.0/10 đồ án xuất sắc, bàn giao 100% tiến độ và triển khai thực tế Docker/Apache lên máy chủ Internet."
+        ]
       },
       "details_en": {
-        "title": "DIENMAYPRO",
-        "period": "03/2026 — 05/2026",
-        "highlight": "Smart Home Appliance Store Ecosystem powered by Gemini AI and Instant PayOS Webhook Settlements",
-        "link": "https://dienmaypro.nguyenanhquy.id.vn",
-        "oldPortfolioTitle": "Portfolio (React/Render)",
-        "oldPortfolioLink": "https://profile-5nkq.onrender.com",
-        "accomplishments": [
+        "projects": [
           {
-            "title": "Service-Repository & Security Blueprint",
-            "desc": "Built secure structures using PHP OOP, configured dual OTP 2FA protection, Google OAuth2, and implemented secure database scopes using PDO Prepared Statements."
+            "title": "Dien May PRO Website",
+            "period": "03/2026 — 05/2026",
+            "highlight": "E-commerce platform integrated with Gemini AI and automated PayOS/VietQR Webhook gateway.",
+            "link": "https://dienmaypro.nguyenanhquy.id.vn",
+            "oldPortfolioTitle": "Android Application (APK)",
+            "oldPortfolioLink": "https://dienmaypro.nguyenanhquy.id.vn/app.apk",
+            "accomplishments": [
+              {
+                "title": "Architecture & Security",
+                "desc": "Applied Service-Repository pattern to optimize and easily maintain the source code. Implemented Two-Factor Authentication (2FA TOTP), Google OAuth2 login, and secured databases with 100% Prepared Statements."
+              },
+              {
+                "title": "Core Backend Development",
+                "desc": "Wrote advanced multi-dimensional product filtering algorithm (Dynamic SQL) combined with AJAX pagination. Built Admin subsystem to monitor login history and automate account locking. Integrated webhook payment gateway (PayOS/VietQR)."
+              },
+              {
+                "title": "AI & Mobile App Integration",
+                "desc": "Constructed RAG pipeline with Google Gemini AI Chatbot to provide contextual product advice. Directly developed and built the Flutter mobile application APK."
+              },
+              {
+                "title": "Operations & Deployment",
+                "desc": "Containerized the development environment using Docker. Configured Apache server, handled WAF firewall, and directly deployed the system to live hosting."
+              }
+            ],
+            "resultTitle": "PROJECT DELIVERABLES",
+            "resultDesc": "100% project completion. Graded 8.0/10, running stably and smoothly on the Internet environment."
           },
           {
-            "title": "Multi-dimensional Filters & Instant Webhooks",
-            "desc": "Architected AJAX multi-functional real-time search filters, and unified banking settlements powered by PayOS/VietQR webhooks."
-          },
-          {
-            "title": "GenAI Assistance & Cross-platform Mobile Client",
-            "desc": "Engineered customized retail context RAG layers connected with Google Gemini API, and delivered a responsive Flutter mobile commerce application powered by Riverpod."
+            "title": "Advanced E-commerce & Mini-ERP",
+            "period": "02/2026 — 06/2026",
+            "highlight": "Retail and enterprise management platform integrated with GenAI, designed to handle heavy data, automate workflows, and optimize conversions.",
+            "link": "https://tmdtgroupg.nthanhhien.id.vn/Home",
+            "accomplishments": [
+              {
+                "title": "Concurrency & Loss Prevention",
+                "desc": "Built Flash Sale campaign and Loyalty points wallet. Applied Pessimistic Locking (sharedLock, lockForUpdate) to thoroughly resolve Race Condition and Overselling bugs during peak traffic transaction spikes."
+              },
+              {
+                "title": "AI Integration & Automation (Agentic & Multi-modal)",
+                "desc": "Developed RAG Chatbot to automate order closure and repair ticket creation. Leveraged Gemini Vision model for device diagnostics via images. Integrated AI risk score for orders and automated UGC moderation."
+              },
+              {
+                "title": "Performance Optimization",
+                "desc": "Utilized Laravel Queue & Chunking to asynchronously process thousands of push notifications. Configured dynamic Caching to optimize loading speeds for multilingual Faceted AJAX filter and Cross-selling recommendation algorithm."
+              },
+              {
+                "title": "Infrastructure & Operations",
+                "desc": "Independently implemented customized tool using Live Iframe DOM Sync (React) for real-time admin template customizer. Wrote CLI Batch automation scripts for env configuration and strictly adhered to Git Feature Branching workflows."
+              }
+            ],
+            "resultTitle": "PROJECT DELIVERABLES",
+            "resultDesc": "System operates flawlessly and bug-free under heavy load stress-testing, satisfying all rigorous QA benchmarks."
           }
-        ],
-        "resultTitle": "PROJECT DELIVERABLES",
-        "resultDesc": "Earned an outstanding score of 8.0/10, completed 100% of pipeline scope, and deployed to live production with Docker & Apache servers."
+        ]
       }
     },
     {
@@ -218,7 +310,7 @@
       "color": "indigo",
       "coords": {
         "x": 350,
-        "y": 300
+        "y": 380
       },
       "size": {
         "w": 140,

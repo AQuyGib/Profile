@@ -104,25 +104,114 @@ body {
   transform: translateY(0);
 }
 
-/* 2D-to-3D Dimension Transition Animation */
+/* 2D-to-3D Dimension Transition Animation & Glitch Effect */
 .transition-dimension {
-  animation: dimensionGlitch 0.6s ease-in-out forwards;
+  animation: dimensionGlitch 0.75s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
 }
 
 @keyframes dimensionGlitch {
   0% {
-    filter: blur(0px) hue-rotate(0deg);
-    opacity: 1;
+    filter: blur(0px) brightness(1) contrast(1) saturate(1);
+    transform: scale(1);
   }
-  50% {
-    filter: blur(8px) hue-rotate(180deg);
-    opacity: 0.3;
-    transform: scale(1.02);
+  15% {
+    filter: blur(2px) brightness(1.8) contrast(1.3) saturate(1.5) drop-shadow(0 0 15px rgba(16,185,129,0.6));
+    transform: scale(1.015) skewX(2deg);
+  }
+  30% {
+    filter: blur(0px) brightness(1.2) contrast(1) saturate(1);
+    transform: scale(0.99) translate(-2px, 2px) skewX(-2deg);
+  }
+  45% {
+    filter: blur(8px) brightness(2.6) contrast(1.6) saturate(2.2) drop-shadow(0 0 30px rgba(236,72,153,0.8));
+    transform: scale(1.035) translate(2px, -2px) skewX(3deg);
+  }
+  60% {
+    filter: blur(3px) brightness(0.6) contrast(2) saturate(0.4);
+    transform: scale(0.97) translate(-1px, -1px);
+  }
+  75% {
+    filter: blur(12px) brightness(3) contrast(2.2) saturate(3.2) drop-shadow(0 0 40px rgba(99,102,241,0.9));
+    transform: scale(1.06) skewY(1deg);
+  }
+  90% {
+    filter: blur(2px) brightness(1.6) contrast(1.3) saturate(1.3);
+    transform: scale(1.01);
   }
   100% {
-    filter: blur(0px) hue-rotate(360deg);
-    opacity: 1;
+    filter: blur(0px) brightness(1) contrast(1) saturate(1);
+    transform: scale(1) translate(0) skew(0);
   }
+}
+
+/* Warp Transition Overlay Styles */
+#dimension_warp_overlay.active {
+  opacity: 1;
+  background-color: rgba(5, 8, 22, 0.98);
+  pointer-events: auto; /* Block interactions during warp */
+  transition: opacity 0.3s ease-in, background-color 0.3s ease-in;
+}
+
+#dimension_warp_overlay.fade-out {
+  opacity: 0;
+  background-color: rgba(5, 8, 22, 0);
+  pointer-events: none;
+  transition: opacity 0.5s cubic-bezier(0.25, 1, 0.5, 1), background-color 0.5s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.warp-gate-ring {
+  box-shadow: 0 0 45px var(--ring-color, rgba(16, 185, 129, 0.6)), inset 0 0 45px var(--ring-color, rgba(16, 185, 129, 0.6));
+}
+
+#dimension_warp_overlay.active .warp-gate-ring {
+  animation: warpRingExpand 0.75s cubic-bezier(0.15, 0.85, 0.35, 1) forwards;
+}
+
+@keyframes warpRingExpand {
+  0% {
+    transform: scale(0.05);
+    border-color: rgba(255, 255, 255, 0.95);
+    opacity: 1;
+    filter: blur(1px);
+  }
+  50% {
+    border-color: var(--ring-color, rgba(16, 185, 129, 0.8));
+    opacity: 1;
+    filter: blur(2px);
+  }
+  100% {
+    transform: scale(5);
+    border-color: var(--ring-color-end, rgba(99, 102, 241, 0));
+    opacity: 0;
+    filter: blur(10px);
+  }
+}
+
+.warp-noise {
+  background-image: repeating-radial-gradient(circle, rgba(16, 185, 129, 0.05) 0px, rgba(16, 185, 129, 0.05) 2px, transparent 2px, transparent 10px);
+}
+
+#dimension_warp_overlay.active .warp-noise {
+  opacity: 0.65;
+  animation: noiseFlicker 0.1s infinite;
+}
+
+@keyframes noiseFlicker {
+  0%, 100% { opacity: 0.45; }
+  50% { opacity: 0.8; }
+}
+
+/* Hologram Loading HUD active states */
+#dimension_warp_overlay.active #warp_loading_hud {
+  opacity: 1;
+  transform: scale(1);
+  transition: opacity 0.3s ease-out 0.1s, transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) 0.1s;
+}
+
+#dimension_warp_overlay.fade-out #warp_loading_hud {
+  opacity: 0;
+  transform: scale(0.9);
+  transition: opacity 0.25s ease-in, transform 0.25s ease-in;
 }
 
 /* Radar Minimap & Glowing 3D overlays */
@@ -324,7 +413,7 @@ body {
   background-color: #10b981;
 }
 
-.toggle-switch[data-enabled="true"] div:not(.left-0.5) {
+.toggle-switch[data-enabled="true"] div:not(.left-0\.5) {
   left: auto;
 }
 

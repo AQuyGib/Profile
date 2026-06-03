@@ -197,6 +197,11 @@
         </button>
       </div>
 
+      <!-- Cache Refresh Tip -->
+      <div class="text-[10px] font-mono text-zinc-500 text-center border-t border-zinc-850/40 pt-4 mt-2 select-none leading-relaxed">
+        💡 Nếu hệ thống tải không đầy đủ, vui lòng nhấn <kbd class="px-1.5 py-0.5 bg-zinc-950 border border-zinc-800/80 rounded text-zinc-300 font-semibold text-[9px] font-sans shadow-sm">Ctrl + F5</kbd> để làm mới cache trình duyệt.
+      </div>
+
     </div>
   </div>
 
@@ -273,11 +278,11 @@
   <!-- ========================================== -->
   <!-- 3. MAIN WORKSPACE CONTENT (BENTO LAYOUT)   -->
   <!-- ========================================== -->
-  <main class="flex-1 w-full max-w-7xl mx-auto px-6 md:px-12 py-8 md:py-12">
+  <main class="flex-1 w-full max-w-5xl mx-auto px-6 md:px-12 py-8 md:py-12">
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
 
-      <!-- Left Column: Core interactive game engine -->
-      <section class="lg:col-span-7 space-y-6">
+      <!-- Left Column: Core interactive game engine (Now full-width lg:col-span-12) -->
+      <section class="lg:col-span-12 space-y-6 max-w-4xl mx-auto w-full">
         <div class="flex justify-between items-center pb-2 border-b border-zinc-900/40 w-full">
           <div>
             <h2 id="lbl_heading_map" class="text-base font-display text-zinc-100 font-medium">
@@ -287,17 +292,27 @@
               Di chuyển phi hành gia bằng WASD / Mũi tên. Kéo chuột để xoay camera.
             </p>
           </div>
-          <!-- Beautiful High-Contrast Dimension Shortcut Trigger -->
-          <button id="btn_manual_dimension_toggle"
-            class="text-[11px] font-mono px-3.5 py-1.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-zinc-950 font-semibold transition-all shadow-[0_0_15px_rgba(16,185,129,0.15)] flex items-center gap-2 duration-250 cursor-pointer select-none active:scale-95">
-            <svg class="w-3.5 h-3.5 text-current animate-pulse" fill="none" stroke="currentColor" stroke-width="2"
-              viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-              <path stroke-linecap="round" stroke-linejoin="round"
-                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-            </svg>
-            <span id="lbl_dimension_toggle_text">XEM KHÔNG GIAN 3D</span>
-          </button>
+          <div class="flex items-center gap-2">
+            <!-- Nút Hướng Dẫn Cách Chơi -->
+            <button id="btn_show_gameplay_instructions" onclick="window.openGameplayInstructions()"
+              class="text-[11px] font-mono px-3.5 py-1.5 rounded-xl border border-zinc-800 bg-zinc-900/80 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 font-semibold transition-all flex items-center gap-2 duration-250 cursor-pointer select-none active:scale-95">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span id="lbl_help_btn_text">HƯỚNG DẪN</span>
+            </button>
+            <!-- Beautiful High-Contrast Dimension Shortcut Trigger -->
+            <button id="btn_manual_dimension_toggle"
+              class="text-[11px] font-mono px-3.5 py-1.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-zinc-950 font-semibold transition-all shadow-[0_0_15px_rgba(16,185,129,0.15)] flex items-center gap-2 duration-250 cursor-pointer select-none active:scale-95">
+              <svg class="w-3.5 h-3.5 text-current animate-pulse" fill="none" stroke="currentColor" stroke-width="2"
+                viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round"
+                  d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+              </svg>
+              <span id="lbl_dimension_toggle_text">XEM KHÔNG GIAN 3D</span>
+            </button>
+          </div>
         </div>
 
         <!-- Game Screen viewport -->
@@ -656,53 +671,24 @@
               </button>
             </div>
           </div>
+
+          <!-- Quick Map Teleportation Actions (Moved below canvas in 2D view) -->
+          <div class="bg-zinc-900/10 border border-zinc-800/80 p-4 rounded-3xl flex flex-col sm:flex-row items-center justify-between gap-4 glass-panel mt-2">
+            <div class="flex-shrink-0 text-center sm:text-left">
+              <span class="text-[10px] font-mono text-zinc-500 block uppercase tracking-wider">ĐIỀU HƯỚNG NHANH BẢN ĐỒ</span>
+            </div>
+            <div id="quick_teleport_container" class="flex flex-wrap gap-2 justify-center sm:justify-end">
+              <!-- Injected dynamically by JavaScript -->
+            </div>
+          </div>
+        </div>
       </section>
 
-      <!-- Right Column: Zone dynamic details -->
-      <section class="lg:col-span-5 lg:sticky lg:top-24">
-        <div class="flex justify-between items-center pb-2 border-b border-zinc-900/40 mb-6 font-sans">
-          <div>
-            <h2 id="lbl_heading_details" class="text-base font-display text-zinc-100 font-medium">
-              Chi Tiết Hồ Sơ
-            </h2>
-            <p id="lbl_desc_details" class="text-[11px] text-zinc-500 font-mono mt-0.5">
-              Nạp thông tin chi tiết một cách tự động khi nhân vật đi vào khu vực
-            </p>
-          </div>
-        </div>
-
-        <!-- Glassmorphic Details Card -->
-        <div
-          class="bg-zinc-900/20 border border-zinc-800 p-4 md:p-5 rounded-3xl h-[580px] flex flex-col justify-between glass-panel">
-          <div class="flex-1 flex flex-col min-h-0">
-            <!-- Header Section inside Info Panel -->
-            <div class="flex items-center gap-3 border-b border-zinc-850 pb-3 mb-4 flex-shrink-0">
-              <div id="zone_banner_icon_holder"
-                class="p-2.5 bg-zinc-900 rounded-xl border border-zinc-800/80 shadow-sm">
-                <!-- Injected by JavaScript -->
-              </div>
-              <div>
-                <span class="text-[9px] font-mono text-zinc-500 uppercase tracking-wider">THÔNG TIN KHU VỰC</span>
-                <h2 id="zone_banner_title" class="text-xl font-display font-medium text-zinc-100 leading-tight">
-                  Vùng Đất Khởi Đầu (Home)
-                </h2>
-              </div>
-            </div>
-
-            <!-- Main Dynamic Info Viewport -->
-            <div id="zone_detail_content" class="flex-1 overflow-y-auto pr-2">
-              <!-- Injected dynamically by JavaScript -->
-            </div>
-          </div>
-
-          <!-- Quick Map Teleportation Actions -->
-          <div class="mt-4 pt-3 border-t border-zinc-850 flex-shrink-0">
-            <span class="text-[9px] font-mono text-zinc-500 block mb-1.5">ĐIỀU HƯỚNG NHANH BẢN ĐỒ</span>
-            <div id="quick_teleport_container" class="flex flex-wrap gap-1.5">
-              <!-- Injected dynamically by JavaScript -->
-            </div>
-          </div>
-        </div>
+      <!-- Kept in DOM as hidden to support JS targets -->
+      <section class="hidden">
+        <div id="zone_banner_icon_holder"></div>
+        <div id="zone_banner_title"></div>
+        <div id="zone_detail_content"></div>
       </section>
 
     </div>
@@ -875,6 +861,153 @@
 
   <!-- Main JS Application script -->
   <script src="js/app.js?v=1.3.0_solid_floors"></script>
+
+  <!-- Dimension Warp Transition Overlay -->
+  <div id="dimension_warp_overlay" class="fixed inset-0 z-[99999] pointer-events-none opacity-0 flex flex-col items-center justify-center transition-all duration-500 bg-zinc-950/0">
+    <div class="warp-gate-ring absolute w-[20vw] h-[20vw] rounded-full border-[3px] border-emerald-500/0 scale-0 transition-all duration-700 ease-out" style="--ring-color: rgba(16, 185, 129, 0.75); --ring-color-end: rgba(16, 185, 129, 0);"></div>
+    <div class="warp-gate-ring absolute w-[35vw] h-[35vw] rounded-full border-[2px] border-cyan-500/0 scale-0 transition-all duration-700 ease-out delay-75" style="--ring-color: rgba(6, 182, 212, 0.75); --ring-color-end: rgba(6, 182, 212, 0);"></div>
+    <div class="warp-gate-ring absolute w-[50vw] h-[50vw] rounded-full border-[1.5px] border-purple-500/0 scale-0 transition-all duration-700 ease-out delay-150" style="--ring-color: rgba(139, 92, 246, 0.75); --ring-color-end: rgba(139, 92, 246, 0);"></div>
+    <div class="warp-noise absolute inset-0 opacity-0 transition-opacity duration-300"></div>
+
+    <!-- Holographic Sci-Fi Loading HUD -->
+    <div id="warp_loading_hud" class="relative z-10 w-80 p-5 rounded-2xl border border-cyan-500/30 bg-zinc-950/90 backdrop-blur-md shadow-[0_0_50px_rgba(6,182,212,0.2)] flex flex-col gap-4 transform scale-90 opacity-0 transition-all duration-300">
+      
+      <!-- Top Neon Status Bar -->
+      <div class="flex justify-between items-center text-[8px] font-mono tracking-widest text-cyan-400">
+        <span>DIMENSION_SHIFT_ACTIVE</span>
+        <span class="w-1.5 h-1.5 rounded-full bg-cyan-500 animate-ping"></span>
+      </div>
+
+      <!-- Hologram Circle Scanner -->
+      <div class="relative w-20 h-20 mx-auto flex items-center justify-center my-1">
+        <div class="absolute inset-0 rounded-full border border-dashed border-cyan-500/30 animate-[spin_8s_linear_infinite]"></div>
+        <div class="absolute inset-1.5 rounded-full border border-double border-purple-500/40 animate-[spin_4s_linear_infinite_reverse]"></div>
+        <div class="absolute inset-3 rounded-full bg-gradient-to-tr from-purple-500/10 via-cyan-500/10 to-pink-500/10 animate-pulse"></div>
+        <div class="w-7 h-7 absolute flex items-center justify-center">
+          <svg class="w-5 h-5 text-cyan-400 animate-[spin_6s_linear_infinite]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m0-12.728l.707.707m11.314 11.314l.707-.707" />
+          </svg>
+        </div>
+      </div>
+
+      <!-- Tech text fields -->
+      <div class="text-center font-mono space-y-1">
+        <h4 id="warp_loading_title" class="text-xs font-bold text-zinc-100 uppercase tracking-widest">CYBERSPACE TUNNELING</h4>
+        <p id="warp_loading_status" class="text-[9px] text-cyan-400/80 uppercase tracking-wider h-3.5 overflow-hidden">INITIATING VECTOR RE-RENDER...</p>
+      </div>
+
+      <!-- Progress Section -->
+      <div class="space-y-1.5 pt-1">
+        <div class="flex justify-between text-[9px] font-mono text-zinc-400">
+          <span>PROGRESS:</span>
+          <span id="warp_loading_percent" class="text-cyan-400 font-bold">0%</span>
+        </div>
+        <!-- Progress Bar -->
+        <div class="w-full h-1 bg-zinc-900 border border-zinc-800/80 rounded-full overflow-hidden p-px">
+          <div id="warp_loading_bar_fill" class="h-full w-0 bg-gradient-to-r from-emerald-500 via-cyan-400 to-purple-500 rounded-full transition-all duration-75"></div>
+        </div>
+      </div>
+      
+    </div>
+  </div>
+
+  <!-- Modal Chi Tiết Khu Vực 2D (2D Zone Detail Modal) -->
+  <div id="zone_info_modal_2d" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-zinc-950/80 backdrop-blur-md p-4 opacity-0 transition-opacity duration-300 pointer-events-auto">
+    <div class="bg-zinc-900/90 border border-zinc-800/80 w-full max-w-2xl rounded-3xl overflow-hidden shadow-2xl backdrop-blur-xl flex flex-col max-h-[90vh] transform scale-95 transition-transform duration-300 glass-panel">
+      <!-- Modal Header -->
+      <div class="p-5 border-b border-zinc-850 flex items-center justify-between flex-shrink-0">
+        <div class="flex items-center gap-3">
+          <div id="modal_2d_icon_holder" class="p-2.5 bg-zinc-950 rounded-xl border border-zinc-800 text-purple-400">
+            <!-- Icon -->
+          </div>
+          <div>
+            <span class="text-[9px] font-mono text-zinc-500 uppercase tracking-wider block">THÔNG TIN KHU VỰC</span>
+            <h2 id="modal_2d_title" class="text-lg font-display font-bold text-zinc-100 tracking-tight">
+              Tên Khu Vực
+            </h2>
+          </div>
+        </div>
+        <button id="btn_close_2d_modal" onclick="window.close2DZoneModal()" class="p-2 rounded-xl bg-zinc-900 hover:bg-rose-950/40 border border-zinc-800 hover:border-rose-800 text-zinc-400 hover:text-rose-400 cursor-pointer transition-all duration-200">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <!-- Modal Body -->
+      <div id="modal_2d_body_content" class="p-6 overflow-y-auto text-sm text-zinc-350 space-y-4 font-sans scrollbar-thin flex-1">
+        <!-- Chi tiết được chèn động -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Hướng Dẫn Cách Chơi (Gameplay Instructions Modal) -->
+  <div id="gameplay_instructions_modal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-zinc-950/80 backdrop-blur-md p-4 opacity-0 transition-opacity duration-300 pointer-events-auto" onclick="if(event.target === this) window.closeGameplayInstructions()">
+    <div class="bg-zinc-900/90 border border-zinc-800/80 w-full max-w-md rounded-3xl overflow-hidden shadow-2xl backdrop-blur-xl flex flex-col transform scale-95 transition-transform duration-300 glass-panel">
+      <!-- Modal Header -->
+      <div class="p-5 border-b border-zinc-850 flex items-center justify-between flex-shrink-0">
+        <div class="flex items-center gap-3">
+          <div class="p-2.5 bg-emerald-950/40 rounded-xl border border-emerald-500/30 text-emerald-400">
+            <svg class="w-5 h-5 animate-pulse" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+            </svg>
+          </div>
+          <div>
+            <span id="lbl_help_modal_badge" class="text-[9px] font-mono text-zinc-500 uppercase tracking-wider block">HƯỚNG DẪN TRẢI NGHIỆM</span>
+            <h2 id="lbl_help_modal_title" class="text-sm font-display font-bold text-zinc-100 tracking-tight">
+              Khám Phá Cyber-Oasis Portfolio
+            </h2>
+          </div>
+        </div>
+        <button onclick="window.closeGameplayInstructions()" class="p-2 rounded-xl bg-zinc-900 hover:bg-rose-950/40 border border-zinc-800 hover:border-rose-800 text-zinc-400 hover:text-rose-400 cursor-pointer transition-all duration-200">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <!-- Modal Body -->
+      <div class="p-6 text-sm text-zinc-300 space-y-4 font-sans">
+        <p id="lbl_help_modal_desc" class="text-zinc-400 text-xs leading-relaxed text-center">
+          Chào mừng bạn đến với văn phòng ảo tương tác. Hãy chọn phương thức di chuyển yêu thích để khám phá các phân khu trong portfolio của tôi!
+        </p>
+        
+        <!-- Controls Grid -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <!-- Keyboard Controls -->
+          <div class="p-3 bg-zinc-950/40 border border-zinc-850 rounded-2xl flex flex-col items-center text-center">
+            <span id="lbl_help_kbd_title" class="text-xs font-bold text-cyan-400 mb-1.5">BÀN PHÍM</span>
+            <div class="flex gap-1 mb-1.5">
+              <kbd class="px-2 py-1 bg-zinc-900 border border-zinc-850 rounded text-[10px] font-mono font-bold text-zinc-100">W</kbd>
+              <kbd class="px-2 py-1 bg-zinc-900 border border-zinc-850 rounded text-[10px] font-mono font-bold text-zinc-100">A</kbd>
+              <kbd class="px-2 py-1 bg-zinc-900 border border-zinc-850 rounded text-[10px] font-mono font-bold text-zinc-100">S</kbd>
+              <kbd class="px-2 py-1 bg-zinc-900 border border-zinc-850 rounded text-[10px] font-mono font-bold text-zinc-100">D</kbd>
+            </div>
+            <p id="lbl_help_kbd_desc" class="text-[10px] text-zinc-400 leading-normal">Hoặc phím mũi tên để di chuyển nhân vật</p>
+          </div>
+          
+          <!-- Mouse Controls -->
+          <div class="p-3 bg-zinc-950/40 border border-zinc-850 rounded-2xl flex flex-col items-center text-center">
+            <span id="lbl_help_mouse_title" class="text-xs font-bold text-purple-400 mb-1.5">CHUỘT / CLICK</span>
+            <div class="w-7 h-7 rounded-full border border-purple-500/30 flex items-center justify-center text-purple-400 mb-1.5">
+              <svg class="w-3.5 h-3.5 animate-bounce" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
+              </svg>
+            </div>
+            <p id="lbl_help_mouse_desc" class="text-[10px] text-zinc-400 leading-normal">Nhấp chuột trực tiếp lên bản đồ để di chuyển</p>
+          </div>
+        </div>
+
+        <!-- Quick Teleport -->
+        <div class="p-3 bg-amber-950/10 border border-amber-900/20 rounded-xl flex items-start gap-2.5">
+          <svg class="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+          </svg>
+          <div id="lbl_help_teleport_desc" class="text-[10px] text-zinc-400 leading-relaxed">
+            <strong class="text-zinc-200">Dịch chuyển nhanh:</strong> Click các nút bên dưới bản đồ để di chuyển tức thời qua lại giữa các khu vực.
+          </div>
+        </div>
+
+        <button id="btn_help_modal_close" onclick="window.closeGameplayInstructions()" class="w-full py-2.5 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-zinc-950 font-bold rounded-xl shadow-lg shadow-emerald-500/10 transition-all duration-200 cursor-pointer text-[10px] uppercase tracking-wider">
+          Bắt Đầu Khám Phá
+        </button>
+      </div>
+    </div>
+  </div>
 </body>
 
 </html>

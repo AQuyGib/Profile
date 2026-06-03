@@ -1,6 +1,79 @@
 # Project Memory
 
 - Current updates & fixes:
+  - **[CẬP NHẬT ĐƯỜNG DẪN DỰ ÁN 2]**:
+    - **Yêu cầu**: Thay đổi đường dẫn trải nghiệm của "Hệ thống E-commerce & Mini-ERP Điện Máy Nâng Cao" thành URL mới.
+    - **Thực hiện**: Đổi giá trị trường `"link"` của dự án 2 trong file `data.json` (ở cả 2 phần ngôn ngữ `details_vi` và `details_en`) từ `https://dienmaypro.nthanhhien.id.vn` thành `https://tmdtgroupg.nthanhhien.id.vn/Home`.
+  - **[TỐI ƯU HÓA ĐA NGÔN NGỮ (MULTILINGUAL OPTIMIZATION)]**:
+    - **Yêu cầu**: Khắc phục tình trạng dùng hỗn hợp tiếng Việt/tiếng Anh, dịch động các tooltip, nhãn tĩnh và modal hướng dẫn cách chơi khi chuyển đổi ngôn ngữ.
+    - **Thực hiện**:
+      - Gán ID tĩnh (`lbl_help_btn_text`, `lbl_help_modal_badge`, `lbl_help_modal_title`, etc.) cho tất cả các thành phần text trong Gameplay Instructions Modal và nút Hướng dẫn ở `index.html`.
+      - Mở rộng hàm `switchLanguage(lang)` trong `js/app.js` để tự động dịch các tooltip chatbot, nút hướng dẫn, và toàn bộ nội dung text của Gameplay Instructions Modal.
+  - **[DỜI NÚT PORTFOLIO REACT/RENDER LÊN TIÊU ĐỀ BẢO TÀNG DỰ ÁN]**:
+    - **Yêu cầu**: Nút "Portfolio Bản sử dụng (React/Render)" (link `https://profile-5nkq.onrender.com`) là bản profile cá nhân chứ không thuộc về dự án 2, do đó cần dời lên bên cạnh tiêu đề "Bảo Tàng Dự Án".
+    - **Thực hiện**:
+      - Xóa thuộc tính `"oldPortfolioTitle"` và `"oldPortfolioLink"` của dự án 2 (Hệ thống E-commerce & Mini-ERP Điện Máy Nâng Cao) trong `data.json` ở cả 2 phần dịch tiếng Việt và tiếng Anh.
+      - Chỉnh sửa hàm `open2DZoneModal` trong `js/app.js` để tự động nối thêm thẻ `<a>` chứa liên kết nút "Bản sử dụng (React/Render)" bên cạnh tiêu đề `#modal_2d_title` khi người dùng mở phân khu `museum`.
+      - Chỉnh sửa logic đồng bộ modal 3D trong `js/engine-3d.js` tại dòng 518 để tự động bổ sung nút liên kết tương tự ngay cạnh tiêu đề `#modal_title` ở chế độ 3D.
+  - **[NÂNG CẤP XƯỞNG KỸ NĂNG (LAB ZONE) VỚI BỘ KỸ NĂNG MỚI]**:
+    - **Yêu cầu**: Cập nhật bộ Kỹ năng Chuyên môn (Technical Skills) và Kỹ năng Mềm (Soft Skills) mới được cung cấp trong ảnh vào Xưởng Kỹ Năng (Lab Zone).
+    - **Thực hiện**:
+      - Cập nhật danh sách `skills` trong `data.json` cho phân khu `lab` bao gồm các hạng mục chi tiết: Frontend (HTML5, CSS3, Tailwind, JS, React), Backend & Architecture (PHP, Laravel 11, MySQL, Service-Repository), Mobile & Integration (Flutter, RESTful, PayOS, Pusher), AI (Gemini Vision & RAG, Prompt Engineering), System & Security (Caching, Queues, 2FA, Bcrypt, SQLi/CSRF protection), Tools & Methodologies (Git, Docker, Apache, Agile/Scrum, AI-Assisted Dev) và Soft Skills (Teamwork, Problem-solving, SRS, Self-learning).
+      - Đồng bộ hóa các bản dịch tiếng Anh tương ứng trong phần `details_en` và cập nhật lại mô tả chung của Lab zone.
+  - **[DI CHUYỂN THƯ VIỆN TRIẾT LÝ VÀ THÊM MODAL HƯỚNG DẪN CÁCH CHƠI]**:
+    - **Yêu cầu**: Thay đổi vị trí Thư viện triết lý (Library) để giải phóng nút giao trung tâm. Khi mới vào game, hiển thị ô hướng dẫn cách chơi cho người dùng.
+    - **Thực hiện**:
+      - Điều chỉnh tọa độ logic của Library trong `data.json` từ `x: 350, y: 300` sang `x: 350, y: 380`, dịch chuyển khu vực này xuống phía dưới trục dọc ngã tư để tránh chắn lối đi và tránh va chạm trực tiếp với nhân vật khi mới bắt đầu.
+      - Chuyển tọa độ hồi sinh/bắt đầu của nhân vật 2D trong `js/game2d-manager.js` về tâm khu vực Home (Vùng Đất Khởi Đầu): `x: 210, y: 200`.
+      - Xây dựng Modal hướng dẫn cách chơi `#gameplay_instructions_modal` trong `index.html`, cung cấp hình ảnh mô phỏng phím di chuyển WASD, nút chuột Click và menu điều hướng nhanh.
+      - Thêm nút "HƯỚNG DẪN" (Help) bên cạnh nút toggle chế độ 3D trên màn hình điều khiển để người chơi có thể mở lại hướng dẫn bất cứ lúc nào.
+      - Thiết lập tự động kích hoạt hiển thị Modal hướng dẫn ngay khi người dùng chọn nhân vật xong và đóng màn hình Loading Screen.
+  - **[TỐI ƯU GIAO DIỆN BẢN ĐỒ 2D VÀ THIẾT KẾ MODAL NỔI CHI TIẾT]**:
+    - **Yêu cầu**: Thay vì hiển thị thông tin ở cột bên phải gây hẹp không gian, tối ưu hóa giao diện 2D rộng rãi hơn và hiện hộp thông tin (modal) nổi trực quan ở giữa màn hình. Chỉ áp dụng cho bản 2D, giữ nguyên bản 3D.
+    - **Thực hiện**:
+      - Chuyển đổi cột trái chứa Game Canvas 2D từ `lg:col-span-7` thành toàn chiều rộng `lg:col-span-12` (kèm `max-w-4xl mx-auto`), giúp bản đồ game 2D hiển thị to rộng và thoáng hơn rất nhiều.
+      - Ẩn hoàn toàn cột bên phải (`lg:col-span-5` cũ) trong DOM để giải phóng không gian 2D nhưng vẫn giữ cấu trúc HTML ẩn nhằm bảo đảm khả năng tương thích của các hàm cập nhật JS.
+      - Di chuyển bảng "ĐIỀU HƯỚNG NHANH BẢN ĐỒ" xuống dưới khung hình Game Canvas 2D dưới dạng một hàng ngang bo góc hiện đại.
+      - Tạo modal nổi `#zone_info_modal_2d` chuyên biệt cho 2D ở cấp độ toàn màn hình (`fixed inset-0 z-50`), có đầy đủ nút đóng và overlay đóng mượt mà.
+      - Gắn trigger kích hoạt mở modal 2D khi người dùng di chuyển nhân vật chạm vào zone mới hoặc click teleport qua các nút điều hướng nhanh.
+      - Cập nhật hàm switch tab dự án trong Museum: Tự động phát hiện và đồng bộ nội dung tab mới sang Modal 2D nếu modal đang mở.
+  - **[XÂY DỰNG GIAO DIỆN CRUD TRỰC QUAN CHO CONSOLE QUẢN TRỊ (ADMIN/)]**:
+    - **Yêu cầu**: Nâng cấp trang admin ẩn để có thể quản lý, sửa đổi dữ liệu `data.json` trực tiếp thông qua form giao diện trực quan thay vì chỉ chỉnh sửa file JSON thô trong textarea.
+    - **Thực hiện**:
+      - Tách phân vùng sửa đổi Portfolio thành 2 cột: Cột trái hiển thị danh sách các phân khu (Zones: Home, Academy, Lab, Museum, Library, Portal) kèm icon trực quan; Cột phải hiển thị Form biên tập chi tiết.
+      - Thiết kế Form biên tập gồm 2 cột ngôn ngữ song song (Tiếng Việt và Tiếng Anh) giúp quản trị viên dễ dàng dịch và đối chiếu nội dung.
+      - Hỗ trợ đầy đủ các trường dữ liệu: Input text, Textarea và trình sửa mảng động (Array Editor) cho các phần thông tin cơ bản, kỹ năng, thành tựu, triết lý và liên hệ (thêm/xóa dòng tức thì).
+      - Bổ sung nút chuyển chế độ "CHẾ ĐỘ JSON THÔ" <-> "CHẾ ĐỘ BIỂU MẪU" linh hoạt, tự động kiểm tra cú pháp và đồng bộ hai chiều.
+      - Tái sử dụng trọn vẹn API lưu trữ Backend (`api/admin.php?action=portfolio_save`) thông qua cơ chế tự động đồng bộ hóa state của Form vào JSON textarea trước khi submit.
+  - **[SỬA LỖI KHÔNG CLICK ĐƯỢC CÁC TAB / SỔ LƯU NIỆM TRONG MODAL 3D]**:
+    - **Lỗi**: Khi mở modal giải mã 3D (`#threejs_info_modal`), nội dung được cập nhật động bằng `updateUIForActiveZone()`. Tuy nhiên, do modal của các phiên hoạt động trước chưa được dọn dẹp, trong DOM tồn tại song song 2 bộ phần tử có cùng ID (nằm ở `modalBody` cũ và `zoneDetail` mới). Vì `modalBody` đứng trước trong cây DOM, các lệnh `document.getElementById` trong `js/app.js` khi gắn Event Listeners cho các tab đã trả về nhầm phần tử cũ trong modal, sau đó phần tử cũ này bị `show3DInfoModal` xóa đi, còn phần tử mới chuyển sang thì không có Event Listener nào.
+    - **Khắc phục**: Di chuyển dòng dọn dẹp `modalBody.innerHTML = '';` lên trước tiên trong hàm `show3DInfoModal(zoneId)` (trước khi gọi `updateUIForActiveZone()`). Điều này đảm bảo dọn sạch các node cũ khỏi DOM trước khi render mới, từ đó `document.getElementById` truy vấn chính xác 100% các tab mới và gán Event Listeners thành công.
+  - **[CẬP NHẬT 2 DỰ ÁN THỰC CHIẾN ĐẦY ĐỦ VÀ THIẾT KẾ TAB TRONG BẢO TÀNG DỰ ÁN (MUSEUM)]**:
+    - **Thực hiện**:
+      - Cấu trúc lại dữ liệu `data.json` tại phân khu `museum` để hỗ trợ mảng `projects` chứa 2 dự án song hành: "Website Điện Máy PRO" (03/2026 - 05/2026) và "Hệ thống E-commerce & Mini-ERP Điện Máy Nâng Cao" (02/2026 - 06/2026).
+      - Phục hồi đầy đủ thông tin chi tiết công việc của cả hai dự án trong `data.json` thay vì rút gọn, nhằm tận dụng tối đa không gian hiển thị rộng rãi của Modal nổi 2D mới.
+      - Cập nhật hàm hiển thị trong `js/app.js` để render các dự án dưới dạng **Tabs** điều hướng trực quan, bấm chuyển tab mượt mà bằng cách gọi `window.switchMuseumProject(index)`, giúp tối ưu hóa không gian hiển thị modal mà không bị tràn màn hình.
+  - **[LOẠI BỎ KHÓA CỐ ĐỊNH GÓC QUAY CAMERA THEO ZONE TRONG 3D]**:
+    - **Vấn đề**: Mỗi khi người chơi đi vào một phân khu (Zone) mới trong 3D, hệ thống tự động cưỡng ép camera di chuyển (lerp) về một tọa độ và góc nhìn mặc định của zone đó. Điều này ghi đè góc quay tự do của người chơi, gây giật camera đột ngột và mang lại trải nghiệm khó chịu.
+    - **Khắc phục**: Loại bỏ hoàn toàn khối lệnh lerp camera (`threeControls.target.lerp` và `threeCamera.position.lerp`) bên trong hàm `detect3DZoneCollision` khi chuyển zone. Giúp camera giữ nguyên hướng xoay hiện tại do người dùng điều khiển bằng chuột, và tiếp tục đi theo nhân vật một cách trơn tru, giải phóng hoàn toàn góc quay tự do của camera.
+  - **[TÁCH BIỆT CỔNG THOÁT 2D VÀ TRẠM LIÊN LẠC PORTAL TRONG 3D]**:
+    - **Lỗi/Yêu cầu**: Cổng thoát về chế độ 2D (Warp Gate) lúc trước được đặt chồng lấn trực tiếp lên Trạm liên lạc Portal (`x: 0, z: 29`), gây cản trở và nhầm lẫn khi người chơi chỉ muốn tương tác mở modal Portal gửi Sổ lưu niệm chứ không muốn thoát 3D.
+    - **Khắc phục**:
+      - Di chuyển Cổng dịch chuyển thoát 2D (Warp Gate) ra một tọa độ hoàn toàn mới ở hướng Nam đối xứng `(x: 0, y: 0, z: -32)`.
+      - Đặt Warp Gate trên bệ pedestal màu Cyan (`#06b6d4`) độc lập và bổ sung nhãn bay Sprite song ngữ hiển thị rõ ràng: `EXIT TO 2D / THOÁT RA 2D`.
+      - Điều chỉnh góc xoay cổng `rotation.y = 0` hướng mặt chính diện tròn phát sáng về tâm bản đồ thay vì xoay nghiêng 90 độ, đồng thời đổi sắc màu phát sáng (Event Horizon và LED generator) của cổng từ màu hồng sang màu Cyan `0x06b6d4` đồng điệu với bệ đỡ.
+      - Cập nhật hàm kiểm tra va chạm `detect3DZoneCollision` để kích hoạt `exit3DMode()` khi người chơi tiến lại gần cổng thoát mới trong khoảng cách `< 2.0` đơn vị.
+      - Trang trí khu vực Trạm liên lạc cũ (`x: 0, z: 29`) bằng tháp Ăng-ten thu phát sóng kết hợp lõi Hologram năng lượng tự xoay màu hồng đặc trưng của Portal zone.
+  - **[HIỆU ỨNG DỊCH CHUYỂN KHÔNG GIAN 2D-3D (DIMENSION WARP TRANSITION) & HOLOGRAM LOADING HUD]**:
+    - **Tính năng**: Bổ sung hoạt ảnh chuyển dịch không gian toàn màn hình hoành tráng kèm bảng hiển thị tiến trình dạng Holographic Sci-Fi HUD khi chuyển đổi 2D/3D.
+    - **Thực hiện**:
+      - Bổ sung vào `#dimension_warp_overlay` trong `index.html` một bảng mạch `#warp_loading_hud` hiển thị tiến trình loading Hologram xoay, nhãn trạng thái động tiếng Việt/Anh và thanh tiến trình chuyển đổi (`from-emerald-550 via-cyan-400 to-purple-500`).
+      - Cập nhật CSS trong `css/style.css` tạo hiệu ứng phóng to nảy (spring scale) mượt mà và làm mờ dần khi hoàn tất.
+      - Viết hàm `triggerWarpTransition` chạy tiến trình ảo 0% -> 100% trong 1.2 giây trong `js/engine-3d.js`, tự động nạp ngầm Three.js ở mức 65% để tối ưu hóa thời gian tải và tạo chuyển động không giật lag. Đồng thời tích hợp vào `enter3DMode` và `exit3DMode`.
+  - **[SỬA LỖI CÚ PHÁP CSS CỦA TOGGLE SWITCH]**:
+    - Khắc phục lỗi `{ expected` tại dòng 327 trong `css/style.css`. Nguyên nhân do selector `.left-0.5` chứa ký tự dấu chấm `.` của class Tailwind không được escape, khiến trình phân tích cú pháp CSS hiểu lầm thành selector đa class không hợp lệ (`.left-0` và `.5`). Đã sửa thành `.left-0\.5` để escape dấu chấm đúng quy chuẩn CSS.
+  - **[BỔ SUNG GỢI Ý XÓA CACHE CTRL + F5]**:
+    - Thêm dòng thông báo nhỏ, thiết kế tinh tế (sử dụng kbd style và màu sắc hài hòa với giao diện Cyberpunk) ở cuối Main Glass HUD Container (Loading Screen) trong `index.html` nhằm nhắc nhở người dùng thực hiện xóa cache cũ (`Ctrl + F5`) khi gặp lỗi tài nguyên hoặc giao diện không tải hoàn chỉnh.
   - **[TOÀN MÀN HÌNH 3D VÀ VẬT THỂ TƯƠNG TÁC GIẢI MÃ THÔNG TIN PHONG CÁCH RPG]**
     - **Toàn màn hình 3D (Fullscreen Mode)**: Tự động biến đổi container 3D thành toàn màn hình (sử dụng position fixed, inset-0, z-9999 thông qua class `.three-fullscreen`) khi kích hoạt chế độ 3D. Đồng thời phục hồi kích thước bento-grid ban đầu khi nhấn thoát 3D.
     - **6 Vật thể tương tác 3D (Interactive Objects) độc đáo**: Đặt các mô hình hình học phức tạp bay lơ lửng, tự xoay và phát ánh sáng neon màu sắc đặc trưng kèm nhãn động thay đổi trạng thái theo khoảng cách: hiển thị "APPROACH TO DECRYPT" khi ở xa và tự động chuyển sang "CLICK TO DECRYPT" phát sáng khi người chơi đứng lại gần (khoảng cách <= 4.5).
