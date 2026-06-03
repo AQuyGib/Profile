@@ -60,12 +60,17 @@
   - **Bổ sung tùy chọn Giọng đọc/Ngôn ngữ đọc & Bật/tắt giọng nói cho Chatbot**.
   - **Chú thích chi tiết (Commenting Code)** cho tất cả các file xử lý backend cốt lõi.
   - **Git Merge:** Đã tiến hành merge thành công toàn bộ mã nguồn từ nhánh `profile_3d_html` vào nhánh `master` không gặp xung đột (conflicts).
+  - **[MODULARIZE ACHIEVEMENTS & 3D WebGL ENGINE]**:
+    - **Achievements System**: Tách toàn bộ logic thành tựu RPG (Achievement list, unlock logic, modal cảm ơn, toast hiển thị) sang `js/achievements-manager.js`.
+    - **3D WebGL Engine**: Tách toàn bộ logic đồ họa Three.js (Hơn 3600 dòng code bao gồm khởi tạo, dựng đảo, load models, raycasting click-to-move, hiệu ứng hạt, animation, shader post-processing UnrealBloom, camera transition, collision detection) sang `js/engine-3d.js`.
+    - **Tối giản hóa app.js**: File `js/app.js` từ ~4800 dòng được thu gọn sạch sẽ xuống còn ~1000 dòng, chỉ đóng vai trò là Orchestrator khởi tạo chung, ngôn ngữ và bộ chọn nhân vật.
 - Edited files:
-  - `js/state-manager.js` (NEW)
-  - `js/control-panel-handler.js` (NEW)
-  - `index.html` (thêm 3D Control Panel UI, script tags)
-  - `css/style.css` (thêm control panel styles)
-  - `js/app.js` (tích hợp themeManager init, gọi initControlPanel)
+  - `js/state-manager.js`
+  - `js/control-panel-handler.js`
+  - `js/achievements-manager.js` (NEW)
+  - `js/engine-3d.js` (NEW)
+  - `index.html` (import `achievements-manager.js` và `engine-3d.js`)
+  - `js/app.js` (rút gọn và tối giản logic điều hướng)
   - `ai-memory.md`
 - TODO:
   - Tái cấu trúc 4 bối cảnh 3D (Desk Setup, Studio Phim, Timeline Quy trình, Portal).

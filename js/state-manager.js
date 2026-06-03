@@ -9,6 +9,25 @@
  * - Eco Mode tự động hạ FPS trên thiết bị di động
  */
 
+// Global Application State
+const state = {
+  loaded: false,
+  language: 'vi',
+  activeZoneId: 'home',
+  targetPosition: null,
+  zones: [],
+  isLoadingAI: false,
+  chatHistory: [],
+  isChatOpen: false,
+  is3DActive: false,
+  threeInstance: null,
+  isAiVoiceEnabled: localStorage.getItem('cyber_portfolio_ai_voice_enabled') !== 'false',
+  selectedVoiceURI: localStorage.getItem('cyber_portfolio_selected_voice_uri') || '',
+  selectedCharacter: localStorage.getItem('cyber_portfolio_selected_character') || 'astronaut',
+  ecoModeEnabled: localStorage.getItem('eco_mode_enabled') === 'true',
+  targetFPS: 60
+};
+
 // ============================================
 // THEME CONFIGURATION PRESETS
 // ============================================
