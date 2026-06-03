@@ -64,6 +64,12 @@
     - **Achievements System**: Tách toàn bộ logic thành tựu RPG (Achievement list, unlock logic, modal cảm ơn, toast hiển thị) sang `js/achievements-manager.js`.
     - **3D WebGL Engine**: Tách toàn bộ logic đồ họa Three.js (Hơn 3600 dòng code bao gồm khởi tạo, dựng đảo, load models, raycasting click-to-move, hiệu ứng hạt, animation, shader post-processing UnrealBloom, camera transition, collision detection) sang `js/engine-3d.js`.
     - **Tối giản hóa app.js**: File `js/app.js` từ ~4800 dòng được thu gọn sạch sẽ xuống còn ~1000 dòng, chỉ đóng vai trò là Orchestrator khởi tạo chung, ngôn ngữ và bộ chọn nhân vật.
+  - **[TỐI ƯU HÓA HIỆU NĂNG & KHẮC PHỤC GIẬT LAG 3D]**:
+    - **Thắt chặt tỷ lệ điểm ảnh (Pixel Ratio Capping)**: Giới hạn độ phân giải tối đa ở mức `1.35` thay vì `2.0` (giảm hơn 50% số điểm ảnh cần render trên màn hình Retina/High-DPI). Khi bật Eco Mode, hạ xuống `0.85` để máy yếu chạy mượt mà.
+    - **Giới hạn FPS (FPS Throttling)**: Khóa khung hình ở mức 60 FPS mặc định (hoặc 30 FPS ở Eco Mode) trong game loop, tránh hiện tượng quá tải GPU trên các màn hình gaming tần số quét cao (120Hz/144Hz).
+    - **Tối ưu hóa bóng đổ (Shadow Map Optimization)**: Giảm kích thước mapSize bóng của `DirectionalLight` từ `2048` xuống `1024`, thu nhỏ camera frustum quét bóng đổ vừa khít vùng di chuyển (-35 đến 35) và thêm shadow bias.
+    - **Bỏ qua Bloom (EffectComposer Bypass)**: Tự động bỏ qua toàn bộ bước hậu kỳ EffectComposer nếu người dùng tắt Bloom hoặc bật Eco Mode, cho phép kết xuất (render) trực tiếp bằng WebGLRenderer gốc để loại bỏ hoàn toàn chi phí Blur Shader.
+    - **Đồng bộ DOM & Persistence**: Tự động lưu cấu hình hiệu năng vào `localStorage` và đồng bộ các nút switch trong Control Panel khi khởi động chế độ 3D.
 - Edited files:
   - `js/state-manager.js`
   - `js/control-panel-handler.js`

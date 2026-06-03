@@ -1,6 +1,7 @@
 // 3D WebGL Three.js Sub-Dimension Logic
 // -------------------------------------------------------------
 let threeScene, threeCamera, threeRenderer, threeControls, threeComposer;
+let lastRenderTime = 0;
 let isCameraUserInteracting = false;
 let threePlayerMesh = null;
 let jetpackParticles = [];
@@ -560,9 +561,14 @@ function initThreeJS() {
   // Renderer setup
   threeRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
   threeRenderer.setSize(container.clientWidth, container.clientHeight);
-  threeRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  
+  // Tối ưu hóa: Giới hạn pixelRatio tối đa 1.35 thay vì 2.0 để giảm gánh nặng render pixel (Retina/High-DPI)
+  // Nếu đang bật chế độ tiết kiệm pin (Eco Mode), hạ pixelRatio xuống 0.85
+  const initialPixelRatio = state.ecoModeEnabled ? 0.85 : Math.min(window.devicePixelRatio, 1.35);
+  threeRenderer.setPixelRatio(initialPixelRatio);
+  
   threeRenderer.setClearColor('#050816', 1);
-  threeRenderer.shadowMap.enabled = true;
+  threeRenderer.shadowMap.enabled = !state.ecoModeEnabled;
   threeRenderer.shadowMap.type = THREE.PCFSoftShadowMap;
   container.appendChild(threeRenderer.domElement);
 
@@ -1207,9 +1213,19 @@ function initThreeJS() {
 
   const dirLight = new THREE.DirectionalLight('#ffffff', 2.4);
   dirLight.position.set(18, 28, 12);
-  dirLight.castShadow = true;
-  dirLight.shadow.mapSize.width = 2048;
-  dirLight.shadow.mapSize.height = 2048;
+  dirLight.castShadow = !state.ecoModeEnabled;
+  dirLight.shadow.mapSize.width = 1024; // Giảm từ 2048 xuống 1024 để tăng hiệu năng
+  dirLight.shadow.mapSize.height = 1024;
+  dirLight.shadow.bias = -0.0005; // Giảm thiểu răng cưa bóng đổ (shadow acne)
+  
+  // Tối ưu hóa frustum của camera bóng đổ để chỉ quét trong vùng di chuyển
+  dirLight.shadow.camera.near = 0.5;
+  dirLight.shadow.camera.far = 80;
+  dirLight.shadow.camera.left = -35;
+  dirLight.shadow.camera.right = 35;
+  dirLight.shadow.camera.top = 35;
+  dirLight.shadow.camera.bottom = -35;
+  
   threeScene.add(dirLight);
 
   const fillLight = new THREE.PointLight('#38bdf8', 3.0, 120);
@@ -1243,6 +1259,20 @@ function initThreeJS() {
     const currentThemeConfig = THEME_PRESETS[savedTheme];
     if (currentThemeConfig) {
       themeManager._switchThemeInstant(currentThemeConfig);
+    }
+    
+    // Áp dụng và đồng bộ cấu hình hiệu năng (Eco Mode, Bloom, Shadows) từ localStorage
+    themeManager.setEcoMode(state.ecoModeEnabled);
+    if (!state.ecoModeEnabled) {
+      const bloomEnabled = localStorage.getItem('bloom_enabled') !== 'false';
+      const shadowsEnabled = localStorage.getItem('shadows_enabled') !== 'false';
+      themeManager.toggleBloom(bloomEnabled);
+      themeManager.toggleShadows(shadowsEnabled);
+      
+      const bloomSwitch = document.getElementById('bloom_switch');
+      if (bloomSwitch) bloomSwitch.setAttribute('data-enabled', bloomEnabled ? 'true' : 'false');
+      const shadowsSwitch = document.getElementById('shadows_switch');
+      if (shadowsSwitch) shadowsSwitch.setAttribute('data-enabled', shadowsEnabled ? 'true' : 'false');
     }
   }
   
@@ -2711,6 +2741,15 @@ function animate3D() {
   threeAnimId = requestAnimationFrame(animate3D);
 
   const now = Date.now();
+  
+  // Tối ưu hóa FPS: Giới hạn FPS ở mức 60 mặc định, và 30 ở chế độ tiết kiệm năng lượng (Eco Mode)
+  // Việc này tránh render lãng phí trên màn hình 120Hz/144Hz gây lag GPU
+  const targetFPS = state.ecoModeEnabled ? 30 : 60;
+  const minInterval = 1000 / targetFPS;
+  if (now - lastRenderTime < minInterval - 1) {
+    return;
+  }
+  lastRenderTime = now;
 
   // 1. Controls update
   if (threeControls) threeControls.update();
@@ -3198,7 +3237,14 @@ function animate3D() {
       };
       renderDiagnosticOverlay(diagnosticSnapshot);
     }
-    if (threeComposer) {
+    // Tối ưu hóa: Bỏ qua EffectComposer (Bloom) nếu Eco Mode đang được kích hoạt hoặc nếu Bloom bị tắt thủ công
+    // Việc này giúp bỏ qua các bước copy renderTarget và gaussian blur cực kỳ tốn hiệu năng GPU
+    const isBloomActive = threeComposer && !state.ecoModeEnabled && (function() {
+      const bloomPass = threeComposer.passes.find(pass => pass.isUnrealBloomPass || (pass.constructor && pass.constructor.name === 'UnrealBloomPass'));
+      return bloomPass ? bloomPass.enabled : false;
+    })();
+
+    if (isBloomActive) {
       threeComposer.render();
     } else {
       threeRenderer.render(threeScene, threeCamera);

@@ -375,15 +375,48 @@ const themeManager = {
   // Bật Eco Mode (giảm FPS trên di động)
   // ============================================
   setEcoMode(enabled) {
+    state.ecoModeEnabled = enabled;
+    state.targetFPS = enabled ? 30 : 60;
+    localStorage.setItem('eco_mode_enabled', enabled ? 'true' : 'false');
+    
+    // Đồng bộ thuộc tính hiển thị trên DOM cho các Switch
+    const ecomodeSwitch = document.getElementById('ecomode_switch');
+    if (ecomodeSwitch) ecomodeSwitch.setAttribute('data-enabled', enabled ? 'true' : 'false');
+
     if (enabled) {
-      console.log('[ThemeManager] Eco Mode ON - Hạ FPS xuống 30');
-      // Bật limitFPS trong game loop
-      state.ecoModeEnabled = true;
-      state.targetFPS = 30;
+      console.log('[ThemeManager] Eco Mode ON - Hạ FPS xuống 30, giảm độ phân giải & tắt hiệu ứng');
+      
+      // Giảm độ phân giải render xuống 0.85
+      if (this.renderer) {
+        this.renderer.setPixelRatio(0.85);
+      }
+      
+      // Tắt bóng đổ và bloom để tăng tối đa FPS
+      this.toggleShadows(false);
+      this.toggleBloom(false);
+      
+      // Cập nhật DOM switch trạng thái
+      const bloomSwitch = document.getElementById('bloom_switch');
+      if (bloomSwitch) bloomSwitch.setAttribute('data-enabled', 'false');
+      const shadowsSwitch = document.getElementById('shadows_switch');
+      if (shadowsSwitch) shadowsSwitch.setAttribute('data-enabled', 'false');
     } else {
-      console.log('[ThemeManager] Eco Mode OFF - FPS bình thường');
-      state.ecoModeEnabled = false;
-      state.targetFPS = 60;
+      console.log('[ThemeManager] Eco Mode OFF - FPS 60, bật lại độ phân giải & hiệu ứng');
+      
+      // Khôi phục độ phân giải render mặc định (tối đa 1.35)
+      if (this.renderer) {
+        this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.35));
+      }
+      
+      // Bật lại bóng đổ và bloom
+      this.toggleShadows(true);
+      this.toggleBloom(true);
+      
+      // Cập nhật DOM switch trạng thái
+      const bloomSwitch = document.getElementById('bloom_switch');
+      if (bloomSwitch) bloomSwitch.setAttribute('data-enabled', 'true');
+      const shadowsSwitch = document.getElementById('shadows_switch');
+      if (shadowsSwitch) shadowsSwitch.setAttribute('data-enabled', 'true');
     }
   },
 
