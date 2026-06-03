@@ -1,0 +1,1163 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thư viện Sprite Không Gian 2D - Nguyễn Anh Quý</title>
+    <!-- Tailwind CSS & Google Fonts -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #030712;
+            color: #f3f4f6;
+        }
+        .font-orbitron {
+            font-family: 'Orbitron', sans-serif;
+        }
+        .font-mono-tech {
+            font-family: 'Share Tech Mono', monospace;
+        }
+        .glass-panel {
+            background: rgba(13, 14, 25, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(147, 51, 234, 0.2);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.2);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(147, 51, 234, 0.4);
+            border-radius: 3px;
+        }
+        /* Animation keyframes */
+        @keyframes scanline {
+            0% { transform: translateY(-100%); }
+            100% { transform: translateY(100%); }
+        }
+        .scanline-effect::after {
+            content: " ";
+            display: block;
+            position: absolute;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            z-index: 2;
+            background-size: 100% 2px, 3px 100%;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8 min-h-screen scanline-effect relative">
+
+    <div class="max-w-7xl mx-auto relative z-10">
+        
+        <!-- HEADER -->
+        <header class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8 pb-6 border-b border-purple-500/20">
+            <div>
+                <div class="flex items-center space-x-3 mb-1">
+                    <span class="px-2 py-1 bg-purple-600/30 text-purple-400 border border-purple-500/40 rounded text-xs font-mono-tech tracking-widest">v2.0 PRODUCTION-READY</span>
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                </div>
+                <h1 class="text-3xl font-orbitron font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-indigo-400 to-cyan-400 tracking-wider">
+                    SPACE SPRITE 2D GENERATOR
+                </h1>
+                <p class="text-sm text-gray-400 mt-1">Hệ thống sinh tạo mô hình vector 2D thông qua mã nguồn Canvas. Tối ưu cực hạn - Không cần tải tệp ảnh ngoài.</p>
+            </div>
+            
+            <div class="flex gap-3">
+                <button onclick="copyAllLibrary()" class="px-4 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-xl font-orbitron text-xs font-bold tracking-widest transition shadow-lg shadow-purple-500/20 flex items-center gap-2">
+                    <i data-lucide="copy" class="w-4 h-4"></i> SAO CHÉP TOÀN BỘ THƯ VIỆN (.JS)
+                </button>
+            </div>
+        </header>
+
+        <!-- DASHBOARD GRID -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            <!-- LEFT PANEL: CONTROLLER & PREVIEW DIRECT -->
+            <div class="lg:col-span-2 space-y-6">
+                
+                <!-- SPRITES SHOWCASE -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="sprites-grid">
+                    
+                    <!-- Sprite Card: Spaceship -->
+                    <div class="glass-panel p-5 rounded-2xl border-purple-500/30 flex flex-col justify-between">
+                        <div>
+                            <div class="flex justify-between items-center mb-3">
+                                <h3 class="font-orbitron font-bold text-purple-300 flex items-center gap-2 text-sm">
+                                    <span class="w-2 h-2 bg-purple-500 rounded-full"></span> 01. PHI THUYỀN CHÍNH (PLAYER)
+                                </h3>
+                                <span class="text-[10px] font-mono-tech bg-purple-500/20 px-2 py-0.5 rounded text-purple-300">SPACESHIP</span>
+                            </div>
+                            <div class="w-full h-44 bg-slate-950/80 rounded-xl relative overflow-hidden flex items-center justify-center border border-purple-500/10 mb-4">
+                                <canvas id="canvas-spaceship" class="w-full h-full"></canvas>
+                            </div>
+                        </div>
+                        <div class="space-y-3">
+                            <div class="flex gap-2">
+                                <button onclick="copySpriteCode('spaceship')" class="flex-1 py-2 bg-purple-900/30 hover:bg-purple-900/50 border border-purple-500/30 text-purple-200 text-xs font-semibold rounded-lg transition flex items-center justify-center gap-1.5">
+                                    <i data-lucide="code-2" class="w-4 h-4"></i> Sao chép Code
+                                </button>
+                                <button onclick="downloadPNG('canvas-spaceship', 'spaceship.png')" class="p-2 bg-cyan-950/40 hover:bg-cyan-950/60 border border-cyan-500/30 text-cyan-300 rounded-lg transition" title="Tải ảnh PNG">
+                                    <i data-lucide="download" class="w-4.5 h-4.5"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sprite Card: UFO -->
+                    <div class="glass-panel p-5 rounded-2xl border-cyan-500/30 flex flex-col justify-between">
+                        <div>
+                            <div class="flex justify-between items-center mb-3">
+                                <h3 class="font-orbitron font-bold text-cyan-300 flex items-center gap-2 text-sm">
+                                    <span class="w-2 h-2 bg-cyan-500 rounded-full"></span> 02. ĐĨA BAY ALIEN (UFO ENEMY)
+                                </h3>
+                                <span class="text-[10px] font-mono-tech bg-cyan-500/20 px-2 py-0.5 rounded text-cyan-300">UFO</span>
+                            </div>
+                            <div class="w-full h-44 bg-slate-950/80 rounded-xl relative overflow-hidden flex items-center justify-center border border-cyan-500/10 mb-4">
+                                <canvas id="canvas-ufo" class="w-full h-full"></canvas>
+                            </div>
+                        </div>
+                        <div class="space-y-3">
+                            <div class="flex gap-2">
+                                <button onclick="copySpriteCode('ufo')" class="flex-1 py-2 bg-cyan-900/30 hover:bg-cyan-900/50 border border-cyan-500/30 text-cyan-200 text-xs font-semibold rounded-lg transition flex items-center justify-center gap-1.5">
+                                    <i data-lucide="code-2" class="w-4 h-4"></i> Sao chép Code
+                                </button>
+                                <button onclick="downloadPNG('canvas-ufo', 'alien_ufo.png')" class="p-2 bg-cyan-950/40 hover:bg-cyan-950/60 border border-cyan-500/30 text-cyan-300 rounded-lg transition" title="Tải ảnh PNG">
+                                    <i data-lucide="download" class="w-4.5 h-4.5"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sprite Card: Asteroid -->
+                    <div class="glass-panel p-5 rounded-2xl border-amber-500/30 flex flex-col justify-between">
+                        <div>
+                            <div class="flex justify-between items-center mb-3">
+                                <h3 class="font-orbitron font-bold text-amber-300 flex items-center gap-2 text-sm">
+                                    <span class="w-2 h-2 bg-amber-500 rounded-full"></span> 03. THIÊN THẠCH TỰ PHÁT SINH
+                                </h3>
+                                <span class="text-[10px] font-mono-tech bg-amber-500/20 px-2 py-0.5 rounded text-amber-300">ASTEROID</span>
+                            </div>
+                            <div class="w-full h-44 bg-slate-950/80 rounded-xl relative overflow-hidden flex items-center justify-center border border-amber-500/10 mb-4">
+                                <canvas id="canvas-asteroid" class="w-full h-full"></canvas>
+                            </div>
+                        </div>
+                        <div class="space-y-3">
+                            <div class="flex gap-2">
+                                <button onclick="copySpriteCode('asteroid')" class="flex-1 py-2 bg-amber-900/30 hover:bg-amber-900/50 border border-amber-500/30 text-amber-200 text-xs font-semibold rounded-lg transition flex items-center justify-center gap-1.5">
+                                    <i data-lucide="code-2" class="w-4 h-4"></i> Sao chép Code
+                                </button>
+                                <button onclick="downloadPNG('canvas-asteroid', 'asteroid.png')" class="p-2 bg-cyan-950/40 hover:bg-cyan-950/60 border border-cyan-500/30 text-cyan-300 rounded-lg transition" title="Tải ảnh PNG">
+                                    <i data-lucide="download" class="w-4.5 h-4.5"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sprite Card: Satellite -->
+                    <div class="glass-panel p-5 rounded-2xl border-indigo-500/30 flex flex-col justify-between">
+                        <div>
+                            <div class="flex justify-between items-center mb-3">
+                                <h3 class="font-orbitron font-bold text-indigo-300 flex items-center gap-2 text-sm">
+                                    <span class="w-2 h-2 bg-indigo-500 rounded-full"></span> 04. VỆ TINH PHÁT SÓNG
+                                </h3>
+                                <span class="text-[10px] font-mono-tech bg-indigo-500/20 px-2 py-0.5 rounded text-indigo-300">SATELLITE</span>
+                            </div>
+                            <div class="w-full h-44 bg-slate-950/80 rounded-xl relative overflow-hidden flex items-center justify-center border border-indigo-500/10 mb-4">
+                                <canvas id="canvas-satellite" class="w-full h-full"></canvas>
+                            </div>
+                        </div>
+                        <div class="space-y-3">
+                            <div class="flex gap-2">
+                                <button onclick="copySpriteCode('satellite')" class="flex-1 py-2 bg-indigo-900/30 hover:bg-indigo-900/50 border border-indigo-500/30 text-indigo-200 text-xs font-semibold rounded-lg transition flex items-center justify-center gap-1.5">
+                                    <i data-lucide="code-2" class="w-4 h-4"></i> Sao chép Code
+                                </button>
+                                <button onclick="downloadPNG('canvas-satellite', 'satellite.png')" class="p-2 bg-cyan-950/40 hover:bg-cyan-950/60 border border-cyan-500/30 text-cyan-300 rounded-lg transition" title="Tải ảnh PNG">
+                                    <i data-lucide="download" class="w-4.5 h-4.5"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sprite Card: Astronaut -->
+                    <div class="glass-panel p-5 rounded-2xl border-emerald-500/30 flex flex-col justify-between">
+                        <div>
+                            <div class="flex justify-between items-center mb-3">
+                                <h3 class="font-orbitron font-bold text-emerald-300 flex items-center gap-2 text-sm">
+                                    <span class="w-2 h-2 bg-emerald-500 rounded-full"></span> 05. PHI HÀNH GIA LƠ LỬNG
+                                </h3>
+                                <span class="text-[10px] font-mono-tech bg-emerald-500/20 px-2 py-0.5 rounded text-emerald-300">ASTRONAUT</span>
+                            </div>
+                            <div class="w-full h-44 bg-slate-950/80 rounded-xl relative overflow-hidden flex items-center justify-center border border-emerald-500/10 mb-4">
+                                <canvas id="canvas-astronaut" class="w-full h-full"></canvas>
+                            </div>
+                        </div>
+                        <div class="space-y-3">
+                            <div class="flex gap-2">
+                                <button onclick="copySpriteCode('astronaut')" class="flex-1 py-2 bg-emerald-900/30 hover:bg-emerald-900/50 border border-emerald-500/30 text-emerald-200 text-xs font-semibold rounded-lg transition flex items-center justify-center gap-1.5">
+                                    <i data-lucide="code-2" class="w-4 h-4"></i> Sao chép Code
+                                </button>
+                                <button onclick="downloadPNG('canvas-astronaut', 'astronaut.png')" class="p-2 bg-cyan-950/40 hover:bg-cyan-950/60 border border-cyan-500/30 text-cyan-300 rounded-lg transition" title="Tải ảnh PNG">
+                                    <i data-lucide="download" class="w-4.5 h-4.5"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sprite Card: Black Hole / Portal -->
+                    <div class="glass-panel p-5 rounded-2xl border-pink-500/30 flex flex-col justify-between">
+                        <div>
+                            <div class="flex justify-between items-center mb-3">
+                                <h3 class="font-orbitron font-bold text-pink-300 flex items-center gap-2 text-sm">
+                                    <span class="w-2 h-2 bg-pink-500 rounded-full"></span> 06. HỐ ĐEN VŨ TRỤ / CỔNG PORTAL
+                                </h3>
+                                <span class="text-[10px] font-mono-tech bg-pink-500/20 px-2 py-0.5 rounded text-pink-300">PORTAL</span>
+                            </div>
+                            <div class="w-full h-44 bg-slate-950/80 rounded-xl relative overflow-hidden flex items-center justify-center border border-pink-500/10 mb-4">
+                                <canvas id="canvas-portal" class="w-full h-full"></canvas>
+                            </div>
+                        </div>
+                        <div class="space-y-3">
+                            <div class="flex gap-2">
+                                <button onclick="copySpriteCode('portal')" class="flex-1 py-2 bg-pink-900/30 hover:bg-pink-900/50 border border-pink-500/30 text-pink-200 text-xs font-semibold rounded-lg transition flex items-center justify-center gap-1.5">
+                                    <i data-lucide="code-2" class="w-4 h-4"></i> Sao chép Code
+                                </button>
+                                <button onclick="downloadPNG('canvas-portal', 'blackhole_portal.png')" class="p-2 bg-cyan-950/40 hover:bg-cyan-950/60 border border-cyan-500/30 text-cyan-300 rounded-lg transition" title="Tải ảnh PNG">
+                                    <i data-lucide="download" class="w-4.5 h-4.5"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <!-- RIGHT PANEL: INTEGRATION GUIDE & LIVE CODE EDITOR VIEW -->
+            <div class="space-y-6">
+                
+                <!-- INTEGRATION GUIDE -->
+                <div class="glass-panel p-6 rounded-3xl border-purple-500/30">
+                    <div class="flex items-center space-x-3 mb-4">
+                        <div class="p-2 bg-purple-500/20 rounded-lg text-purple-400">
+                            <i data-lucide="help-circle" class="w-6 h-6"></i>
+                        </div>
+                        <h2 class="text-lg font-orbitron font-bold text-purple-300">HƯỚNG DẪN TÍCH HỢP</h2>
+                    </div>
+
+                    <div class="space-y-4 text-xs leading-relaxed text-gray-300">
+                        <p>Hệ thống hỗ trợ 2 dạng sử dụng chính vào dự án **Profile 3D Nguyễn Anh Quý** của bạn:</p>
+                        
+                        <div class="p-3 bg-purple-950/20 border border-purple-500/20 rounded-xl space-y-2">
+                            <h4 class="font-bold text-purple-300 font-orbitron">Cách 1: Vẽ Trực Tiếp Bằng Code (Khuyên dùng)</h4>
+                            <p>Không tốn băng thông tải ảnh, tăng hiệu suất tuyệt đối. Bạn dán hàm code vẽ nhận được vào vòng lặp cập nhật màn hình Canvas (`requestAnimationFrame`) trong tệp `game-2d.js` hoặc bất kỳ đâu.</p>
+                        </div>
+
+                        <div class="p-3 bg-cyan-950/20 border border-cyan-500/20 rounded-xl space-y-2">
+                            <h4 class="font-bold text-cyan-300 font-orbitron">Cách 2: Sử Dụng Ảnh Tĩnh PNG</h4>
+                            <p>Bấm vào biểu tượng <i data-lucide="download" class="inline w-3.5 h-3.5"></i> để lưu file ảnh dạng PNG trong suốt chất lượng cao, sau đó nạp bình thường qua `new Image()` trong Javascript.</p>
+                        </div>
+                        
+                        <div class="pt-2">
+                            <span class="text-[10px] text-gray-500 font-mono-tech uppercase">Trình trạng: Toàn bộ mã nguồn hoàn toàn độc lập, sử dụng API vẽ vector tiêu chuẩn của trình duyệt.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- LIVE CONSOLE & NOTIFICATION -->
+                <div class="glass-panel p-5 rounded-3xl border-cyan-500/30">
+                    <h3 class="font-orbitron font-bold text-cyan-400 mb-3 text-xs tracking-wider">HỘP THÔNG BÁO HỆ THỐNG</h3>
+                    <div id="console-output" class="bg-black/80 rounded-xl p-4 font-mono-tech text-xs text-green-400 min-h-[140px] overflow-y-auto max-h-[200px] border border-cyan-500/10">
+                        <div class="text-cyan-400">// Ready to emit assets. Click "Sao chép Code" on any card!</div>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- CODE KHỞI TẠO VÀ CHẠY TOÀN BỘ MÔ HÌNH VẼ -->
+    <script>
+        // Cấu hình lưu trữ mã nguồn để sao chép
+        const spriteCodeRepository = {
+            spaceship: `/**
+ * Hàm vẽ Phi Thuyền Không Gian (Player) chuyên dụng cho Game 2D
+ * @param {CanvasRenderingContext2D} ctx - Canvas Rendering Context
+ * @param {number} x - Tọa độ tâm X
+ * @param {number} y - Tọa độ tâm Y
+ * @param {number} size - Kích thước phi thuyền (mặc định: 40)
+ * @param {number} angle - Góc xoay bằng radian
+ * @param {boolean} isThrusting - Trạng thái động cơ đang hoạt động
+ */
+function drawSpaceship(ctx, x, y, size = 40, angle = 0, isThrusting = true) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(angle);
+
+    // Vẽ luồng lửa động cơ
+    if (isThrusting) {
+        ctx.beginPath();
+        ctx.moveTo(-size * 0.2, size * 0.4);
+        ctx.lineTo(0, size * (0.6 + Math.random() * 0.3));
+        ctx.lineTo(size * 0.2, size * 0.4);
+        ctx.closePath();
+        let fireGrad = ctx.createLinearGradient(0, size * 0.4, 0, size * 0.9);
+        fireGrad.addColorStop(0, '#ff4500');
+        fireGrad.addColorStop(0.5, '#ffd700');
+        fireGrad.addColorStop(1, 'transparent');
+        ctx.fillStyle = fireGrad;
+        ctx.fill();
+    }
+
+    // Thiết kế cánh phụ trái phải (Wings)
+    ctx.beginPath();
+    ctx.moveTo(-size * 0.5, size * 0.3);
+    ctx.lineTo(-size * 0.6, size * 0.1);
+    ctx.lineTo(0, -size * 0.5);
+    ctx.lineTo(size * 0.6, size * 0.1);
+    ctx.lineTo(size * 0.5, size * 0.3);
+    ctx.lineTo(0, size * 0.15);
+    ctx.closePath();
+    ctx.fillStyle = '#7c3aed'; // Màu chính tím đậm
+    ctx.strokeStyle = '#a855f7'; // Phát sáng viền tím nhạt
+    ctx.lineWidth = 2;
+    ctx.fill();
+    ctx.stroke();
+
+    // Thân chính phi thuyền (Main Body)
+    ctx.beginPath();
+    ctx.moveTo(0, -size * 0.6);
+    ctx.lineTo(-size * 0.25, size * 0.25);
+    ctx.lineTo(size * 0.25, size * 0.25);
+    ctx.closePath();
+    ctx.fillStyle = '#0f172a'; // Thân kim loại tối màu
+    ctx.strokeStyle = '#06b6d4'; // Phát sáng viền xanh neon
+    ctx.lineWidth = 2;
+    ctx.fill();
+    ctx.stroke();
+
+    // Buồng lái kính (Cockpit Glass)
+    ctx.beginPath();
+    ctx.moveTo(0, -size * 0.35);
+    ctx.lineTo(-size * 0.1, size * 0.05);
+    ctx.lineTo(size * 0.1, size * 0.05);
+    ctx.closePath();
+    ctx.fillStyle = '#22d3ee'; // Kính phát sáng lam
+    ctx.fill();
+
+    // Dải phát sáng động cơ chính
+    ctx.beginPath();
+    ctx.arc(0, size * 0.22, size * 0.1, 0, Math.PI, true);
+    ctx.fillStyle = '#00ffff';
+    ctx.fill();
+
+    ctx.restore();
+}`,
+            ufo: `/**
+ * Hàm vẽ Đĩa Bay Ngoài Hành Tinh (UFO Enemy) tương tác cao
+ * @param {CanvasRenderingContext2D} ctx - Canvas Rendering Context
+ * @param {number} x - Tọa độ tâm X
+ * @param {number} y - Tọa độ tâm Y
+ * @param {number} size - Đường kính dĩa bay (mặc định: 45)
+ * @param {number} time - Tham số thời gian chuyển động để nhấp nháy đèn
+ */
+function drawUFO(ctx, x, y, size = 45, time = 0) {
+    ctx.save();
+    ctx.translate(x, y);
+
+    // Luồng sáng quét từ bên dưới (Tractor Beam)
+    ctx.beginPath();
+    ctx.moveTo(-size * 0.25, size * 0.15);
+    ctx.lineTo(-size * 0.65, size * 1.1);
+    ctx.lineTo(size * 0.65, size * 1.1);
+    ctx.lineTo(size * 0.25, size * 0.15);
+    ctx.closePath();
+    let beamGrad = ctx.createLinearGradient(0, 0, 0, size * 1.1);
+    beamGrad.addColorStop(0, 'rgba(6, 182, 212, 0.4)');
+    beamGrad.addColorStop(1, 'transparent');
+    ctx.fillStyle = beamGrad;
+    ctx.fill();
+
+    // Thân đĩa bay bên dưới (Lower Deck metal)
+    ctx.beginPath();
+    ctx.ellipse(0, size * 0.05, size * 0.6, size * 0.22, 0, 0, Math.PI * 2);
+    ctx.fillStyle = '#1e293b';
+    ctx.strokeStyle = '#06b6d4';
+    ctx.lineWidth = 2;
+    ctx.fill();
+    ctx.stroke();
+
+    // Vòm kính bảo hộ bên trên (Cockpit Dome)
+    ctx.beginPath();
+    ctx.arc(0, -size * 0.02, size * 0.32, Math.PI, 0, false);
+    let glassGrad = ctx.createLinearGradient(0, -size * 0.35, 0, 0);
+    glassGrad.addColorStop(0, '#06b6d4');
+    glassGrad.addColorStop(1, '#083344');
+    ctx.fillStyle = glassGrad;
+    ctx.fill();
+
+    // Đèn phát sáng nhấp nháy xoay quanh vành đĩa bay
+    const numLights = 5;
+    for (let i = 0; i < numLights; i++) {
+        let angle = (i / numLights) * Math.PI * 2 + time * 2;
+        let lx = Math.cos(angle) * (size * 0.48);
+        let ly = Math.sin(angle) * (size * 0.08) + (size * 0.05);
+        
+        ctx.beginPath();
+        ctx.arc(lx, ly, size * 0.05, 0, Math.PI * 2);
+        
+        // Nhấp nháy luân phiên màu đỏ, xanh lục, vàng
+        let phase = Math.floor(time * 3 + i) % 3;
+        ctx.fillStyle = phase === 0 ? '#f43f5e' : (phase === 1 ? '#10b981' : '#f59e0b');
+        ctx.shadowColor = ctx.fillStyle;
+        ctx.shadowBlur = 10;
+        ctx.fill();
+        ctx.shadowBlur = 0; // Tắt shadow để không ảnh hưởng vẽ tiếp theo
+    }
+
+    ctx.restore();
+}`,
+            asteroid: `/**
+ * Hàm vẽ Thiên thạch (Asteroid) dạng khối tự sinh ngẫu nhiên
+ * @param {CanvasRenderingContext2D} ctx - Canvas Rendering Context
+ * @param {number} x - Tọa độ tâm X
+ * @param {number} y - Tọa độ tâm Y
+ * @param {number} size - Bán kính trung bình (mặc định: 30)
+ * @param {number} rotation - Góc tự xoay (Radian)
+ * @param {number} seed - Số hạt giống cố định để hình dạng không bị đổi ngẫu nhiên mỗi khung hình
+ */
+function drawAsteroid(ctx, x, y, size = 30, rotation = 0, seed = 42) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(rotation);
+
+    // Sử dụng thuật toán sinh tạo đa giác gồ ghề từ mã băm seed
+    const numPoints = 11;
+    ctx.beginPath();
+    
+    // Hàm băm giả ngẫu nhiên dựa vào seed
+    let seededRandom = (s) => {
+        let mask = Math.sin(s) * 10000;
+        return mask - Math.floor(mask);
+    };
+
+    for (let i = 0; i < numPoints; i++) {
+        let angle = (i / numPoints) * Math.PI * 2;
+        // Tạo biến thiên nhẹ ở bán kính
+        let rOffset = seededRandom(seed + i) * 0.35 - 0.175;
+        let r = size * (1 + rOffset);
+        let px = Math.cos(angle) * r;
+        let py = Math.sin(angle) * r;
+        
+        if (i === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+    
+    // Đổ màu đất đá vũ trụ tối với hoa văn nổi
+    let astGrad = ctx.createRadialGradient(0, 0, size * 0.2, 0, 0, size);
+    astGrad.addColorStop(0, '#451a03'); // Nâu cháy lõi sáng
+    astGrad.addColorStop(0.8, '#1c1917'); // Đất đá phong hóa rìa tối
+    astGrad.addColorStop(1, '#0c0a09');
+    ctx.fillStyle = astGrad;
+    ctx.strokeStyle = '#78716c';
+    ctx.lineWidth = 2.5;
+    ctx.fill();
+    ctx.stroke();
+
+    // Vẽ một số lỗ thủng / vết nứt va chạm (Craters)
+    for (let j = 0; j < 3; j++) {
+        let cx = Math.cos(j * 2) * (size * 0.35);
+        let cy = Math.sin(j * 2.5) * (size * 0.35);
+        let cr = size * (0.08 + seededRandom(seed * j) * 0.12);
+        
+        ctx.beginPath();
+        ctx.arc(cx, cy, cr, 0, Math.PI * 2);
+        ctx.fillStyle = '#0c0a09'; // Lỗ lõm tối
+        ctx.fill();
+        ctx.strokeStyle = '#57534e'; // Rìa sáng viền trên của lỗ
+        ctx.lineWidth = 1;
+        ctx.stroke();
+    }
+
+    ctx.restore();
+}`,
+            satellite: `/**
+ * Hàm vẽ Vệ tinh viễn thông (Satellite)
+ * @param {CanvasRenderingContext2D} ctx - Canvas Rendering Context
+ * @param {number} x - Tọa độ tâm X
+ * @param {number} y - Tọa độ tâm Y
+ * @param {number} size - Kích thước của vệ tinh
+ * @param {number} time - Thời gian trôi qua để tạo hiệu ứng phát sóng điện từ
+ */
+function drawSatellite(ctx, x, y, size = 40, time = 0) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(Math.sin(time * 0.5) * 0.15); // Lắc nhẹ tự do
+
+    // Vẽ dải sóng điện từ (Signal Waves)
+    ctx.beginPath();
+    ctx.arc(0, -size * 0.45, size * (0.35 + (time * 0.8) % 0.6), Math.PI * 1.25, Math.PI * 1.75);
+    ctx.strokeStyle = 'rgba(6, 182, 212, ' + (1 - ((time * 1.3) % 1)) + ')';
+    ctx.lineWidth = 2.5;
+    ctx.stroke();
+
+    // 2 Tấm thu năng lượng mặt trời (Solar Panels) hai bên
+    ctx.fillStyle = '#1e3a8a'; // Xanh thẫm
+    ctx.strokeStyle = '#60a5fa'; // Viền xanh lam nhạt
+    ctx.lineWidth = 1.5;
+
+    // Tấm Pin Trái
+    ctx.fillRect(-size * 1.1, -size * 0.15, size * 0.65, size * 0.3);
+    ctx.strokeRect(-size * 1.1, -size * 0.15, size * 0.65, size * 0.3);
+    // Tấm Pin Phải
+    ctx.fillRect(size * 0.45, -size * 0.15, size * 0.65, size * 0.3);
+    ctx.strokeRect(size * 0.45, -size * 0.15, size * 0.65, size * 0.3);
+
+    // Trục nối chính
+    ctx.beginPath();
+    ctx.moveTo(-size * 0.5, 0);
+    ctx.lineTo(size * 0.5, 0);
+    ctx.strokeStyle = '#94a3b8';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+
+    // Lõi trung tâm vệ tinh (Satellite Core)
+    ctx.beginPath();
+    ctx.arc(0, 0, size * 0.22, 0, Math.PI * 2);
+    ctx.fillStyle = '#475569';
+    ctx.strokeStyle = '#e2e8f0';
+    ctx.lineWidth = 2;
+    ctx.fill();
+    ctx.stroke();
+
+    // Ăng-ten phát sóng phía trước
+    ctx.beginPath();
+    ctx.moveTo(0, -size * 0.2);
+    ctx.lineTo(0, -size * 0.45);
+    ctx.strokeStyle = '#e2e8f0';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Chóp phát tín hiệu
+    ctx.beginPath();
+    ctx.arc(0, -size * 0.45, 4, 0, Math.PI * 2);
+    ctx.fillStyle = '#ef4444'; // Đèn tín hiệu nhấp nháy đỏ
+    ctx.fill();
+
+    ctx.restore();
+}`,
+            astronaut: `/**
+ * Hàm vẽ Phi hành gia 2D (Miniature Astronaut) dễ thương
+ * @param {CanvasRenderingContext2D} ctx - Canvas Rendering Context
+ * @param {number} x - Tọa độ tâm X
+ * @param {number} y - Tọa độ tâm Y
+ * @param {number} size - Chiều cao phi hành gia
+ * @param {number} time - Biến thời gian điều chỉnh độ bồng bềnh
+ */
+function drawAstronaut(ctx, x, y, size = 45, time = 0) {
+    ctx.save();
+    // Tạo độ võng chuyển động
+    let driftY = Math.sin(time * 2) * (size * 0.08);
+    ctx.translate(x, y + driftY);
+    ctx.rotate(Math.sin(time * 1.5) * 0.08);
+
+    // Dây cáp sinh mệnh lửng lơ phía sau (Oxygen Tether)
+    ctx.beginPath();
+    ctx.moveTo(-size * 0.15, size * 0.1);
+    ctx.bezierCurveTo(-size * 0.8, size * 0.4, -size * 1.2, -size * 0.2, -size * 2, size * 0.2);
+    ctx.strokeStyle = 'rgba(226, 232, 240, 0.4)';
+    ctx.lineWidth = 2.5;
+    ctx.stroke();
+
+    // Bình oxi dưỡng khí (Backpack)
+    ctx.fillStyle = '#cbd5e1';
+    ctx.fillRect(-size * 0.35, -size * 0.15, size * 0.22, size * 0.45);
+
+    // Chân phải và chân trái lửng lơ
+    ctx.fillStyle = '#f1f5f9';
+    ctx.fillRect(-size * 0.18, size * 0.3, size * 0.11, size * 0.25); // Chân trái
+    ctx.fillRect(size * 0.04, size * 0.3, size * 0.11, size * 0.25); // Chân phải
+
+    // Thân áo phi hành gia (Spacesuit Body)
+    ctx.beginPath();
+    ctx.ellipse(0, size * 0.1, size * 0.25, size * 0.25, 0, 0, Math.PI * 2);
+    ctx.fillStyle = '#f8fafc';
+    ctx.strokeStyle = '#94a3b8';
+    ctx.lineWidth = 1.5;
+    ctx.fill();
+    ctx.stroke();
+
+    // Cánh tay chào mừng (Wave Arm)
+    ctx.save();
+    ctx.translate(size * 0.25, size * 0.05);
+    ctx.rotate(-Math.sin(time * 4.5) * 0.25 - 0.4); // Hoạt ảnh vẫy tay
+    ctx.fillRect(0, 0, size * 0.11, size * 0.25);
+    ctx.restore();
+
+    // Mũ bảo hiểm phi hành gia (Helmet Shield)
+    ctx.beginPath();
+    ctx.arc(0, -size * 0.22, size * 0.26, 0, Math.PI * 2);
+    ctx.fillStyle = '#f8fafc';
+    ctx.strokeStyle = '#cbd5e1';
+    ctx.lineWidth = 2;
+    ctx.fill();
+    ctx.stroke();
+
+    // Mặt kính Visor tối ngắm cảnh (Glow Visor)
+    ctx.beginPath();
+    ctx.ellipse(size * 0.05, -size * 0.22, size * 0.19, size * 0.14, 0, 0, Math.PI * 2);
+    ctx.fillStyle = '#1e1b4b'; // Đêm không gian thẫm
+    ctx.fill();
+
+    // Phản xạ mặt trời trên kính mũ (Glow Reflection)
+    ctx.beginPath();
+    ctx.ellipse(size * 0.11, -size * 0.25, size * 0.06, size * 0.03, Math.PI / 6, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+    ctx.fill();
+
+    ctx.restore();
+}`,
+            portal: `/**
+ * Hàm vẽ Hố Đen Vũ Trụ & Cổng Portal đa lớp phát sáng siêu đẹp
+ * @param {CanvasRenderingContext2D} ctx - Canvas Rendering Context
+ * @param {number} x - Tọa độ tâm X
+ * @param {number} y - Tọa độ tâm Y
+ * @param {number} size - Bán kính của hố đen
+ * @param {number} time - Biến thời gian điều khiển vận tốc xoay
+ */
+function drawBlackHole(ctx, x, y, size = 50, time = 0) {
+    ctx.save();
+    ctx.translate(x, y);
+
+    // Lớp đĩa bồi tụ năng lượng phát sáng ngoài cùng (Accretion Disk)
+    let outerGrad = ctx.createRadialGradient(0, 0, size * 0.1, 0, 0, size);
+    outerGrad.addColorStop(0, '#000000'); // Trọng lực hút tuyệt đối
+    outerGrad.addColorStop(0.35, '#ec4899'); // Hồng phát sáng rực rỡ
+    outerGrad.addColorStop(0.7, '#8b5cf6'); // Tím rực sáng
+    outerGrad.addColorStop(1, 'transparent');
+    
+    ctx.beginPath();
+    ctx.arc(0, 0, size, 0, Math.PI * 2);
+    ctx.fillStyle = outerGrad;
+    ctx.fill();
+
+    // Vẽ các dải tia năng lượng chuyển động xoắn ốc (Spiral arms)
+    const armsCount = 4;
+    for (let i = 0; i < armsCount; i++) {
+        ctx.save();
+        ctx.rotate(time * 3 + (i * Math.PI / 2));
+        
+        ctx.beginPath();
+        ctx.moveTo(size * 0.25, 0);
+        ctx.bezierCurveTo(size * 0.5, size * 0.35, size * 0.75, -size * 0.35, size, 0);
+        ctx.strokeStyle = '#db2777';
+        ctx.lineWidth = 3.5;
+        ctx.stroke();
+        
+        ctx.restore();
+    }
+
+    // Tâm điểm kỳ dị của Hố đen (Singularity Core)
+    ctx.beginPath();
+    ctx.arc(0, 0, size * 0.28, 0, Math.PI * 2);
+    ctx.fillStyle = '#000000'; // Đen tuyệt đối hút ánh sáng
+    ctx.strokeStyle = '#ffffff'; // Viền mỏng phát sáng nhẹ
+    ctx.lineWidth = 1.5;
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.restore();
+}`
+        };
+
+        // ----------------- ANIMATION LOOPS FOR REALTIME SHOWCASE -----------------
+        const canvases = {
+            spaceship: document.getElementById('canvas-spaceship'),
+            ufo: document.getElementById('canvas-ufo'),
+            asteroid: document.getElementById('canvas-asteroid'),
+            satellite: document.getElementById('canvas-satellite'),
+            astronaut: document.getElementById('canvas-astronaut'),
+            portal: document.getElementById('canvas-portal')
+        };
+
+        const ctxs = {};
+        let time = 0;
+
+        // Khởi tạo kích thước canvas chuẩn chất lượng cao Retina
+        function resizeCanvases() {
+            Object.keys(canvases).forEach(key => {
+                const canvas = canvases[key];
+                const rect = canvas.getBoundingClientRect();
+                canvas.width = rect.width * window.devicePixelRatio;
+                canvas.height = rect.height * window.devicePixelRatio;
+                ctxs[key] = canvas.getContext('2d');
+                ctxs[key].scale(window.devicePixelRatio, window.devicePixelRatio);
+            });
+        }
+
+        // ----------------- PROCEDURAL DRAWING CONTEXTS -----------------
+        function drawAll() {
+            time += 0.02;
+
+            // 1. Draw Spaceship
+            if (ctxs.spaceship) {
+                const ctx = ctxs.spaceship;
+                ctx.clearRect(0, 0, 300, 300);
+                // Giữ ở giữa canvas
+                drawSpaceship(ctx, 110, 85, 45, Math.sin(time) * 0.2, true);
+            }
+
+            // 2. Draw UFO
+            if (ctxs.ufo) {
+                const ctx = ctxs.ufo;
+                ctx.clearRect(0, 0, 300, 300);
+                drawUFO(ctx, 110, 80, 50, time);
+            }
+
+            // 3. Draw Asteroid
+            if (ctxs.asteroid) {
+                const ctx = ctxs.asteroid;
+                ctx.clearRect(0, 0, 300, 300);
+                drawAsteroid(ctx, 110, 85, 38, time * 0.3, 15);
+            }
+
+            // 4. Draw Satellite
+            if (ctxs.satellite) {
+                const ctx = ctxs.satellite;
+                ctx.clearRect(0, 0, 300, 300);
+                drawSatellite(ctx, 110, 85, 45, time);
+            }
+
+            // 5. Draw Astronaut
+            if (ctxs.astronaut) {
+                const ctx = ctxs.astronaut;
+                ctx.clearRect(0, 0, 300, 300);
+                drawAstronaut(ctx, 110, 85, 45, time);
+            }
+
+            // 6. Draw Portal
+            if (ctxs.portal) {
+                const ctx = ctxs.portal;
+                ctx.clearRect(0, 0, 300, 300);
+                drawBlackHole(ctx, 110, 85, 55, time * 0.5);
+            }
+
+            requestAnimationFrame(drawAll);
+        }
+
+        // Tích hợp trực tiếp logic vẽ từ code mẫu để hiển thị trực quan
+        function drawSpaceship(ctx, x, y, size = 40, angle = 0, isThrusting = true) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(angle);
+
+            if (isThrusting) {
+                ctx.beginPath();
+                ctx.moveTo(-size * 0.2, size * 0.4);
+                ctx.lineTo(0, size * (0.65 + Math.random() * 0.3));
+                ctx.lineTo(size * 0.2, size * 0.4);
+                ctx.closePath();
+                let fireGrad = ctx.createLinearGradient(0, size * 0.4, 0, size * 0.9);
+                fireGrad.addColorStop(0, '#ff4500');
+                fireGrad.addColorStop(0.5, '#ffd700');
+                fireGrad.addColorStop(1, 'transparent');
+                ctx.fillStyle = fireGrad;
+                ctx.fill();
+            }
+
+            ctx.beginPath();
+            ctx.moveTo(-size * 0.5, size * 0.3);
+            ctx.lineTo(-size * 0.6, size * 0.1);
+            ctx.lineTo(0, -size * 0.5);
+            ctx.lineTo(size * 0.6, size * 0.1);
+            ctx.lineTo(size * 0.5, size * 0.3);
+            ctx.lineTo(0, size * 0.15);
+            ctx.closePath();
+            ctx.fillStyle = '#7c3aed';
+            ctx.strokeStyle = '#a855f7';
+            ctx.lineWidth = 2;
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(0, -size * 0.6);
+            ctx.lineTo(-size * 0.25, size * 0.25);
+            ctx.lineTo(size * 0.25, size * 0.25);
+            ctx.closePath();
+            ctx.fillStyle = '#0f172a';
+            ctx.strokeStyle = '#06b6d4';
+            ctx.lineWidth = 2;
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(0, -size * 0.35);
+            ctx.lineTo(-size * 0.1, size * 0.05);
+            ctx.lineTo(size * 0.1, size * 0.05);
+            ctx.closePath();
+            ctx.fillStyle = '#22d3ee';
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.arc(0, size * 0.22, size * 0.1, 0, Math.PI, true);
+            ctx.fillStyle = '#00ffff';
+            ctx.fill();
+
+            ctx.restore();
+        }
+
+        function drawUFO(ctx, x, y, size = 45, time = 0) {
+            ctx.save();
+            ctx.translate(x, y);
+
+            ctx.beginPath();
+            ctx.moveTo(-size * 0.25, size * 0.15);
+            ctx.lineTo(-size * 0.65, size * 1.1);
+            ctx.lineTo(size * 0.65, size * 1.1);
+            ctx.lineTo(size * 0.25, size * 0.15);
+            ctx.closePath();
+            let beamGrad = ctx.createLinearGradient(0, 0, 0, size * 1.1);
+            beamGrad.addColorStop(0, 'rgba(6, 182, 212, 0.45)');
+            beamGrad.addColorStop(1, 'transparent');
+            ctx.fillStyle = beamGrad;
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.ellipse(0, size * 0.05, size * 0.6, size * 0.22, 0, 0, Math.PI * 2);
+            ctx.fillStyle = '#1e293b';
+            ctx.strokeStyle = '#06b6d4';
+            ctx.lineWidth = 2;
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.arc(0, -size * 0.02, size * 0.32, Math.PI, 0, false);
+            let glassGrad = ctx.createLinearGradient(0, -size * 0.35, 0, 0);
+            glassGrad.addColorStop(0, '#06b6d4');
+            glassGrad.addColorStop(1, '#083344');
+            ctx.fillStyle = glassGrad;
+            ctx.fill();
+
+            const numLights = 5;
+            for (let i = 0; i < numLights; i++) {
+                let angle = (i / numLights) * Math.PI * 2 + time * 2;
+                let lx = Math.cos(angle) * (size * 0.48);
+                let ly = Math.sin(angle) * (size * 0.08) + (size * 0.05);
+                
+                ctx.beginPath();
+                ctx.arc(lx, ly, size * 0.05, 0, Math.PI * 2);
+                
+                let phase = Math.floor(time * 3 + i) % 3;
+                ctx.fillStyle = phase === 0 ? '#f43f5e' : (phase === 1 ? '#10b981' : '#f59e0b');
+                ctx.shadowColor = ctx.fillStyle;
+                ctx.shadowBlur = 10;
+                ctx.fill();
+                ctx.shadowBlur = 0;
+            }
+
+            ctx.restore();
+        }
+
+        function drawAsteroid(ctx, x, y, size = 30, rotation = 0, seed = 42) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(rotation);
+
+            const numPoints = 11;
+            ctx.beginPath();
+            
+            let seededRandom = (s) => {
+                let mask = Math.sin(s) * 10000;
+                return mask - Math.floor(mask);
+            };
+
+            for (let i = 0; i < numPoints; i++) {
+                let angle = (i / numPoints) * Math.PI * 2;
+                let rOffset = seededRandom(seed + i) * 0.35 - 0.175;
+                let r = size * (1 + rOffset);
+                let px = Math.cos(angle) * r;
+                let py = Math.sin(angle) * r;
+                
+                if (i === 0) ctx.moveTo(px, py);
+                else ctx.lineTo(px, py);
+            }
+            ctx.closePath();
+            
+            let astGrad = ctx.createRadialGradient(0, 0, size * 0.2, 0, 0, size);
+            astGrad.addColorStop(0, '#451a03');
+            astGrad.addColorStop(0.8, '#1c1917');
+            astGrad.addColorStop(1, '#0c0a09');
+            ctx.fillStyle = astGrad;
+            ctx.strokeStyle = '#78716c';
+            ctx.lineWidth = 2.5;
+            ctx.fill();
+            ctx.stroke();
+
+            for (let j = 0; j < 3; j++) {
+                let cx = Math.cos(j * 2) * (size * 0.35);
+                let cy = Math.sin(j * 2.5) * (size * 0.35);
+                let cr = size * (0.08 + seededRandom(seed * j) * 0.12);
+                
+                ctx.beginPath();
+                ctx.arc(cx, cy, cr, 0, Math.PI * 2);
+                ctx.fillStyle = '#0c0a09';
+                ctx.fill();
+                ctx.strokeStyle = '#57534e';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+            }
+
+            ctx.restore();
+        }
+
+        function drawSatellite(ctx, x, y, size = 40, time = 0) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(Math.sin(time * 0.5) * 0.15);
+
+            ctx.beginPath();
+            ctx.arc(0, -size * 0.45, size * (0.35 + (time * 0.8) % 0.6), Math.PI * 1.25, Math.PI * 1.75);
+            ctx.strokeStyle = 'rgba(6, 182, 212, ' + (1 - ((time * 1.3) % 1)) + ')';
+            ctx.lineWidth = 2.5;
+            ctx.stroke();
+
+            ctx.fillStyle = '#1e3a8a';
+            ctx.strokeStyle = '#60a5fa';
+            ctx.lineWidth = 1.5;
+
+            ctx.fillRect(-size * 1.1, -size * 0.15, size * 0.65, size * 0.3);
+            ctx.strokeRect(-size * 1.1, -size * 0.15, size * 0.65, size * 0.3);
+            ctx.fillRect(size * 0.45, -size * 0.15, size * 0.65, size * 0.3);
+            ctx.strokeRect(size * 0.45, -size * 0.15, size * 0.65, size * 0.3);
+
+            ctx.beginPath();
+            ctx.moveTo(-size * 0.5, 0);
+            ctx.lineTo(size * 0.5, 0);
+            ctx.strokeStyle = '#94a3b8';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.arc(0, 0, size * 0.22, 0, Math.PI * 2);
+            ctx.fillStyle = '#475569';
+            ctx.strokeStyle = '#e2e8f0';
+            ctx.lineWidth = 2;
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(0, -size * 0.2);
+            ctx.lineTo(0, -size * 0.45);
+            ctx.strokeStyle = '#e2e8f0';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.arc(0, -size * 0.45, 4, 0, Math.PI * 2);
+            ctx.fillStyle = '#ef4444';
+            ctx.fill();
+
+            ctx.restore();
+        }
+
+        function drawAstronaut(ctx, x, y, size = 45, time = 0) {
+            ctx.save();
+            let driftY = Math.sin(time * 2) * (size * 0.08);
+            ctx.translate(x, y + driftY);
+            ctx.rotate(Math.sin(time * 1.5) * 0.08);
+
+            ctx.beginPath();
+            ctx.moveTo(-size * 0.15, size * 0.1);
+            ctx.bezierCurveTo(-size * 0.8, size * 0.4, -size * 1.2, -size * 0.2, -size * 2, size * 0.2);
+            ctx.strokeStyle = 'rgba(226, 232, 240, 0.4)';
+            ctx.lineWidth = 2.5;
+            ctx.stroke();
+
+            ctx.fillStyle = '#cbd5e1';
+            ctx.fillRect(-size * 0.35, -size * 0.15, size * 0.22, size * 0.45);
+
+            ctx.fillStyle = '#f1f5f9';
+            ctx.fillRect(-size * 0.18, size * 0.3, size * 0.11, size * 0.25);
+            ctx.fillRect(size * 0.04, size * 0.3, size * 0.11, size * 0.25);
+
+            ctx.beginPath();
+            ctx.ellipse(0, size * 0.1, size * 0.25, size * 0.25, 0, 0, Math.PI * 2);
+            ctx.fillStyle = '#f8fafc';
+            ctx.strokeStyle = '#94a3b8';
+            ctx.lineWidth = 1.5;
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.save();
+            ctx.translate(size * 0.25, size * 0.05);
+            ctx.rotate(-Math.sin(time * 4.5) * 0.25 - 0.4);
+            ctx.fillRect(0, 0, size * 0.11, size * 0.25);
+            ctx.restore();
+
+            ctx.beginPath();
+            ctx.arc(0, -size * 0.22, size * 0.26, 0, Math.PI * 2);
+            ctx.fillStyle = '#f8fafc';
+            ctx.strokeStyle = '#cbd5e1';
+            ctx.lineWidth = 2;
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.ellipse(size * 0.05, -size * 0.22, size * 0.19, size * 0.14, 0, 0, Math.PI * 2);
+            ctx.fillStyle = '#1e1b4b';
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.ellipse(size * 0.11, -size * 0.25, size * 0.06, size * 0.03, Math.PI / 6, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+            ctx.fill();
+
+            ctx.restore();
+        }
+
+        function drawBlackHole(ctx, x, y, size = 50, time = 0) {
+            ctx.save();
+            ctx.translate(x, y);
+
+            let outerGrad = ctx.createRadialGradient(0, 0, size * 0.1, 0, 0, size);
+            outerGrad.addColorStop(0, '#000000');
+            outerGrad.addColorStop(0.35, '#ec4899');
+            outerGrad.addColorStop(0.7, '#8b5cf6');
+            outerGrad.addColorStop(1, 'transparent');
+            
+            ctx.beginPath();
+            ctx.arc(0, 0, size, 0, Math.PI * 2);
+            ctx.fillStyle = outerGrad;
+            ctx.fill();
+
+            const armsCount = 4;
+            for (let i = 0; i < armsCount; i++) {
+                ctx.save();
+                ctx.rotate(time * 3 + (i * Math.PI / 2));
+                
+                ctx.beginPath();
+                ctx.moveTo(size * 0.25, 0);
+                ctx.bezierCurveTo(size * 0.5, size * 0.35, size * 0.75, -size * 0.35, size, 0);
+                ctx.strokeStyle = '#db2777';
+                ctx.lineWidth = 3.5;
+                ctx.stroke();
+                
+                ctx.restore();
+            }
+
+            ctx.beginPath();
+            ctx.arc(0, 0, size * 0.28, 0, Math.PI * 2);
+            ctx.fillStyle = '#000000';
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 1.5;
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        // ----------------- FUNCTIONS FOR UTILITIES (COPY, DOWNLOAD) -----------------
+        function printConsole(text) {
+            const consoleBox = document.getElementById('console-output');
+            const now = new Date();
+            const timeStr = now.toTimeString().split(' ')[0];
+            const div = document.createElement('div');
+            div.innerHTML = `<span class="text-gray-500">[${timeStr}]</span> ${text}`;
+            consoleBox.appendChild(div);
+            consoleBox.scrollTop = consoleBox.scrollHeight;
+        }
+
+        function copyToClipboard(text) {
+            const tempEl = document.createElement('textarea');
+            tempEl.value = text;
+            document.body.appendChild(tempEl);
+            tempEl.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempEl);
+        }
+
+        function copySpriteCode(key) {
+            const code = spriteCodeRepository[key];
+            if (code) {
+                copyToClipboard(code);
+                printConsole(`<span class="text-purple-400">SUCCESS:</span> Đã sao chép hàm vẽ của <b class="uppercase font-bold">${key}</b> vào bộ nhớ đệm!`);
+            }
+        }
+
+        function copyAllLibrary() {
+            let fullLibrary = `/**
+ * THƯ VIỆN SPRITES VECTOR 2D KHÔNG GIAN - NGUYỄN ANH QUÝ
+ * Độc lập hoàn toàn, hỗ trợ tối ưu cực đoan cho Game Canvas 2D
+ */
+`;
+            Object.keys(spriteCodeRepository).forEach(key => {
+                fullLibrary += `\n// ==================== ${key.toUpperCase()} ====================\n` + spriteCodeRepository[key] + `\n`;
+            });
+
+            copyToClipboard(fullLibrary);
+            printConsole(`<span class="text-emerald-400">SYSTEM GLOBAL:</span> Đã sao chép TOÀN BỘ thư viện hàm vẽ (Gồm 6 thực thể) vào Clipboard!`);
+        }
+
+        function downloadPNG(canvasId, fileName) {
+            const canvas = document.getElementById(canvasId);
+            if (!canvas) return;
+
+            // Tạo một canvas tạm có nền trong suốt với kích thước cố định để xuất ảnh tối ưu
+            const exportCanvas = document.createElement('canvas');
+            exportCanvas.width = 150;
+            exportCanvas.height = 150;
+            const exportCtx = exportCanvas.getContext('2d');
+
+            // Vẽ lại đúng sprite vào tâm của canvas xuất ảnh tĩnh
+            const targetX = 75;
+            const targetY = 75;
+
+            if (canvasId === 'canvas-spaceship') {
+                drawSpaceship(exportCtx, targetX, targetY, 45, 0, true);
+            } else if (canvasId === 'canvas-ufo') {
+                drawUFO(exportCtx, targetX, targetY, 50, 2);
+            } else if (canvasId === 'canvas-asteroid') {
+                drawAsteroid(exportCtx, targetX, targetY, 35, 0, 99);
+            } else if (canvasId === 'canvas-satellite') {
+                drawSatellite(exportCtx, targetX, targetY, 42, 1);
+            } else if (canvasId === 'canvas-astronaut') {
+                drawAstronaut(exportCtx, targetX, targetY, 45, 0.5);
+            } else if (canvasId === 'canvas-portal') {
+                drawBlackHole(exportCtx, targetX, targetY, 55, 1.2);
+            }
+
+            // Tiến hành chuyển đổi dữ liệu thành Base64 PNG và tự động tải xuống
+            const dataUrl = exportCanvas.toDataURL("image/png");
+            const link = document.createElement('a');
+            link.download = fileName;
+            link.href = dataUrl;
+            link.click();
+            printConsole(`<span class="text-cyan-400">EXPORT:</span> Tải về thành công tệp ảnh trong suốt: <b class="font-bold text-white">${fileName}</b>`);
+        }
+
+        // Khởi động
+        window.onload = function() {
+            lucide.createIcons();
+            resizeCanvases();
+            drawAll();
+            
+            window.addEventListener('resize', () => {
+                resizeCanvases();
+            });
+        };
+    </script>
+
+</body>
+</html>

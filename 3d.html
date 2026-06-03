@@ -1,0 +1,1024 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Procedural 3D Space Assets - Nguyễn Anh Quý</title>
+    <!-- Tailwind CSS & Google Fonts -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&family=Inter:wght@300;400;600&display=swap"
+        rel="stylesheet">
+    <!-- Three.js & OrbitControls -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <!-- GSAP for Exploded View animations -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #030712;
+            color: #f3f4f6;
+        }
+
+        .font-orbitron {
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        .font-mono-tech {
+            font-family: 'Share Tech Mono', monospace;
+        }
+
+        .glass-panel {
+            background: rgba(13, 14, 25, 0.75);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(147, 51, 234, 0.2);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        .glass-panel-cyan {
+            background: rgba(8, 20, 30, 0.75);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(6, 182, 212, 0.3);
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(6, 182, 212, 0.4);
+            border-radius: 2px;
+        }
+    </style>
+</head>
+
+<body class="w-screen h-screen overflow-hidden select-none relative">
+
+    <!-- WEBGL CANVAS FOR 3D PREVIEW -->
+    <canvas id="preview-canvas" class="absolute inset-0 w-full h-full z-0"></canvas>
+
+    <!-- UI HUD OVERLAY -->
+    <div class="absolute inset-0 z-10 pointer-events-none flex flex-col justify-between p-4 md:p-6">
+
+        <!-- HEADER -->
+        <header class="flex justify-between items-start w-full pointer-events-auto">
+            <div class="glass-panel px-4 py-3 rounded-2xl flex items-center space-x-3 border-purple-500/25">
+                <div class="w-2.5 h-2.5 bg-cyan-400 rounded-full animate-pulse"></div>
+                <div class="flex flex-col">
+                    <span class="font-orbitron text-xs font-black tracking-wider text-cyan-400">PROCEDURAL 3D
+                        ENGINE</span>
+                    <span class="text-[9px] text-gray-400 font-mono-tech tracking-widest">ZERO LOADING SCREEN - 60
+                        FPS</span>
+                </div>
+            </div>
+
+            <!-- THEME SWITCHER & EXPLODE HUD -->
+            <div class="flex items-center space-x-3">
+                <button onclick="toggleExplodedView()" id="explode-btn"
+                    class="glass-panel px-4 py-2 rounded-xl text-xs font-orbitron font-bold text-pink-400 hover:text-white border-pink-500/30 hover:bg-pink-950/20 transition flex items-center space-x-2">
+                    <i data-lucide="layers" class="w-4 h-4"></i>
+                    <span id="explode-text">BẢN VẼ RÃ (EXPLODED VIEW)</span>
+                </button>
+                <div class="glass-panel p-1.5 rounded-xl flex space-x-1 border-cyan-500/25">
+                    <button onclick="switchTheme('cyberpunk')"
+                        class="p-2 rounded-lg bg-purple-950/40 text-purple-400 hover:text-white transition"
+                        title="Cyberpunk Neon">
+                        <i data-lucide="zap" class="w-4 h-4"></i>
+                    </button>
+                    <button onclick="switchTheme('cinematic')"
+                        class="p-2 rounded-lg hover:bg-amber-950/40 text-amber-500 hover:text-white transition"
+                        title="Cinematic Golden Hour">
+                        <i data-lucide="sunset" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- MIDDLE CONTROLS & INSPECTOR -->
+        <main class="flex-grow flex justify-between items-stretch gap-6 my-4 relative overflow-hidden">
+
+            <!-- LEFT PANEL: MODEL SELECTOR -->
+            <div class="w-80 flex flex-col justify-between pointer-events-auto gap-4">
+
+                <!-- SELECTOR LIST -->
+                <div class="glass-panel p-4 rounded-2xl border-cyan-500/25 flex flex-col space-y-2.5">
+                    <h2 class="text-xs font-orbitron font-black text-cyan-400 tracking-widest uppercase mb-1">MÔ HÌNH
+                        CHỦ ĐỀ KHÔNG GIAN</h2>
+
+                    <button onclick="selectAsset('station')" id="btn-station"
+                        class="asset-selector-btn text-left p-3 rounded-xl border border-white/5 hover:border-cyan-500/30 transition flex items-center justify-between group">
+                        <div class="flex items-center space-x-3">
+                            <span class="text-xs font-mono-tech text-gray-500 group-hover:text-cyan-400">01</span>
+                            <span class="text-xs font-orbitron font-bold text-gray-300 group-hover:text-white">Trạm
+                                Module Cơ Sở</span>
+                        </div>
+                        <i data-lucide="server" class="w-4 h-4 text-gray-500 group-hover:text-cyan-400"></i>
+                    </button>
+
+                    <button onclick="selectAsset('ship')" id="btn-ship"
+                        class="asset-selector-btn text-left p-3 rounded-xl border border-white/5 hover:border-cyan-500/30 transition flex items-center justify-between group">
+                        <div class="flex items-center space-x-3">
+                            <span class="text-xs font-mono-tech text-gray-500 group-hover:text-cyan-400">02</span>
+                            <span class="text-xs font-orbitron font-bold text-gray-300 group-hover:text-white">Tàu Vận
+                                Tải Vũ Trụ</span>
+                        </div>
+                        <i data-lucide="navigation" class="w-4 h-4 text-gray-500 group-hover:text-cyan-400"></i>
+                    </button>
+
+                    <button onclick="selectAsset('satellite')" id="btn-satellite"
+                        class="asset-selector-btn text-left p-3 rounded-xl border border-white/5 hover:border-cyan-500/30 transition flex items-center justify-between group">
+                        <div class="flex items-center space-x-3">
+                            <span class="text-xs font-mono-tech text-gray-500 group-hover:text-cyan-400">03</span>
+                            <span class="text-xs font-orbitron font-bold text-gray-300 group-hover:text-white">Vệ Tinh
+                                Viễn Thông</span>
+                        </div>
+                        <i data-lucide="radio" class="w-4 h-4 text-gray-500 group-hover:text-cyan-400"></i>
+                    </button>
+
+                    <button onclick="selectAsset('gate')" id="btn-gate"
+                        class="asset-selector-btn text-left p-3 rounded-xl border border-white/5 hover:border-cyan-500/30 transition flex items-center justify-between group">
+                        <div class="flex items-center space-x-3">
+                            <span class="text-xs font-mono-tech text-gray-500 group-hover:text-cyan-400">04</span>
+                            <span class="text-xs font-orbitron font-bold text-gray-300 group-hover:text-white">Cổng
+                                Không Gian Warp</span>
+                        </div>
+                        <i data-lucide="orbit" class="w-4 h-4 text-gray-500 group-hover:text-cyan-400"></i>
+                    </button>
+
+                    <button onclick="selectAsset('asteroid')" id="btn-asteroid"
+                        class="asset-selector-btn text-left p-3 rounded-xl border border-white/5 hover:border-cyan-500/30 transition flex items-center justify-between group">
+                        <div class="flex items-center space-x-3">
+                            <span class="text-xs font-mono-tech text-gray-500 group-hover:text-cyan-400">05</span>
+                            <span class="text-xs font-orbitron font-bold text-gray-300 group-hover:text-white">Thiên
+                                Thạch Tinh Thể</span>
+                        </div>
+                        <i data-lucide="gem" class="w-4 h-4 text-gray-500 group-hover:text-cyan-400"></i>
+                    </button>
+                </div>
+
+                <!-- SYSTEM DIAGNOSTICS -->
+                <div
+                    class="glass-panel p-4 rounded-2xl border-purple-500/25 flex flex-col space-y-2 font-mono-tech text-xs">
+                    <h3 class="font-orbitron font-black text-purple-400 text-[10px] tracking-wider mb-1">KIỂM TRA HIỆU
+                        NĂNG ƯỚC LƯỢNG</h3>
+                    <div class="flex justify-between">
+                        <span class="text-gray-400">Vertices Count:</span>
+                        <span id="diagnostic-vertices" class="text-white font-bold">0</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-400">Draw Calls:</span>
+                        <span id="diagnostic-drawcalls" class="text-white font-bold">1</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-400">VRAM Budget:</span>
+                        <span id="diagnostic-vram" class="text-green-400 font-bold">&lt; 0.1 MB</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-400">Loading State:</span>
+                        <span class="text-emerald-400 font-bold">INSTANTANEOUS</span>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- RIGHT PANEL: CODE VIEWER -->
+            <div
+                class="w-[450px] ml-auto glass-panel p-5 rounded-3xl border-purple-500/25 flex flex-col justify-between pointer-events-auto">
+                <div class="flex flex-col h-full">
+                    <div class="flex justify-between items-center mb-3">
+                        <div class="flex items-center space-x-2">
+                            <i data-lucide="code-2" class="w-5 h-5 text-purple-400"></i>
+                            <h2 class="text-xs font-orbitron font-black text-purple-300 tracking-wider">MÃ NGUỒN KHỞI
+                                TẠO (THREE.JS)</h2>
+                        </div>
+                        <button onclick="copyActiveCode()"
+                            class="px-3 py-1.5 bg-purple-600/30 border border-purple-500/50 hover:bg-purple-600 text-white rounded-lg text-[10px] font-orbitron font-bold tracking-wider transition">
+                            SAO CHÉP MÃ
+                        </button>
+                    </div>
+
+                    <!-- Code block -->
+                    <div
+                        class="flex-grow bg-black/60 rounded-xl border border-white/5 p-4 font-mono-tech text-[10px] overflow-y-auto leading-relaxed h-[360px]">
+                        <pre><code id="code-block" class="text-purple-300"></code></pre>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+
+        <!-- FOOTER / CONTROLS -->
+        <footer class="w-full flex justify-between items-center pointer-events-auto">
+            <div class="glass-panel px-4 py-2.5 rounded-xl text-[10px] text-gray-400 font-mono-tech">
+                Sử dụng chuột trái kéo để xoay góc máy ảnh • Chuột phải để dịch chuyển • Cuộn để phóng to
+            </div>
+
+            <button onclick="resetCamera()"
+                class="p-2.5 bg-cyan-950/50 hover:bg-cyan-900 border border-cyan-500/40 text-cyan-400 rounded-xl transition shadow-lg shadow-cyan-500/10"
+                title="Khôi phục góc máy quay">
+                <i data-lucide="video" class="w-5 h-5"></i>
+            </button>
+        </footer>
+
+    </div>
+
+    <!-- CODE KHỞI TẠO TOÀN BỘ STUDIO VÀ CÁC THỰC THỂ PROCEDURAL 3D -->
+    <script>
+        let scene, camera, renderer, controls;
+        let activeGroup = null;
+        let starField, planet;
+        let isExploded = false;
+        let time = 0;
+        let currentTheme = 'cyberpunk';
+        let currentAsset = 'station';
+
+        // ----------------- CHỨA MÃ NGUỒN ĐỂ COPY CHO USER -----------------
+        const proceduralCodeRepo = {
+            station: `/**
+ * Tạo mô hình Trạm Vũ Trụ Module (Station Module)
+ * Sử dụng hoàn toàn hình học cơ bản của Three.js
+ * @returns {THREE.Group} Group chứa trạm vũ trụ
+ */
+function createProceduralStation() {
+    const stationGroup = new THREE.Group();
+
+    // Thân module chính (Cylinder)
+    const bodyGeom = new THREE.CylinderGeometry(2, 2, 8, 16);
+    const bodyMat = new THREE.MeshStandardMaterial({ 
+        color: 0x475569, 
+        metalness: 0.9, 
+        roughness: 0.25 
+    });
+    const body = new THREE.Mesh(bodyGeom, bodyMat);
+    body.rotation.z = Math.PI / 2;
+    stationGroup.add(body);
+
+    // Vành đai bảo hộ quanh trạm (Ring)
+    const ringGeom = new THREE.TorusGeometry(3.5, 0.3, 8, 32);
+    const ringMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.8 });
+    const ring = new THREE.Mesh(ringGeom, ringMat);
+    stationGroup.add(ring);
+
+    // Tấm năng lượng mặt trời (Solar Panels)
+    const panelMat = new THREE.MeshStandardMaterial({ 
+        color: 0x1e40af, 
+        emissive: 0x0f172a, 
+        metalness: 0.9, 
+        roughness: 0.1 
+    });
+    for(let i = -1; i <= 1; i += 2) {
+        const wing = new THREE.Mesh(new THREE.BoxGeometry(0.1, 4, 3), panelMat);
+        wing.position.set(i * 5.5, 0, 0);
+        // Trục nối tấm pin
+        const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 2, 8), bodyMat);
+        rod.rotation.z = Math.PI / 2;
+        rod.position.set(i * 4.5, 0, 0);
+        stationGroup.add(wing, rod);
+    }
+
+    // Các dải đèn tín hiệu LED dọc thân trạm
+    for(let i = 0; i < 4; i++) {
+        const led = new THREE.Mesh(new THREE.SphereGeometry(0.15, 8, 8), new THREE.MeshBasicMaterial({ color: 0x06b6d4 }));
+        led.position.set(-2 + i*1.3, 2.02, 0);
+        stationGroup.add(led);
+    }
+
+    return stationGroup;
+}`,
+            ship: `/**
+ * Tạo mô hình Tàu Vận Tải Vũ Trụ (Cargo Ship)
+ * @returns {THREE.Group} Group chứa tàu vận tải
+ */
+function createProceduralCargoShip() {
+    const shipGroup = new THREE.Group();
+
+    // Thân tàu chính (Cylinder)
+    const hull = new THREE.Mesh(
+        new THREE.CylinderGeometry(1.5, 1.8, 7, 16),
+        new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.85, roughness: 0.3 })
+    );
+    hull.rotation.x = Math.PI / 2;
+    shipGroup.add(hull);
+
+    // Cabin buồng lái (Cone)
+    const cabin = new THREE.Mesh(
+        new THREE.ConeGeometry(1.5, 2.5, 16),
+        new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.9 })
+    );
+    cabin.rotation.x = -Math.PI / 2;
+    cabin.position.set(0, 0, 4.75);
+    shipGroup.add(cabin);
+
+    // Kính cabin (Visor Glass)
+    const glass = new THREE.Mesh(
+        new THREE.SphereGeometry(0.8, 12, 12, 0, Math.PI, 0, Math.PI/2),
+        new THREE.MeshStandardMaterial({ color: 0x06b6d4, emissive: 0x011b22, roughness: 0.05 })
+    );
+    glass.position.set(0, 0.5, 4.3);
+    glass.rotation.x = -Math.PI/6;
+    shipGroup.add(glass);
+
+    // Các thùng hàng container trên boong (Boxes)
+    const boxMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, metalness: 0.5, roughness: 0.5 });
+    for(let i = 0; i < 3; i++) {
+        const cargo = new THREE.Mesh(new THREE.BoxGeometry(1.6, 1.6, 1.6), boxMat);
+        cargo.position.set(0, 1.4, -2 + i * 1.8);
+        shipGroup.add(cargo);
+    }
+
+    // Động cơ đẩy phản lực phía sau (Thrusters)
+    const engineMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.9 });
+    for(let i = -1; i <= 1; i += 2) {
+        const engine = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.4, 1.5, 8), engineMat);
+        engine.rotation.x = Math.PI / 2;
+        engine.position.set(i * 0.8, -0.4, -4.2);
+        shipGroup.add(engine);
+
+        // Luồng lửa đẩy phản lực lơ lửng
+        const fire = new THREE.Mesh(
+            new THREE.ConeGeometry(0.35, 1.2, 8),
+            new THREE.MeshBasicMaterial({ color: 0xf97316, transparent: true, opacity: 0.8 })
+        );
+        fire.rotation.x = -Math.PI / 2;
+        fire.position.set(i * 0.8, -0.4, -5.3);
+        shipGroup.add(fire);
+    }
+
+    return shipGroup;
+}`,
+            satellite: `/**
+ * Tạo mô hình Vệ Tinh Thu Phát (Communication Satellite)
+ * @returns {THREE.Group} Group chứa vệ tinh
+ */
+function createProceduralSatellite() {
+    const satGroup = new THREE.Group();
+
+    // Lõi năng lượng trung tâm (Octahedron)
+    const core = new THREE.Mesh(
+        new THREE.OctahedronGeometry(1.5),
+        new THREE.MeshStandardMaterial({ color: 0x4b5563, metalness: 0.9, roughness: 0.2 })
+    );
+    satGroup.add(core);
+
+    // Đĩa Parabol thu phát tín hiệu (Cone/Cylinder)
+    const dish = new THREE.Mesh(
+        new THREE.CylinderGeometry(2, 0.2, 0.6, 16, 1, true),
+        new THREE.MeshStandardMaterial({ color: 0xd1d5db, metalness: 0.7, roughness: 0.3, side: THREE.DoubleSide })
+    );
+    dish.rotation.x = Math.PI / 2;
+    dish.position.set(0, 0, 2);
+    satGroup.add(dish);
+
+    // Trục cảm biến ở tiêu cự đĩa
+    const sensorRod = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.08, 0.08, 1.8, 8),
+        new THREE.MeshStandardMaterial({ color: 0x9ca3af })
+    );
+    sensorRod.rotation.x = Math.PI / 2;
+    sensorRod.position.set(0, 0, 2.8);
+    satGroup.add(sensorRod);
+
+    // Chóp phát tín hiệu phát sáng
+    const signalNode = new THREE.Mesh(
+        new THREE.SphereGeometry(0.25, 8, 8),
+        new THREE.MeshBasicMaterial({ color: 0xef4444 })
+    );
+    signalNode.position.set(0, 0, 3.7);
+    satGroup.add(signalNode);
+
+    // Tấm pin quang năng khổng lồ 2 bên (Solar Arrays)
+    const solarMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, metalness: 0.9, roughness: 0.1 });
+    const wingSupportMat = new THREE.MeshStandardMaterial({ color: 0x374151 });
+
+    for(let i = -1; i <= 1; i += 2) {
+        // Cánh pin
+        const panel = new THREE.Mesh(new THREE.BoxGeometry(4, 1.2, 0.1), solarMat);
+        panel.position.set(i * 4.2, 0, 0);
+        // Trục thép nối
+        const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 2.5, 8), wingSupportMat);
+        rod.rotation.z = Math.PI / 2;
+        rod.position.set(i * 2.2, 0, 0);
+        satGroup.add(panel, rod);
+    }
+
+    return satGroup;
+}`,
+            gate: `/**
+ * Tạo mô hình Cổng Dịch Chuyển Không Gian (Warp Gate)
+ * @returns {THREE.Group} Group chứa warp gate
+ */
+function createProceduralWarpGate() {
+    const gateGroup = new THREE.Group();
+
+    // Vòng tạo từ trường lớn (Torus)
+    const ring = new THREE.Mesh(
+        new THREE.TorusGeometry(4.5, 0.5, 12, 48),
+        new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.9, roughness: 0.2 })
+    );
+    gateGroup.add(ring);
+
+    // Các trạm phát năng lượng gắn trên vòng (Power Generators)
+    const generatorGeom = new THREE.CylinderGeometry(0.6, 0.6, 1.8, 12);
+    const generatorMat = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.8 });
+    const lightMat = new THREE.MeshBasicMaterial({ color: 0xec4899 }); // Màu hồng phát sáng
+
+    for(let i = 0; i < 4; i++) {
+        const angle = (i / 4) * Math.PI * 2;
+        const gen = new THREE.Mesh(generatorGeom, generatorMat);
+        gen.position.set(Math.cos(angle) * 4.5, Math.sin(angle) * 4.5, 0);
+        gen.rotation.z = angle + Math.PI / 2;
+        
+        // Thêm nhân LED phát sáng
+        const led = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.2, 0.8), lightMat);
+        led.position.set(Math.cos(angle) * 3.8, Math.sin(angle) * 3.8, 0);
+        led.rotation.z = angle + Math.PI / 2;
+
+        gateGroup.add(gen, led);
+    }
+
+    // Tâm hố sâu chân không ảo (Warp Event Horizon)
+    const horizon = new THREE.Mesh(
+        new THREE.RingGeometry(0.1, 4, 32),
+        new THREE.MeshBasicMaterial({ 
+            color: 0xec4899, 
+            transparent: true, 
+            opacity: 0.35, 
+            side: THREE.DoubleSide,
+            wireframe: true 
+        })
+    );
+    gateGroup.add(horizon);
+
+    return gateGroup;
+}`,
+            asteroid: `/**
+ * Tạo mô hình Tiểu Hành Tinh Tinh Thể (Crystal Asteroid)
+ * @returns {THREE.Group} Group chứa thiên thạch
+ */
+function createProceduralCrystalAsteroid() {
+    const astGroup = new THREE.Group();
+
+    // Lõi đá thô ráp (Sử dụng Icosahedron và bóp méo vertices)
+    const rockGeom = new THREE.IcosahedronGeometry(2.4, 2);
+    
+    // Bóp méo ngẫu nhiên để tạo khối tự nhiên ghồ ghề
+    const positionAttr = rockGeom.attributes.position;
+    for (let i = 0; i < positionAttr.count; i++) {
+        const vx = positionAttr.getX(i);
+        const vy = positionAttr.getY(i);
+        const vz = positionAttr.getZ(i);
+        
+        // Offset nhỏ bằng toán học hình sin
+        const noise = Math.sin(vx * 1.5) * Math.cos(vy * 1.5) * 0.25;
+        positionAttr.setXYZ(i, vx + noise, vy + noise, vz + noise);
+    }
+    rockGeom.computeVertexNormals();
+
+    const rockMat = new THREE.MeshStandardMaterial({ 
+        color: 0x27272a, 
+        roughness: 0.9, 
+        metalness: 0.1 
+    });
+    const baseRock = new THREE.Mesh(rockGeom, rockMat);
+    astGroup.add(baseRock);
+
+    // Gieo các mầm tinh thể phát sáng rực rỡ mọc ra từ thân đá
+    const crystalGeom = new THREE.ConeGeometry(0.4, 1.4, 5);
+    const crystalMat = new THREE.MeshStandardMaterial({ 
+        color: 0x10b981, 
+        emissive: 0x059669, 
+        emissiveIntensity: 1.5,
+        roughness: 0.1,
+        metalness: 0.9 
+    });
+
+    // Mọc 6 tinh thể theo các hướng ngẫu nhiên ổn định
+    const directions = [
+        [1, 1, 1], [-1, 1, -1], [1, -1, -1], [-1, -1, 1], [0, 1.5, 0], [0, -1.5, 0.5]
+    ];
+
+    directions.forEach((dir, idx) => {
+        const crystal = new THREE.Mesh(crystalGeom, crystalMat);
+        const vDir = new THREE.Vector3(...dir).normalize();
+        
+        // Đưa tinh thể ra rìa bề mặt đá
+        crystal.position.copy(vDir).multiplyScalar(2.1);
+        
+        // Xoay tinh thể hướng ra ngoài tâm
+        crystal.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), vDir);
+        astGroup.add(crystal);
+    });
+
+    return astGroup;
+}`
+        };
+
+        // ----------------- ENGINE 3D INITIALIZATION -----------------
+        function init3DStudio() {
+            const canvas = document.getElementById('preview-canvas');
+
+            // Scene
+            scene = new THREE.Scene();
+            scene.fog = new THREE.FogExp2(0x030712, 0.02);
+
+            // Camera
+            camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 8, 16);
+
+            // Renderer
+            renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+            // Controls
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.maxPolarAngle = Math.PI / 2 + 0.1;
+
+            // Thêm các yếu tố vũ trụ nền (Sao & Nebula)
+            createBackgroundStars();
+
+            // Khởi tạo nguồn sáng studio
+            setupLighting();
+
+            // Lắp đặt mô hình đầu tiên
+            selectAsset('station');
+
+            // Resize event
+            window.addEventListener('resize', onWindowResize);
+
+            // Bắt đầu vòng lặp render
+            renderLoop();
+        }
+
+        let ambientLight, dirLight, pointLight;
+
+        function setupLighting() {
+            ambientLight = new THREE.AmbientLight(0x1e1530, 0.9);
+            scene.add(ambientLight);
+
+            dirLight = new THREE.DirectionalLight(0x8a2be2, 1.8);
+            dirLight.position.set(10, 20, 10);
+            scene.add(dirLight);
+
+            pointLight = new THREE.PointLight(0x06b6d4, 3, 30);
+            pointLight.position.set(-5, -2, 5);
+            scene.add(pointLight);
+        }
+
+        function createBackgroundStars() {
+            const starsCount = 1000;
+            const starGeom = new THREE.BufferGeometry();
+            const positions = new Float32Array(starsCount * 3);
+
+            for (let i = 0; i < starsCount * 3; i += 3) {
+                positions[i] = (Math.random() - 0.5) * 300;
+                positions[i + 1] = (Math.random() - 0.5) * 300;
+                positions[i + 2] = (Math.random() - 0.5) * 300;
+            }
+
+            starGeom.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            const starMat = new THREE.PointsMaterial({
+                color: 0xffffff,
+                size: 0.8,
+                transparent: true,
+                opacity: 0.6,
+                sizeAttenuation: true
+            });
+
+            starField = new THREE.Points(starGeom, starMat);
+            scene.add(starField);
+        }
+
+        // ----------------- PROCEDURAL MODEL CONSTRUCTORS -----------------
+        function buildStation() {
+            const group = new THREE.Group();
+
+            // Core cylinder
+            const body = new THREE.Mesh(
+                new THREE.CylinderGeometry(1.2, 1.2, 6, 16),
+                new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.9, roughness: 0.2 })
+            );
+            body.rotation.z = Math.PI / 2;
+            body.userData = { explodeDir: new THREE.Vector3(0, 0, 0) };
+            group.add(body);
+
+            // Ring
+            const ring = new THREE.Mesh(
+                new THREE.TorusGeometry(2.4, 0.25, 8, 32),
+                new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.85, roughness: 0.3 })
+            );
+            ring.userData = { explodeDir: new THREE.Vector3(0, 1.5, 0) };
+            group.add(ring);
+
+            // Solar wings
+            const solarMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, metalness: 0.9, roughness: 0.1, emissive: 0x012e44 });
+            for (let i = -1; i <= 1; i += 2) {
+                const wing = new THREE.Mesh(new THREE.BoxGeometry(0.08, 3, 2.2), solarMat);
+                wing.position.set(i * 4.2, 0, 0);
+                wing.userData = { explodeDir: new THREE.Vector3(i * 2, 0, 0) };
+
+                const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 1.8, 8), new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.9 }));
+                rod.rotation.z = Math.PI / 2;
+                rod.position.set(i * 3.2, 0, 0);
+                rod.userData = { explodeDir: new THREE.Vector3(i * 0.8, 0, 0) };
+
+                group.add(wing, rod);
+            }
+
+            return group;
+        }
+
+        function buildShip() {
+            const group = new THREE.Group();
+
+            const hull = new THREE.Mesh(
+                new THREE.CylinderGeometry(1, 1.2, 5, 16),
+                new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.85, roughness: 0.3 })
+            );
+            hull.rotation.x = Math.PI / 2;
+            hull.userData = { explodeDir: new THREE.Vector3(0, 0, 0) };
+            group.add(hull);
+
+            const cabin = new THREE.Mesh(
+                new THREE.ConeGeometry(1, 1.8, 16),
+                new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.9 })
+            );
+            cabin.rotation.x = -Math.PI / 2;
+            cabin.position.set(0, 0, 3.4);
+            cabin.userData = { explodeDir: new THREE.Vector3(0, 0, 1.8) };
+            group.add(cabin);
+
+            const engine = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.5, 0.3, 1.2, 8),
+                new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.9 })
+            );
+            engine.rotation.x = Math.PI / 2;
+            engine.position.set(0, 0, -3.1);
+            engine.userData = { explodeDir: new THREE.Vector3(0, 0, -1.8) };
+            group.add(engine);
+
+            // Container cargo
+            const containerMat = new THREE.MeshStandardMaterial({ color: 0x0891b2, metalness: 0.4, roughness: 0.5 });
+            for (let i = -1; i <= 1; i += 2) {
+                const box = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.8, 1.4), containerMat);
+                box.position.set(i * 0.9, 0.5, 0);
+                box.userData = { explodeDir: new THREE.Vector3(i * 1.5, 0.8, 0) };
+                group.add(box);
+            }
+
+            return group;
+        }
+
+        function buildSatellite() {
+            const group = new THREE.Group();
+
+            const core = new THREE.Mesh(
+                new THREE.OctahedronGeometry(1.1),
+                new THREE.MeshStandardMaterial({ color: 0x4b5563, metalness: 0.9, roughness: 0.2 })
+            );
+            core.userData = { explodeDir: new THREE.Vector3(0, 0, 0) };
+            group.add(core);
+
+            const dish = new THREE.Mesh(
+                new THREE.CylinderGeometry(1.6, 0.1, 0.5, 16, 1, true),
+                new THREE.MeshStandardMaterial({ color: 0xd1d5db, metalness: 0.7, roughness: 0.3, side: THREE.DoubleSide })
+            );
+            dish.rotation.x = Math.PI / 2;
+            dish.position.set(0, 0, 1.5);
+            dish.userData = { explodeDir: new THREE.Vector3(0, 0, 1.8) };
+            group.add(dish);
+
+            // Wings
+            const solarMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, metalness: 0.9, roughness: 0.1 });
+            for (let i = -1; i <= 1; i += 2) {
+                const wing = new THREE.Mesh(new THREE.BoxGeometry(3, 1, 0.08), solarMat);
+                wing.position.set(i * 3.2, 0, 0);
+                wing.userData = { explodeDir: new THREE.Vector3(i * 1.8, 0, 0) };
+
+                const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 1.8, 8), new THREE.MeshStandardMaterial({ color: 0x374151 }));
+                rod.rotation.z = Math.PI / 2;
+                rod.position.set(i * 1.6, 0, 0);
+                rod.userData = { explodeDir: new THREE.Vector3(i * 0.6, 0, 0) };
+
+                group.add(wing, rod);
+            }
+
+            return group;
+        }
+
+        function buildWarpGate() {
+            const group = new THREE.Group();
+
+            const ring = new THREE.Mesh(
+                new THREE.TorusGeometry(3.8, 0.35, 12, 48),
+                new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.9, roughness: 0.2 })
+            );
+            ring.userData = { explodeDir: new THREE.Vector3(0, 0, 0) };
+            group.add(ring);
+
+            // Generatore
+            const generatorGeom = new THREE.CylinderGeometry(0.5, 0.5, 1.4, 12);
+            const generatorMat = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.8 });
+
+            for (let i = 0; i < 4; i++) {
+                const angle = (i / 4) * Math.PI * 2;
+                const gen = new THREE.Mesh(generatorGeom, generatorMat);
+                gen.position.set(Math.cos(angle) * 3.8, Math.sin(angle) * 3.8, 0);
+                gen.rotation.z = angle + Math.PI / 2;
+                gen.userData = { explodeDir: new THREE.Vector3(Math.cos(angle) * 1.5, Math.sin(angle) * 1.5, 0) };
+
+                group.add(gen);
+            }
+
+            // Portal event horizon (Glowing aura mesh)
+            const horizon = new THREE.Mesh(
+                new THREE.RingGeometry(0.1, 3.4, 32),
+                new THREE.MeshBasicMaterial({
+                    color: 0xec4899,
+                    transparent: true,
+                    opacity: 0.45,
+                    side: THREE.DoubleSide,
+                    wireframe: true
+                })
+            );
+            horizon.userData = { explodeDir: new THREE.Vector3(0, 0, 1.2) };
+            group.add(horizon);
+
+            return group;
+        }
+
+        function buildCrystalAsteroid() {
+            const group = new THREE.Group();
+
+            // Core rock base
+            const rockGeom = new THREE.IcosahedronGeometry(2.0, 2);
+            const positionAttr = rockGeom.attributes.position;
+            for (let i = 0; i < positionAttr.count; i++) {
+                const vx = positionAttr.getX(i);
+                const vy = positionAttr.getY(i);
+                const vz = positionAttr.getZ(i);
+                const noise = Math.sin(vx * 1.5) * Math.cos(vy * 1.5) * 0.22;
+                positionAttr.setXYZ(i, vx + noise, vy + noise, vz + noise);
+            }
+            rockGeom.computeVertexNormals();
+
+            const rockMat = new THREE.MeshStandardMaterial({ color: 0x27272a, roughness: 0.9, metalness: 0.1 });
+            const baseRock = new THREE.Mesh(rockGeom, rockMat);
+            baseRock.userData = { explodeDir: new THREE.Vector3(0, 0, 0) };
+            group.add(baseRock);
+
+            // Shards
+            const crystalGeom = new THREE.ConeGeometry(0.32, 1.2, 5);
+            const crystalMat = new THREE.MeshStandardMaterial({
+                color: 0x10b981,
+                emissive: 0x059669,
+                emissiveIntensity: 1.2,
+                roughness: 0.1,
+                metalness: 0.9
+            });
+
+            const dirs = [
+                [1, 1, 1], [-1, 1, -1], [1, -1, -1], [-1, -1, 1], [0, 1.5, 0], [0, -1.5, 0.5]
+            ];
+
+            dirs.forEach((dir, idx) => {
+                const crystal = new THREE.Mesh(crystalGeom, crystalMat);
+                const vDir = new THREE.Vector3(...dir).normalize();
+                crystal.position.copy(vDir).multiplyScalar(1.7);
+                crystal.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), vDir);
+                crystal.userData = { explodeDir: vDir.clone().multiplyScalar(1.4) };
+                group.add(crystal);
+            });
+
+            return group;
+        }
+
+        // ----------------- CONTROLLERS & INTERACTIONS -----------------
+        function selectAsset(assetId) {
+            currentAsset = assetId;
+
+            // Remove old group
+            if (activeGroup) scene.remove(activeGroup);
+
+            // Build new group
+            if (assetId === 'station') activeGroup = buildStation();
+            else if (assetId === 'ship') activeGroup = buildShip();
+            else if (assetId === 'satellite') activeGroup = buildSatellite();
+            else if (assetId === 'gate') activeGroup = buildWarpGate();
+            else if (assetId === 'asteroid') activeGroup = buildCrystalAsteroid();
+
+            // Save original positions of components for Exploded View
+            activeGroup.children.forEach(child => {
+                child.userData.originalPos = child.position.clone();
+            });
+
+            scene.add(activeGroup);
+
+            // Reset Explode Button State
+            isExploded = false;
+            document.getElementById('explode-text').innerText = "BẢN VẼ RÃ (EXPLODED VIEW)";
+
+            // Update UI selectors styling
+            document.querySelectorAll('.asset-selector-btn').forEach(btn => {
+                btn.classList.remove('glass-panel-cyan', 'border-cyan-500/50');
+            });
+            document.getElementById(`btn-${assetId}`).classList.add('glass-panel-cyan', 'border-cyan-500/50');
+
+            // Update diagnostic HUD
+            updateDiagnostics();
+
+            // Update Exporter Code Block
+            document.getElementById('code-block').innerText = proceduralCodeRepo[assetId];
+        }
+
+        function updateDiagnostics() {
+            let totalVertices = 0;
+            let drawCalls = 0;
+
+            if (activeGroup) {
+                activeGroup.traverse(child => {
+                    if (child.isMesh) {
+                        totalVertices += child.geometry.attributes.position.count;
+                        drawCalls++;
+                    }
+                });
+            }
+
+            document.getElementById('diagnostic-vertices').innerText = totalVertices.toLocaleString();
+            document.getElementById('diagnostic-drawcalls').innerText = drawCalls;
+        }
+
+        function toggleExplodedView() {
+            if (!activeGroup) return;
+            playSoundEffect('click');
+
+            isExploded = !isExploded;
+            const btnText = document.getElementById('explode-text');
+            btnText.innerText = isExploded ? "HỢP NHẤT MÔ HÌNH" : "BẢN VẼ RÃ (EXPLODED VIEW)";
+
+            activeGroup.children.forEach(child => {
+                const targetPos = isExploded
+                    ? child.userData.originalPos.clone().add(child.userData.explodeDir)
+                    : child.userData.originalPos;
+
+                gsap.to(child.position, {
+                    x: targetPos.x,
+                    y: targetPos.y,
+                    z: targetPos.z,
+                    duration: 1.2,
+                    ease: "power2.inOut"
+                });
+            });
+        }
+
+        // ----------------- THEMES CONTROLLERS (LIGHTING SYSTEMS) -----------------
+        const lightingThemes = {
+            cyberpunk: {
+                fog: 0x030712,
+                ambient: 0x1e1530,
+                dirLight: 0x8a2be2,
+                pointLight: 0x06b6d4
+            },
+            cinematic: {
+                fog: 0x0c0703,
+                ambient: 0x2c1d11,
+                dirLight: 0xffaa44, // Golden Sunset Sunrise
+                pointLight: 0xffdd88
+            }
+        };
+
+        function switchTheme(themeId) {
+            currentTheme = themeId;
+            playSoundEffect('level-up');
+
+            const config = lightingThemes[themeId];
+
+            // GSAP morph colors
+            gsap.to(scene.fog, { color: config.fog, duration: 1.5 });
+            gsap.to(ambientLight.color, {
+                r: ((config.ambient >> 16) & 255) / 255,
+                g: ((config.ambient >> 8) & 255) / 255,
+                b: (config.ambient & 255) / 255,
+                duration: 1.5
+            });
+            gsap.to(dirLight.color, {
+                r: ((config.dirLight >> 16) & 255) / 255,
+                g: ((config.dirLight >> 8) & 255) / 255,
+                b: (config.dirLight & 255) / 255,
+                duration: 1.5
+            });
+            gsap.to(pointLight.color, {
+                r: ((config.pointLight >> 16) & 255) / 255,
+                g: ((config.pointLight >> 8) & 255) / 255,
+                b: (config.pointLight & 255) / 255,
+                duration: 1.5
+            });
+        }
+
+        // Đặt lại camera
+        function resetCamera() {
+            playSoundEffect('click');
+            gsap.to(camera.position, { x: 0, y: 8, z: 16, duration: 1.2, ease: "power2.inOut" });
+            gsap.to(controls.target, { x: 0, y: 0, z: 0, duration: 1.2, ease: "power2.inOut" });
+        }
+
+        // Copy Code rương
+        function copyActiveCode() {
+            const code = proceduralCodeRepo[currentAsset];
+            copyToClipboard(code);
+            playSoundEffect('level-up');
+        }
+
+        function copyToClipboard(text) {
+            const tempEl = document.createElement('textarea');
+            tempEl.value = text;
+            document.body.appendChild(tempEl);
+            tempEl.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempEl);
+        }
+
+        // ----------------- SYNTHETIC WEB AUDIO (SINE/SAWTOOTH GENERATOR) -----------------
+        let audioCtx = null;
+
+        function playSoundEffect(type) {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            if (type === 'click') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(600, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.1);
+                gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+                gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.1);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.12);
+            } else if (type === 'level-up') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(250, audioCtx.currentTime);
+                osc.frequency.setValueAtTime(450, audioCtx.currentTime + 0.08);
+                osc.frequency.setValueAtTime(650, audioCtx.currentTime + 0.16);
+                gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+                gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.35);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.45);
+            }
+        }
+
+        // ----------------- ANIMATION LOOPS -----------------
+        function renderLoop() {
+            requestAnimationFrame(renderLoop);
+
+            time += 0.01;
+
+            // Xoay sao nền lấp lánh nhẹ nhàng
+            if (starField) {
+                starField.rotation.y = time * 0.02;
+            }
+
+            // Tự động xoay mô hình lơ lửng nếu không kéo chuột rã vẽ
+            if (activeGroup && !isExploded) {
+                activeGroup.rotation.y = time * 0.15;
+                activeGroup.rotation.x = Math.sin(time * 0.5) * 0.05;
+            }
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        // Bắt đầu
+        window.onload = function () {
+            lucide.createIcons();
+            init3DStudio();
+        };
+    </script>
+
+</body>
+
+</html>

@@ -16,7 +16,8 @@ const state = {
   is3DActive: false,
   threeInstance: null,
   isAiVoiceEnabled: localStorage.getItem('cyber_portfolio_ai_voice_enabled') !== 'false',
-  selectedVoiceURI: localStorage.getItem('cyber_portfolio_selected_voice_uri') || ''
+  selectedVoiceURI: localStorage.getItem('cyber_portfolio_selected_voice_uri') || '',
+  selectedCharacter: localStorage.getItem('cyber_portfolio_selected_character') || 'astronaut'
 };
 
 // Web Audio API Synthesizer
@@ -781,6 +782,292 @@ function gameLoop() {
   animationFrameId = requestAnimationFrame(gameLoop);
 }
 
+// -------------------------------------------------------------
+// 2D Canvas Procedural Vector Draw Utilities
+// -------------------------------------------------------------
+function drawGameSpaceship(ctx, x, y, size = 35, angle = 0, isThrusting = true) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(angle);
+
+  // Draw fire tail
+  if (isThrusting) {
+    ctx.beginPath();
+    ctx.moveTo(-size * 0.2, size * 0.4);
+    ctx.lineTo(0, size * (0.65 + Math.random() * 0.3));
+    ctx.lineTo(size * 0.2, size * 0.4);
+    ctx.closePath();
+    let fireGrad = ctx.createLinearGradient(0, size * 0.4, 0, size * 0.9);
+    fireGrad.addColorStop(0, '#ff4500');
+    fireGrad.addColorStop(0.5, '#ffd700');
+    fireGrad.addColorStop(1, 'transparent');
+    ctx.fillStyle = fireGrad;
+    ctx.fill();
+  }
+
+  // Left/Right wings
+  ctx.beginPath();
+  ctx.moveTo(-size * 0.5, size * 0.3);
+  ctx.lineTo(-size * 0.6, size * 0.1);
+  ctx.lineTo(0, -size * 0.5);
+  ctx.lineTo(size * 0.6, size * 0.1);
+  ctx.lineTo(size * 0.5, size * 0.3);
+  ctx.lineTo(0, size * 0.15);
+  ctx.closePath();
+  ctx.fillStyle = '#7c3aed';
+  ctx.strokeStyle = '#a855f7';
+  ctx.lineWidth = 1.5;
+  ctx.fill();
+  ctx.stroke();
+
+  // Main metal body
+  ctx.beginPath();
+  ctx.moveTo(0, -size * 0.6);
+  ctx.lineTo(-size * 0.25, size * 0.25);
+  ctx.lineTo(size * 0.25, size * 0.25);
+  ctx.closePath();
+  ctx.fillStyle = '#0f172a';
+  ctx.strokeStyle = '#06b6d4';
+  ctx.lineWidth = 1.5;
+  ctx.fill();
+  ctx.stroke();
+
+  // Glass Cockpit
+  ctx.beginPath();
+  ctx.moveTo(0, -size * 0.35);
+  ctx.lineTo(-size * 0.1, size * 0.05);
+  ctx.lineTo(size * 0.1, size * 0.05);
+  ctx.closePath();
+  ctx.fillStyle = '#22d3ee';
+  ctx.fill();
+
+  // Engine core glow dot
+  ctx.beginPath();
+  ctx.arc(0, size * 0.22, size * 0.1, 0, Math.PI, true);
+  ctx.fillStyle = '#00ffff';
+  ctx.fill();
+
+  ctx.restore();
+}
+
+function drawGameUFO(ctx, x, y, size = 40, time = 0) {
+  ctx.save();
+  ctx.translate(x, y);
+
+  // Tractor beam
+  ctx.beginPath();
+  ctx.moveTo(-size * 0.25, size * 0.15);
+  ctx.lineTo(-size * 0.65, size * 1.1);
+  ctx.lineTo(size * 0.65, size * 1.1);
+  ctx.lineTo(size * 0.25, size * 0.15);
+  ctx.closePath();
+  let beamGrad = ctx.createLinearGradient(0, 0, 0, size * 1.1);
+  beamGrad.addColorStop(0, 'rgba(6, 182, 212, 0.4)');
+  beamGrad.addColorStop(1, 'transparent');
+  ctx.fillStyle = beamGrad;
+  ctx.fill();
+
+  // Lower deck metal
+  ctx.beginPath();
+  ctx.ellipse(0, size * 0.05, size * 0.6, size * 0.22, 0, 0, Math.PI * 2);
+  ctx.fillStyle = '#1e293b';
+  ctx.strokeStyle = '#06b6d4';
+  ctx.lineWidth = 1.5;
+  ctx.fill();
+  ctx.stroke();
+
+  // Cockpit dome
+  ctx.beginPath();
+  ctx.arc(0, -size * 0.02, size * 0.32, Math.PI, 0, false);
+  let glassGrad = ctx.createLinearGradient(0, -size * 0.35, 0, 0);
+  glassGrad.addColorStop(0, '#06b6d4');
+  glassGrad.addColorStop(1, '#083344');
+  ctx.fillStyle = glassGrad;
+  ctx.fill();
+
+  // Flashing lights around rim
+  const numLights = 5;
+  for (let i = 0; i < numLights; i++) {
+    let lightAngle = (i / numLights) * Math.PI * 2 + time * 2;
+    let lx = Math.cos(lightAngle) * (size * 0.48);
+    let ly = Math.sin(lightAngle) * (size * 0.08) + (size * 0.05);
+    
+    ctx.beginPath();
+    ctx.arc(lx, ly, size * 0.05, 0, Math.PI * 2);
+    
+    let phase = Math.floor(time * 3 + i) % 3;
+    ctx.fillStyle = phase === 0 ? '#f43f5e' : (phase === 1 ? '#10b981' : '#f59e0b');
+    ctx.fill();
+  }
+
+  ctx.restore();
+}
+
+function drawGameAstronaut(ctx, x, y, size = 40, time = 0) {
+  ctx.save();
+  let driftY = Math.sin(time * 2) * (size * 0.08);
+  ctx.translate(x, y + driftY);
+  ctx.rotate(Math.sin(time * 1.5) * 0.08);
+
+  // Oxygen Tether
+  ctx.beginPath();
+  ctx.moveTo(-size * 0.15, size * 0.1);
+  ctx.bezierCurveTo(-size * 0.8, size * 0.4, -size * 1.2, -size * -0.2, -size * 2, size * 0.2);
+  ctx.strokeStyle = 'rgba(226, 232, 240, 0.25)';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  // Backpack
+  ctx.fillStyle = '#cbd5e1';
+  ctx.fillRect(-size * 0.35, -size * 0.15, size * 0.22, size * 0.45);
+
+  // Legs
+  ctx.fillStyle = '#cbd5e1';
+  ctx.fillRect(-size * 0.18, size * 0.3, size * 0.11, size * 0.25);
+  ctx.fillRect(size * 0.04, size * 0.3, size * 0.11, size * 0.25);
+
+  // Body
+  ctx.beginPath();
+  ctx.ellipse(0, size * 0.1, size * 0.25, size * 0.25, 0, 0, Math.PI * 2);
+  ctx.fillStyle = '#f8fafc';
+  ctx.strokeStyle = '#94a3b8';
+  ctx.lineWidth = 1.5;
+  ctx.fill();
+  ctx.stroke();
+
+  // Wave arm
+  ctx.save();
+  ctx.translate(size * 0.25, size * 0.05);
+  ctx.rotate(-Math.sin(time * 4.5) * 0.25 - 0.4);
+  ctx.fillStyle = '#cbd5e1';
+  ctx.fillRect(0, 0, size * 0.11, size * 0.25);
+  ctx.restore();
+
+  // Helmet
+  ctx.beginPath();
+  ctx.arc(0, -size * 0.22, size * 0.26, 0, Math.PI * 2);
+  ctx.fillStyle = '#f8fafc';
+  ctx.strokeStyle = '#cbd5e1';
+  ctx.lineWidth = 1.5;
+  ctx.fill();
+  ctx.stroke();
+
+  // Visor
+  ctx.beginPath();
+  ctx.ellipse(size * 0.05, -size * 0.22, size * 0.19, size * 0.14, 0, 0, Math.PI * 2);
+  ctx.fillStyle = '#1e1b4b';
+  ctx.fill();
+
+  // Reflection
+  ctx.beginPath();
+  ctx.ellipse(size * 0.11, -size * 0.25, size * 0.06, size * 0.03, Math.PI / 6, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+  ctx.fill();
+
+  ctx.restore();
+}
+
+function drawGameSatellite(ctx, x, y, size = 35, time = 0) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(Math.sin(time * 0.5) * 0.15);
+
+  // Signal waves
+  ctx.beginPath();
+  ctx.arc(0, -size * 0.45, size * (0.35 + (time * 0.8) % 0.6), Math.PI * 1.25, Math.PI * 1.75);
+  ctx.strokeStyle = 'rgba(6, 182, 212, ' + (1 - ((time * 1.3) % 1)) + ')';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  // Solar panels
+  ctx.fillStyle = '#1e3a8a';
+  ctx.strokeStyle = '#60a5fa';
+  ctx.lineWidth = 1.2;
+  // Left panel
+  ctx.fillRect(-size * 1.1, -size * 0.15, size * 0.65, size * 0.3);
+  ctx.strokeRect(-size * 1.1, -size * 0.15, size * 0.65, size * 0.3);
+  // Right panel
+  ctx.fillRect(size * 0.45, -size * 0.15, size * 0.65, size * 0.3);
+  ctx.strokeRect(size * 0.45, -size * 0.15, size * 0.65, size * 0.3);
+
+  // Main metal shaft
+  ctx.beginPath();
+  ctx.moveTo(-size * 0.5, 0);
+  ctx.lineTo(size * 0.5, 0);
+  ctx.strokeStyle = '#94a3b8';
+  ctx.lineWidth = 2.5;
+  ctx.stroke();
+
+  // Core
+  ctx.beginPath();
+  ctx.arc(0, 0, size * 0.22, 0, Math.PI * 2);
+  ctx.fillStyle = '#475569';
+  ctx.strokeStyle = '#e2e8f0';
+  ctx.lineWidth = 1.5;
+  ctx.fill();
+  ctx.stroke();
+
+  // Antenna stick
+  ctx.beginPath();
+  ctx.moveTo(0, -size * 0.2);
+  ctx.lineTo(0, -size * 0.45);
+  ctx.strokeStyle = '#e2e8f0';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  // Red blinking bulb
+  ctx.beginPath();
+  ctx.arc(0, -size * 0.45, 3, 0, Math.PI * 2);
+  ctx.fillStyle = '#ef4444';
+  ctx.fill();
+
+  ctx.restore();
+}
+
+function drawGamePortal(ctx, x, y, size = 45, time = 0) {
+  ctx.save();
+  ctx.translate(x, y);
+
+  // Accretion disk
+  let outerGrad = ctx.createRadialGradient(0, 0, size * 0.1, 0, 0, size);
+  outerGrad.addColorStop(0, '#000000');
+  outerGrad.addColorStop(0.35, '#ec4899');
+  outerGrad.addColorStop(0.7, '#8b5cf6');
+  outerGrad.addColorStop(1, 'transparent');
+  
+  ctx.beginPath();
+  ctx.arc(0, 0, size, 0, Math.PI * 2);
+  ctx.fillStyle = outerGrad;
+  ctx.fill();
+
+  // Spiral arms
+  const armsCount = 4;
+  for (let i = 0; i < armsCount; i++) {
+    ctx.save();
+    ctx.rotate(time * 3 + (i * Math.PI / 2));
+    
+    ctx.beginPath();
+    ctx.moveTo(size * 0.25, 0);
+    ctx.bezierCurveTo(size * 0.5, size * 0.35, size * 0.75, -size * 0.35, size, 0);
+    ctx.strokeStyle = '#db2777';
+    ctx.lineWidth = 2.5;
+    ctx.stroke();
+    
+    ctx.restore();
+  }
+
+  // Singularity Core
+  ctx.beginPath();
+  ctx.arc(0, 0, size * 0.28, 0, Math.PI * 2);
+  ctx.fillStyle = '#000000';
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 1.2;
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.restore();
+}
+
 function drawScene() {
   if (!ctx) return;
 
@@ -1002,22 +1289,53 @@ function drawScene() {
     ctx.lineTo(zone.coords.x + zone.size.w - 8, zone.coords.y + zone.size.h - 12);
     ctx.stroke();
 
-    // Circle base for building symbol
+    // Holographic pad circle base
+    const cx = zone.coords.x + zone.size.w / 2;
+    const cy = zone.coords.y + 35;
+    const padRadius = 22;
+    
     ctx.fillStyle = isActive ? 
-      (zone.color === 'emerald' ? 'rgba(16, 185, 129, 0.2)' : 
-       zone.color === 'blue' ? 'rgba(59, 130, 246, 0.2)' :
-       zone.color === 'purple' ? 'rgba(168, 85, 247, 0.2)' :
-       zone.color === 'amber' ? 'rgba(245, 158, 11, 0.2)' :
-       zone.color === 'pink' ? 'rgba(236, 72, 153, 0.2)' : 'rgba(99, 102, 241, 0.2)') : '#27272a';
+      (zone.color === 'emerald' ? 'rgba(16, 185, 129, 0.15)' : 
+       zone.color === 'blue' ? 'rgba(59, 130, 246, 0.15)' :
+       zone.color === 'purple' ? 'rgba(168, 85, 247, 0.15)' :
+       zone.color === 'amber' ? 'rgba(245, 158, 11, 0.15)' :
+       zone.color === 'pink' ? 'rgba(236, 72, 153, 0.15)' : 'rgba(99, 102, 241, 0.15)') : 'rgba(39, 39, 42, 0.3)';
+       
+    ctx.strokeStyle = isActive ? 
+      (zone.color === 'emerald' ? '#10b981' : 
+       zone.color === 'blue' ? '#3b82f6' :
+       zone.color === 'purple' ? '#a855f7' :
+       zone.color === 'amber' ? '#f59e0b' :
+       zone.color === 'pink' ? '#ec4899' : '#6366f1') : '#27272a';
+    ctx.lineWidth = 1.5;
+    
     ctx.beginPath();
-    ctx.arc(zone.coords.x + zone.size.w / 2, zone.coords.y + 35, 18, 0, Math.PI * 2);
+    ctx.arc(cx, cy, padRadius, 0, Math.PI * 2);
     ctx.fill();
+    ctx.stroke();
 
-    // Code Icon Text
-    ctx.fillStyle = isActive ? '#ffffff' : '#a1a1aa';
-    ctx.font = '10px monospace';
-    ctx.textAlign = 'center';
-    ctx.fillText(zone.name.toUpperCase(), zone.coords.x + zone.size.w / 2, zone.coords.y + 38);
+    // Draw grid lines inside pad for cyber visual details
+    ctx.strokeStyle = isActive ? 'rgba(255, 255, 255, 0.12)' : 'rgba(63, 63, 70, 0.25)';
+    ctx.lineWidth = 0.8;
+    ctx.beginPath();
+    ctx.moveTo(cx - padRadius + 4, cy);
+    ctx.lineTo(cx + padRadius - 4, cy);
+    ctx.moveTo(cx, cy - padRadius + 4);
+    ctx.lineTo(cx, cy + padRadius - 4);
+    ctx.stroke();
+
+    // Draw interactive sprite inside pad
+    if (zone.id === 'home') {
+      drawGameAstronaut(ctx, cx, cy - 1, 16, localFrame * 0.035);
+    } else if (zone.id === 'academy') {
+      drawGameSatellite(ctx, cx, cy, 15, localFrame * 0.02);
+    } else if (zone.id === 'lab') {
+      drawGameUFO(ctx, cx, cy, 16, localFrame * 0.035);
+    } else if (zone.id === 'museum') {
+      drawGameSpaceship(ctx, cx, cy, 15, -Math.PI / 4, false);
+    } else if (zone.id === 'portal') {
+      drawGamePortal(ctx, cx, cy, 18, localFrame * 0.02);
+    }
 
     // Title text
     ctx.fillStyle = isActive ? '#ffffff' : '#e4e4e7';
@@ -1079,15 +1397,15 @@ function drawScene() {
   playerTrail.forEach((pos, idx) => {
     const ratio = (idx + 1) / playerTrail.length;
     const alpha = ratio * 0.22;
-    ctx.fillStyle = `rgba(16, 185, 129, ${alpha})`;
-    ctx.beginPath();
-    ctx.ellipse(pos.x, pos.y + 12, 9 * ratio, 3.5 * ratio, 0, 0, Math.PI * 2);
-    ctx.fill();
     
-    // Trail helmet silhouette
-    ctx.fillStyle = `rgba(244, 244, 245, ${alpha * 0.35})`;
+    // Choose trail glow color based on the selected character
+    let trailColor = '16, 185, 129'; // default emerald for astronaut
+    if (state.selectedCharacter === 'spaceship') trailColor = '168, 85, 247'; // purple
+    else if (state.selectedCharacter === 'ufo') trailColor = '6, 182, 212'; // cyan
+    
+    ctx.fillStyle = `rgba(${trailColor}, ${alpha})`;
     ctx.beginPath();
-    ctx.arc(pos.x, pos.y - 14, 7 * ratio, 0, Math.PI * 2);
+    ctx.arc(pos.x, pos.y, 8 * ratio, 0, Math.PI * 2);
     ctx.fill();
   });
   ctx.restore();
@@ -1102,53 +1420,34 @@ function drawScene() {
   ctx.ellipse(player.x, player.y + 12, 12, 5, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  // Suit body
-  ctx.fillStyle = '#27272a';
-  ctx.strokeStyle = '#d4d4d8';
-  ctx.lineWidth = 2;
-  
-  const legOffset = player.isMoving ? Math.sin(localFrame * 0.25) * 4 : 0;
-
-  // Legs
-  ctx.fillStyle = '#3f3f46';
-  ctx.fillRect(player.x - 7, player.y + 4 + (legOffset > 0 ? -2 : 0), 5, 8); 
-  ctx.fillRect(player.x + 2, player.y + 4 + (legOffset < 0 ? -2 : 0), 5, 8); 
-
-  // Space jacket
-  ctx.fillStyle = '#10b981';
-  ctx.beginPath();
-  ctx.arc(player.x, player.y - 4 + bobbing, 9, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = '#18181b';
-  ctx.fillRect(player.x - 9, player.y - 4 + bobbing, 18, 10);
-  ctx.fillStyle = '#10b981';
-  ctx.fillRect(player.x - 6, player.y - 4 + bobbing, 12, 10);
-
-  // Oxygen tank
-  ctx.fillStyle = '#3f3f46';
-  if (player.facing === 'left') {
-    ctx.fillRect(player.x + 5, player.y - 12 + bobbing, 5, 14);
-  } else if (player.facing === 'right') {
-    ctx.fillRect(player.x - 10, player.y - 12 + bobbing, 5, 14);
+  // Smoothly update player.angle for 360-degree rotation
+  if (!player.hasOwnProperty('angle')) {
+    player.angle = 0;
   }
+  let targetAngle = 0;
+  if (player.vx !== 0 || player.vy !== 0) {
+    targetAngle = Math.atan2(player.vy, player.vx);
+  } else {
+    if (player.facing === 'up') targetAngle = -Math.PI / 2;
+    else if (player.facing === 'down') targetAngle = Math.PI / 2;
+    else if (player.facing === 'left') targetAngle = Math.PI;
+    else if (player.facing === 'right') targetAngle = 0;
+  }
+  let diff = targetAngle - player.angle;
+  while (diff < -Math.PI) diff += Math.PI * 2;
+  while (diff > Math.PI) diff -= Math.PI * 2;
+  player.angle += diff * 0.22;
 
-  // Helmet
-  ctx.fillStyle = '#f4f4f5';
-  ctx.beginPath();
-  ctx.arc(player.x, player.y - 14 + bobbing, 10, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Glass Visor
-  ctx.fillStyle = '#38bdf8';
-  ctx.shadowBlur = 8;
-  ctx.shadowColor = '#38bdf8';
-  
-  if (player.facing === 'down') {
-    ctx.fillRect(player.x - 6, player.y - 18 + bobbing, 12, 7);
-  } else if (player.facing === 'left') {
-    ctx.fillRect(player.x - 9, player.y - 18 + bobbing, 6, 7);
-  } else if (player.facing === 'right') {
-    ctx.fillRect(player.x + 3, player.y - 18 + bobbing, 6, 7);
+  // Render the selected character avatar
+  const selectedChar = state.selectedCharacter || 'astronaut';
+  if (selectedChar === 'spaceship') {
+    // Add Math.PI / 2 offset because the vector spaceship is drawn pointing up
+    drawGameSpaceship(ctx, player.x, player.y + bobbing, 34, player.angle + Math.PI / 2, player.isMoving);
+  } else if (selectedChar === 'ufo') {
+    drawGameUFO(ctx, player.x, player.y + bobbing, 34, localFrame * 0.04);
+  } else {
+    // Default: Astronaut
+    drawGameAstronaut(ctx, player.x, player.y, 34, localFrame * 0.04);
   }
   ctx.restore();
 
@@ -2502,19 +2801,81 @@ function startLoadingSequence() {
       enterBtn.classList.remove('hidden-panel');
       
       enterBtn.addEventListener('click', () => {
-        playNewZoneSound();
-        // Animate fading out loading screen
-        const loaderScreen = document.getElementById('loading_screen_container');
-        loaderScreen.style.transition = 'opacity 0.4s ease';
-        loaderScreen.style.opacity = '0';
-        setTimeout(() => {
-          loaderScreen.remove();
-          // Initialize Interactive components
-          initGameEngine();
-          initQuickTeleportButtons();
-          initChatbot();
-          updateUIForActiveZone();
-        }, 400);
+        playClickSound();
+        
+        // Hide console logs and the activate button itself
+        document.getElementById('loading_console_logs').classList.add('hidden');
+        enterBtn.classList.add('hidden');
+        
+        // Show character selection panel
+        const charSelectContainer = document.getElementById('char_select_container');
+        charSelectContainer.classList.remove('hidden');
+        
+        // Start vector preview loops
+        startPreviewLoops();
+        
+        // Pre-select default character card matching global state
+        const initialChar = state.selectedCharacter || 'astronaut';
+        document.querySelectorAll('.char-card').forEach(card => {
+          if (card.getAttribute('data-char') === initialChar) {
+            card.classList.add('active-char');
+          } else {
+            card.classList.remove('active-char');
+          }
+        });
+        
+        // Update description mapping
+        const descBox = document.getElementById('char_desc_box');
+        const updateDescription = (char) => {
+          if (char === 'spaceship') {
+            descBox.textContent = "Phi Thuyền: Phương tiện di chuyển phản lực siêu tốc, để lại vệt năng lượng Plasma tím huyền ảo.";
+          } else if (char === 'ufo') {
+            descBox.textContent = "Đĩa Bay UFO: Thiết bị bay ngoài hành tinh, chiếu chùm ánh sáng bắt cóc Tractor Beam xanh neon độc đáo.";
+          } else {
+            descBox.textContent = "Phi Hành Gia: Nhân vật du hành không trọng lực nguyên bản, bồng bềnh lơ lửng khám phá các vùng đất.";
+          }
+        };
+        updateDescription(initialChar);
+
+        // Bind character card click events
+        document.querySelectorAll('.char-card').forEach(card => {
+          card.addEventListener('click', (e) => {
+            playClickSound();
+            const selected = e.currentTarget.getAttribute('data-char');
+            state.selectedCharacter = selected;
+            localStorage.setItem('cyber_portfolio_selected_character', selected);
+            
+            // Highlight selected card
+            document.querySelectorAll('.char-card').forEach(c => c.classList.remove('active-char'));
+            e.currentTarget.classList.add('active-char');
+            
+            updateDescription(selected);
+          });
+        });
+
+        // Confirm button action
+        const confirmBtn = document.getElementById('btn_confirm_character');
+        confirmBtn.addEventListener('click', () => {
+          playNewZoneSound();
+          stopPreviewLoops();
+          
+          // Animate fading out loading screen
+          const loaderScreen = document.getElementById('loading_screen_container');
+          loaderScreen.style.transition = 'opacity 0.4s ease';
+          loaderScreen.style.opacity = '0';
+          setTimeout(() => {
+            loaderScreen.remove();
+            
+            // Initialize Interactive components
+            initGameEngine();
+            initQuickTeleportButtons();
+            initChatbot();
+            updateUIForActiveZone();
+            
+            // Initialize the 2D Mini-switcher button
+            initCharacterSwitcherButton();
+          }, 400);
+        });
       });
     }
   };
@@ -2544,10 +2905,15 @@ let threeClips = {};
 let activeAction = null;
 let isCinematicView = false;
 let isExiting3D = false;
+let clickTargetPosition = null;
+let clickIndicators = [];
+let shouldResetCameraView = true;
 let spaceParticles = null;
 let animatedCogs = [];
 let animatedCrafts = [];
 let physicsBoxes = [];
+let interactiveObjects = [];
+let decryptParticles = [];
 let emissiveMaterials = [];
 let zoneBoxes = [];
 let activeHotspots = [];
@@ -2714,6 +3080,348 @@ async function loadThreeJS() {
   }
 }
 
+function spawnClickIndicator(pos) {
+  if (!threeScene) return;
+  const geo = new THREE.RingGeometry(0.1, 0.6, 16);
+  geo.rotateX(-Math.PI / 2); // Nằm ngang trên mặt đất
+  const mat = new THREE.MeshBasicMaterial({
+    color: '#06b6d4', // Màu Cyan neon đồng bộ
+    side: THREE.DoubleSide,
+    transparent: true,
+    opacity: 0.8
+  });
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.position.copy(pos);
+  mesh.position.y = 0.22; // Cao hơn mặt đất một chút để tránh Z-fighting
+  threeScene.add(mesh);
+  
+  clickIndicators.push({
+    mesh: mesh,
+    age: 0,
+    maxAge: 30 // Tồn tại trong 30 frame (~0.5 giây)
+  });
+}
+
+// =============================================================
+// PREMIUM 3D INTERACTIVE OBJECT MECHANICS
+// =============================================================
+let activeDecryptedObjId = null;
+
+function spawnInteractiveObjects() {
+  // Clear any existing interactive objects from the scene
+  interactiveObjects.forEach(obj => {
+    if (obj.group && threeScene) threeScene.remove(obj.group);
+  });
+  interactiveObjects = [];
+
+  const zonesInfo = [
+    { id: 'home', x: -20, y: 2.2, z: -14, color: '#f59e0b', type: 'crystal', name_vi: 'KHOANG THÔNG TIN (HOME)', icon: 'Home' },
+    { id: 'academy', x: 20, y: 2.2, z: -14, color: '#10b981', type: 'cube', name_vi: 'KHOANG HỌC VẤN (ACADEMY)', icon: 'GraduationCap' },
+    { id: 'library', x: 0, y: 2.2, z: 0, color: '#6366f1', type: 'octahedron', name_vi: 'KHOANG TRI THỨC (LIBRARY)', icon: 'MapPinned' },
+    { id: 'lab', x: -20, y: 2.2, z: 14, color: '#3b82f6', type: 'sphere', name_vi: 'KHOANG CÔNG NGHỆ (LAB)', icon: 'Cpu' },
+    { id: 'museum', x: 20, y: 2.2, z: 14, color: '#a855f7', type: 'torusKnot', name_vi: 'KHOANG DỰ ÁN (MUSEUM)', icon: 'Briefcase' },
+    { id: 'portal', x: 0, y: 2.2, z: 24, color: '#ec4899', type: 'ring', name_vi: 'KHOANG LIÊN KẾT (PORTAL)', icon: 'MapPinned' }
+  ];
+
+  zonesInfo.forEach(info => {
+    const group = new THREE.Group();
+    group.position.set(info.x, info.y, info.z);
+
+    let mainMesh;
+    const material = new THREE.MeshStandardMaterial({
+      color: info.color,
+      roughness: 0.1,
+      metalness: 0.8,
+      emissive: info.color,
+      emissiveIntensity: 0.5,
+      transparent: true,
+      opacity: 0.9
+    });
+
+    if (info.type === 'crystal') {
+      mainMesh = new THREE.Mesh(new THREE.IcosahedronGeometry(1.2, 0), material);
+    } else if (info.type === 'cube') {
+      mainMesh = new THREE.Mesh(new THREE.BoxGeometry(1.4, 1.4, 1.4), material);
+    } else if (info.type === 'octahedron') {
+      mainMesh = new THREE.Mesh(new THREE.OctahedronGeometry(1.3, 0), material);
+    } else if (info.type === 'sphere') {
+      mainMesh = new THREE.Mesh(new THREE.SphereGeometry(1.1, 32, 32), material);
+    } else if (info.type === 'torusKnot') {
+      mainMesh = new THREE.Mesh(new THREE.TorusKnotGeometry(0.75, 0.22, 64, 8), material);
+    } else {
+      mainMesh = new THREE.Mesh(new THREE.TorusGeometry(0.9, 0.28, 16, 100), material);
+    }
+
+    mainMesh.castShadow = true;
+    mainMesh.receiveShadow = true;
+    mainMesh.name = `interactive_${info.id}`;
+    group.add(mainMesh);
+
+    // Add wireframe overlay for cyberpunk feel
+    const wireMat = new THREE.MeshBasicMaterial({
+      color: '#ffffff',
+      wireframe: true,
+      transparent: true,
+      opacity: 0.15
+    });
+    const wireMesh = new THREE.Mesh(mainMesh.geometry.clone(), wireMat);
+    mainMesh.add(wireMesh);
+
+    // Add outer orbit ring
+    const ringGeo = new THREE.TorusGeometry(1.9, 0.04, 8, 48);
+    const ringMat = new THREE.MeshBasicMaterial({
+      color: info.color,
+      transparent: true,
+      opacity: 0.35,
+      blending: THREE.AdditiveBlending
+    });
+    const ring = new THREE.Mesh(ringGeo, ringMat);
+    ring.rotation.x = Math.PI / 2;
+    group.add(ring);
+
+    // Point Light under the object
+    const light = new THREE.PointLight(info.color, 1.8, 10);
+    light.position.set(0, -0.8, 0);
+    group.add(light);
+
+    // Text Label sprite
+    const labelSprite = createInteractiveLabel(info.color, info.id === 'home' ? 'CLICK TO DECRYPT' : 'APPROACH TO DECRYPT');
+    labelSprite.position.set(0, 1.8, 0);
+    group.add(labelSprite);
+
+    threeScene.add(group);
+
+    interactiveObjects.push({
+      id: info.id,
+      group: group,
+      mesh: mainMesh,
+      ring: ring,
+      light: light,
+      label: labelSprite,
+      baseY: info.y,
+      scale: 1,
+      state: 'idle', // 'idle', 'destroyed', 'restoring'
+      isNear: info.id === 'home',
+      color: info.color,
+      name_vi: info.name_vi,
+      icon: info.icon
+    });
+  });
+
+  // Backward compatibility check references
+  threeReadiness.homeBeacon = interactiveObjects[0].mesh;
+  threeReadiness.coreBeacon = interactiveObjects[2].mesh;
+}
+
+function createInteractiveLabel(color, text = 'APPROACH TO DECRYPT') {
+  const canvas = document.createElement('canvas');
+  canvas.width = 256;
+  canvas.height = 64;
+  const ctx = canvas.getContext('2d');
+  
+  ctx.clearRect(0, 0, 256, 64);
+  
+  // Draw futuristic border
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2;
+  ctx.strokeRect(4, 4, 248, 56);
+  
+  // Inner text
+  ctx.font = '900 13px "Orbitron", sans-serif';
+  ctx.fillStyle = '#ffffff';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.shadowColor = color;
+  ctx.shadowBlur = 8;
+  ctx.fillText(text, 128, 32);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  const material = new THREE.SpriteMaterial({
+    map: texture,
+    transparent: true,
+    opacity: 0.8
+  });
+  const sprite = new THREE.Sprite(material);
+  sprite.scale.set(2.8, 0.7, 1);
+  return sprite;
+}
+
+function updateInteractiveLabelTexture(obj, isNear) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 256;
+  canvas.height = 64;
+  const ctx = canvas.getContext('2d');
+  
+  ctx.clearRect(0, 0, 256, 64);
+  
+  // Draw futuristic border
+  ctx.strokeStyle = obj.color;
+  ctx.lineWidth = 2;
+  ctx.strokeRect(4, 4, 248, 56);
+  
+  // Inner text
+  ctx.font = '900 13px "Orbitron", sans-serif';
+  ctx.fillStyle = '#ffffff';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.shadowColor = obj.color;
+  ctx.shadowBlur = 8;
+  
+  const text = isNear ? 'CLICK TO DECRYPT' : 'APPROACH TO DECRYPT';
+  ctx.fillText(text, 128, 32);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  if (obj.label.material.map) {
+    obj.label.material.map.dispose();
+  }
+  obj.label.material.map = texture;
+  obj.label.material.needsUpdate = true;
+}
+
+function spawnExplosionParticles(pos, colorStr) {
+  const count = 45;
+  const geo = new THREE.BufferGeometry();
+  const positions = [];
+  const velocities = [];
+  const colors = [];
+
+  const baseColor = new THREE.Color(colorStr);
+
+  for (let i = 0; i < count; i++) {
+    positions.push(pos.x, pos.y, pos.z);
+    
+    // Fly outwards in spherical pattern
+    const theta = Math.random() * Math.PI * 2;
+    const phi = Math.acos((Math.random() * 2) - 1);
+    const speed = 0.08 + Math.random() * 0.14;
+    
+    velocities.push(
+      Math.sin(phi) * Math.cos(theta) * speed,
+      Math.sin(phi) * Math.sin(theta) * speed + 0.05, // slightly upwards
+      Math.cos(phi) * speed
+    );
+
+    // Color variations
+    const c = baseColor.clone();
+    if (Math.random() > 0.5) c.addScalar(0.2); // make some brighter/whiteish
+    colors.push(c.r, c.g, c.b);
+  }
+
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  
+  // Custom glowing canvas particle texture
+  const pCanvas = document.createElement('canvas');
+  pCanvas.width = 16;
+  pCanvas.height = 16;
+  const pCtx = pCanvas.getContext('2d');
+  const grad = pCtx.createRadialGradient(8, 8, 0, 8, 8, 8);
+  grad.addColorStop(0, 'rgba(255, 255, 255, 1)');
+  grad.addColorStop(0.3, colorStr);
+  grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+  pCtx.fillStyle = grad;
+  pCtx.fillRect(0, 0, 16, 16);
+  
+  const texture = new THREE.CanvasTexture(pCanvas);
+
+  const mat = new THREE.PointsMaterial({
+    size: 0.6,
+    map: texture,
+    transparent: true,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+    vertexColors: true
+  });
+
+  const pSystem = new THREE.Points(geo, mat);
+  threeScene.add(pSystem);
+
+  decryptParticles.push({
+    system: pSystem,
+    velocities: velocities,
+    age: 0,
+    maxAge: 45 // 45 frames lifespan
+  });
+}
+
+function show3DInfoModal(zoneId) {
+  activeDecryptedObjId = zoneId;
+  
+  // Cập nhật zone hoạt động toàn cục
+  state.activeZoneId = zoneId;
+  updateUIForActiveZone();
+  
+  // Lấy dữ liệu và đồng bộ vào modal
+  const bannerTitle = document.getElementById('zone_banner_title');
+  const bannerIconHolder = document.getElementById('zone_banner_icon_holder');
+  const detailsHtml = document.getElementById('zone_detail_content').innerHTML;
+  
+  const modal = document.getElementById('threejs_info_modal');
+  const modalTitle = document.getElementById('modal_title');
+  const modalIcon = document.getElementById('modal_icon_holder');
+  const modalBody = document.getElementById('modal_body_content');
+  const modalBadge = document.getElementById('modal_badge');
+  
+  if (modal && modalTitle && modalIcon && modalBody) {
+    modalTitle.textContent = bannerTitle ? bannerTitle.textContent : zoneId.toUpperCase();
+    modalIcon.innerHTML = bannerIconHolder ? bannerIconHolder.innerHTML : '';
+    modalBody.innerHTML = detailsHtml;
+    
+    // Thêm thông tin tiến trình
+    const visited = JSON.parse(localStorage.getItem('visited_zones') || '[]');
+    const total = 6;
+    if (modalBadge) {
+      modalBadge.textContent = `ĐÃ GIẢI MÃ KHU VỰC: ${visited.length}/${total}`;
+    }
+    
+    // Mở modal với hiệu ứng fade in và scale up
+    modal.classList.remove('hidden');
+    setTimeout(() => {
+      modal.classList.add('active');
+      modal.style.opacity = '1';
+      // Cập nhật lại Lucide icons trong modal
+      if (typeof lucide !== 'undefined' && lucide.createIcons) {
+        lucide.createIcons();
+      }
+    }, 20);
+  }
+}
+
+function close3DInfoModal() {
+  const modal = document.getElementById('threejs_info_modal');
+  if (modal) {
+    modal.classList.remove('active');
+    modal.style.opacity = '0';
+    setTimeout(() => {
+      modal.classList.add('hidden');
+      if (activeDecryptedObjId) {
+        restoreInteractiveObject(activeDecryptedObjId);
+        activeDecryptedObjId = null;
+      }
+    }, 300);
+  }
+}
+
+function restoreInteractiveObject(id) {
+  const obj = interactiveObjects.find(o => o.id === id);
+  if (!obj || obj.state !== 'destroyed') return;
+  
+  obj.state = 'restoring';
+  obj.group.visible = true;
+  obj.group.scale.set(0, 0, 0);
+  
+  // Scale up mượt mà với back ease
+  gsap.to(obj.group.scale, {
+    x: 1,
+    y: 1,
+    z: 1,
+    duration: 0.6,
+    ease: 'back.out(1.7)',
+    onComplete: () => {
+      obj.state = 'idle';
+    }
+  });
+}
+
 function initThreeJS() {
   const container = document.getElementById('threejs_3d_viewport');
   if (!container) return;
@@ -2746,6 +3454,176 @@ function initThreeJS() {
   threeRenderer.shadowMap.enabled = true;
   threeRenderer.shadowMap.type = THREE.PCFSoftShadowMap;
   container.appendChild(threeRenderer.domElement);
+
+  // Expose key Three.js components to window for external scripts/HUD diagnostics
+  window.threeScene = threeScene;
+  window.threeCamera = threeCamera;
+  window.threeRenderer = threeRenderer;
+
+  // === CLICK-TO-MOVE & INTERACTIVE OBJECT CLICKS ===
+  threeRenderer.domElement.addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+  });
+
+  let _clickStartX = 0, _clickStartY = 0, _clickStartTime = 0;
+
+  threeRenderer.domElement.addEventListener('pointerdown', (e) => {
+    _clickStartX = e.clientX;
+    _clickStartY = e.clientY;
+    _clickStartTime = Date.now();
+  });
+
+  threeRenderer.domElement.addEventListener('pointerup', (e) => {
+    // Hỗ trợ chuột trái (0) để phá hủy vật thể tương tác và chuột phải (2) để di chuyển nhân vật
+    if (e.button !== 0 && e.button !== 2) return;
+
+    const dragDist = Math.sqrt(Math.pow(e.clientX - _clickStartX, 2) + Math.pow(e.clientY - _clickStartY, 2));
+    const clickDuration = Date.now() - _clickStartTime;
+
+    // Phân biệt "click nhanh" vs "kéo xoay camera"
+    if (dragDist > 8 || clickDuration > 400) return;
+
+    const rect = threeRenderer.domElement.getBoundingClientRect();
+    const ndc = new THREE.Vector2(
+      ((e.clientX - rect.left) / rect.width) * 2 - 1,
+      -((e.clientY - rect.top) / rect.height) * 2 + 1
+    );
+
+    const raycaster = new THREE.Raycaster();
+    raycaster.setFromCamera(ndc, threeCamera);
+
+    // 1. Kiểm tra xem có bấm trúng vật thể giải mã (interactiveObjects) nào không
+    let hitObject = null;
+    const activeMeshes = interactiveObjects
+      .filter(obj => obj.state === 'idle')
+      .map(obj => obj.mesh);
+
+    if (activeMeshes.length > 0) {
+      const hits = raycaster.intersectObjects(activeMeshes, true);
+      if (hits.length > 0) {
+        let targetMesh = hits[0].object;
+        // Tìm kiếm object cha sở hữu mesh này
+        hitObject = interactiveObjects.find(obj => obj.mesh === targetMesh || obj.mesh.children.includes(targetMesh));
+      }
+    }
+
+    if (hitObject) {
+      const playerPos = threePlayerMesh ? threePlayerMesh.position : new THREE.Vector3(0, 0, 0);
+      const targetPos = new THREE.Vector3();
+      hitObject.group.getWorldPosition(targetPos);
+      
+      const dist = Math.sqrt(Math.pow(playerPos.x - targetPos.x, 2) + Math.pow(playerPos.z - targetPos.z, 2));
+
+      if (dist <= 4.5) {
+        // HỦY di chuyển bằng click cũ
+        clickTargetPosition = null;
+
+        // Phóng hiệu ứng hạt giải mã
+        spawnExplosionParticles(targetPos, hitObject.color);
+        playAchievementSound();
+
+        // Co nhỏ mô hình về 0 bằng GSAP
+        hitObject.state = 'destroyed';
+        gsap.to(hitObject.group.scale, {
+          x: 0,
+          y: 0,
+          z: 0,
+          duration: 0.4,
+          ease: 'back.in(1.7)',
+          onComplete: () => {
+            hitObject.group.visible = false;
+            show3DInfoModal(hitObject.id);
+          }
+        });
+      } else {
+        // Chỉ di chuyển nhân vật tới vị trí của vật thể nếu ở khoảng cách xa
+        clickTargetPosition = new THREE.Vector3(targetPos.x, 0.2, targetPos.z);
+        spawnClickIndicator(clickTargetPosition);
+        console.log('[Click-to-Move] Điều hướng nhân vật tới vật thể từ xa:', hitObject.id, clickTargetPosition);
+      }
+      return; // Dừng xử lý click-to-move
+    }
+
+    // 2. Di chuyển nhân vật: chỉ kích hoạt khi click chuột phải
+    if (e.button !== 2) return;
+
+    let hitPoint = null;
+
+    // Bắn tia vào bề mặt thực tế (đảo, cầu, platform...)
+    if (threeReadiness && threeReadiness.worldGroup) {
+      const hits = raycaster.intersectObjects(threeReadiness.worldGroup.children, true);
+      for (let i = 0; i < hits.length; i++) {
+        const name = hits[i].object.name || '';
+        if (name.includes('sky') || name.includes('particle') || name.includes('aura') || name.startsWith('interactive_')) continue;
+        hitPoint = hits[i].point.clone();
+        break;
+      }
+    }
+
+    // Fallback: chiếu tia xuống mặt phẳng ngang y = 0.2
+    if (!hitPoint) {
+      const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -0.2);
+      const pt = new THREE.Vector3();
+      if (raycaster.ray.intersectPlane(groundPlane, pt)) {
+        hitPoint = pt;
+      }
+    }
+
+    // Raycast trực tiếp vào children của threeScene
+    if (!hitPoint && threeScene) {
+      const sceneHits = raycaster.intersectObjects(threeScene.children, true);
+      for (let i = 0; i < sceneHits.length; i++) {
+        const obj = sceneHits[i].object;
+        const name = obj.name || '';
+        if (name.includes('sky') || name.includes('particle') || name.includes('aura') || name.startsWith('interactive_')) continue;
+        if (obj.material && obj.material.transparent && obj.material.opacity < 0.3) continue;
+        hitPoint = sceneHits[i].point.clone();
+        break;
+      }
+    }
+
+    if (hitPoint) {
+      clickTargetPosition = new THREE.Vector3(
+        Math.max(-32, Math.min(32, hitPoint.x)),
+        0.2,
+        Math.max(-32, Math.min(32, hitPoint.z))
+      );
+      spawnClickIndicator(clickTargetPosition);
+      console.log('[Click-to-Move] Target:', clickTargetPosition.x.toFixed(1), clickTargetPosition.z.toFixed(1));
+    }
+  });
+
+  // Gán các sự kiện đóng cửa sổ giải mã 3D
+  const btnCloseModal = document.getElementById('btn_close_info_modal');
+  if (btnCloseModal) {
+    btnCloseModal.addEventListener('click', close3DInfoModal);
+  }
+  const modalOverlay = document.getElementById('threejs_info_modal');
+  if (modalOverlay) {
+    modalOverlay.addEventListener('click', (e) => {
+      if (e.target === modalOverlay) {
+        close3DInfoModal();
+      }
+    });
+  }
+
+  // Bind Quick Navigation Buttons in active_zone_hud
+  document.querySelectorAll('button[data-nav-zone]').forEach(btn => {
+    const newBtn = btn.cloneNode(true);
+    btn.parentNode.replaceChild(newBtn, btn);
+    
+    newBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const zoneId = e.currentTarget.getAttribute('data-nav-zone');
+      const zone = ZONES_3D.find(z => z.id === zoneId);
+      if (zone && threePlayerMesh) {
+        clickTargetPosition = new THREE.Vector3(zone.x, 0.2, zone.z);
+        spawnClickIndicator(clickTargetPosition);
+        console.log(`[Quick Nav] Targeting zone: ${zoneId} at (${zone.x}, ${zone.z})`);
+      }
+    });
+  });
 
   // Resize observer to dynamic resize and prevent 0x0 size on container transition
   if (window.ResizeObserver) {
@@ -2787,6 +3665,10 @@ function initThreeJS() {
   threeControls.minDistance = 12;
   threeControls.maxDistance = 55;
   threeControls.target.set(0, 1.5, 0);
+
+  // Vô hiệu hóa pan và phím mũi tên để tránh xung đột click-to-move & WASD
+  threeControls.enablePan = false;
+  threeControls.enableKeys = false;
 
   // Track manual camera interactions to prevent fight back
   isCameraUserInteracting = false;
@@ -3061,13 +3943,8 @@ function initThreeJS() {
   mainGround.receiveShadow = true;
   worldGroup.add(mainGround);
 
-  const homeBeacon = new THREE.Mesh(
-    new THREE.SphereGeometry(1.2, 16, 16),
-    new THREE.MeshBasicMaterial({ color: '#f59e0b', transparent: true, opacity: 0.35, blending: THREE.AdditiveBlending })
-  );
-  homeBeacon.position.set(-20, 1.8, -14);
-  worldGroup.add(homeBeacon);
-  threeReadiness.homeBeacon = homeBeacon;
+  // Spawn the premium 3D interactive objects at all zones
+  spawnInteractiveObjects();
 
   const mainGroundGlow = new THREE.Mesh(
     new THREE.CircleGeometry(42.6, 64),
@@ -3228,13 +4105,7 @@ function initThreeJS() {
   fillLight.position.set(0, 12, 0);
   threeScene.add(fillLight);
 
-  const coreBeacon = new THREE.Mesh(
-    new THREE.SphereGeometry(1.2, 24, 24),
-    new THREE.MeshStandardMaterial({ color: '#f8fafc', emissive: '#f59e0b', emissiveIntensity: 1.4, roughness: 0.15, metalness: 0.1 })
-  );
-  coreBeacon.position.set(0, 1.8, 0);
-  threeScene.add(coreBeacon);
-  threeReadiness.coreBeacon = coreBeacon;
+  // coreBeacon is now handled by the interactiveObjects[2] (library zone)
 
   zoneEnvironment = { ambientLight, dirLight, fillLight, skyMat };
   
@@ -3279,6 +4150,7 @@ function initThreeJS() {
     btnToggleCamera.onclick = () => {
       playClickSound();
       isCinematicView = !isCinematicView;
+      shouldResetCameraView = true; // Kích hoạt lerp camera đến góc mới
       btnToggleCamera.querySelector('span').textContent = isCinematicView ? "GÓC CẬN CẢNH" : "GÓC TOÀN CẢNH";
       if (isCinematicView) {
         btnToggleCamera.classList.remove('bg-purple-950/90', 'border-purple-800', 'text-purple-300');
@@ -4803,31 +5675,134 @@ function animate3D() {
     });
   }
 
+  // Update interactive objects
+  if (typeof interactiveObjects !== 'undefined' && interactiveObjects.length > 0) {
+    const t = now * 0.0015;
+    const playerPos = threePlayerMesh ? threePlayerMesh.position : new THREE.Vector3(0, 0, 0);
+
+    interactiveObjects.forEach(obj => {
+      if (obj.state === 'idle') {
+        // Floating nhấp nhô
+        obj.group.position.y = obj.baseY + Math.sin(t * 1.5 + obj.id.charCodeAt(0)) * 0.12;
+        // Rotation
+        obj.mesh.rotation.y += 0.015;
+        obj.mesh.rotation.x += 0.008;
+        obj.ring.rotation.z -= 0.01;
+
+        // Tính khoảng cách tới người chơi để cập nhật nhãn động
+        const dist = Math.sqrt(Math.pow(playerPos.x - obj.group.position.x, 2) + Math.pow(playerPos.z - obj.group.position.z, 2));
+        const isNear = dist <= 4.5;
+        if (obj.isNear !== isNear) {
+          obj.isNear = isNear;
+          updateInteractiveLabelTexture(obj, isNear);
+        }
+
+        // Pulse label text
+        obj.label.material.opacity = 0.5 + Math.sin(t * 3.5) * 0.35;
+      }
+    });
+  }
+
+  // Update decrypt particles
+  if (typeof decryptParticles !== 'undefined') {
+    for (let i = decryptParticles.length - 1; i >= 0; i--) {
+      const p = decryptParticles[i];
+      p.age++;
+      
+      const posAttr = p.system.geometry.attributes.position;
+      const v = p.velocities;
+      
+      for (let j = 0; j < posAttr.count; j++) {
+        posAttr.array[j * 3] += v[j * 3];
+        posAttr.array[j * 3 + 1] += v[j * 3 + 1];
+        posAttr.array[j * 3 + 2] += v[j * 3 + 2];
+        
+        // Drag and gravity
+        v[j * 3] *= 0.96;
+        v[j * 3 + 1] -= 0.002;
+        v[j * 3 + 1] *= 0.96;
+        v[j * 3 + 2] *= 0.96;
+      }
+      posAttr.needsUpdate = true;
+      
+      // Fade out
+      p.system.material.opacity = 1 - (p.age / p.maxAge);
+      
+      if (p.age >= p.maxAge) {
+        threeScene.remove(p.system);
+        p.system.geometry.dispose();
+        p.system.material.dispose();
+        decryptParticles.splice(i, 1);
+      }
+    }
+  }
+
   // 2. Character logic -> Astronaut walking
   if (!threePlayerMesh && threePlayerPlaceholder) {
     threePlayerMesh = threePlayerPlaceholder;
   }
   if (threePlayerMesh) {
-    let moveX = 0;
-    let moveZ = 0;
-    if (threeKeys['KeyW'] || threeKeys['ArrowUp']) moveZ = -1;
-    if (threeKeys['KeyS'] || threeKeys['ArrowDown']) moveZ = 1;
-    if (threeKeys['KeyA'] || threeKeys['ArrowLeft']) moveX = -1;
-    if (threeKeys['KeyD'] || threeKeys['ArrowRight']) moveX = 1;
+    // === WASD / Arrow: Di chuyển theo hướng camera (camera-relative) ===
+    let inputX = 0; // trái/phải
+    let inputZ = 0; // trước/sau
+    if (threeKeys['KeyW'] || threeKeys['ArrowUp'])    inputZ = 1;  // tiến
+    if (threeKeys['KeyS'] || threeKeys['ArrowDown'])  inputZ = -1; // lùi
+    if (threeKeys['KeyA'] || threeKeys['ArrowLeft'])  inputX = -1; // trái
+    if (threeKeys['KeyD'] || threeKeys['ArrowRight']) inputX = 1;  // phải
 
-    const length = Math.sqrt(moveX * moveX + moveZ * moveZ);
-    const isMoving = length > 0;
-    if (isMoving) {
-      moveX /= length;
-      moveZ /= length;
-      const speed = 0.16;
-      threePlayerMesh.position.x += moveX * speed;
-      threePlayerMesh.position.z += moveZ * speed;
-      if (threePlayerAura) {
-        threePlayerAura.position.x += moveX * speed;
-        threePlayerAura.position.z += moveZ * speed;
+    let finalMoveX = 0;
+    let finalMoveZ = 0;
+
+    const hasKeyboardInput = (inputX !== 0 || inputZ !== 0);
+    if (hasKeyboardInput) {
+      clickTargetPosition = null; // Bấm phím hủy click-to-move
+
+      // Tính hướng "trước" của camera trên mặt phẳng XZ (bỏ thành phần Y)
+      const camForward = new THREE.Vector3();
+      threeCamera.getWorldDirection(camForward);
+      camForward.y = 0;
+      camForward.normalize();
+
+      // Hướng "phải" vuông góc
+      const camRight = new THREE.Vector3();
+      camRight.crossVectors(camForward, new THREE.Vector3(0, 1, 0)).normalize();
+
+      // Kết hợp input với hướng camera
+      finalMoveX = camRight.x * inputX + camForward.x * inputZ;
+      finalMoveZ = camRight.z * inputX + camForward.z * inputZ;
+    }
+
+    // === Click-to-Move: tự động lướt đến điểm click ===
+    let isMoving = hasKeyboardInput;
+    if (!hasKeyboardInput && clickTargetPosition) {
+      const dx = clickTargetPosition.x - threePlayerMesh.position.x;
+      const dz = clickTargetPosition.z - threePlayerMesh.position.z;
+      const distance = Math.sqrt(dx * dx + dz * dz);
+
+      if (distance < 0.5) {
+        clickTargetPosition = null; // Đã đến đích
+      } else {
+        finalMoveX = dx / distance;
+        finalMoveZ = dz / distance;
+        isMoving = true;
       }
-      const angle = Math.atan2(moveX, moveZ);
+    }
+
+    if (isMoving) {
+      const speed = 0.16;
+      const moveLen = Math.sqrt(finalMoveX * finalMoveX + finalMoveZ * finalMoveZ);
+      if (moveLen > 0) {
+        finalMoveX /= moveLen;
+        finalMoveZ /= moveLen;
+      }
+
+      threePlayerMesh.position.x += finalMoveX * speed;
+      threePlayerMesh.position.z += finalMoveZ * speed;
+      if (threePlayerAura) {
+        threePlayerAura.position.x += finalMoveX * speed;
+        threePlayerAura.position.z += finalMoveZ * speed;
+      }
+      const angle = Math.atan2(finalMoveX, finalMoveZ);
       threePlayerMesh.rotation.y = angle;
       if (threePlayerAura) threePlayerAura.rotation.y += 0.02;
     }
@@ -4955,9 +5930,25 @@ function animate3D() {
     // Slide visual viewport matching target delta shift to preserve customized angle/zoom ratio during movement
     threeCamera.position.add(targetMovementDelta);
 
-    // If traveler is not dragging, gently decay back to default cinematic parameters
-    if (!isCameraUserInteracting) {
-      const hoverWave = Math.sin(now * 0.0012) * 0.12; // Premium space breathing swell
+    // Cập nhật click indicators
+    clickIndicators = clickIndicators.filter(ind => {
+      ind.age++;
+      const scale = 1 + ind.age * 0.04;
+      ind.mesh.scale.set(scale, 1, scale);
+      ind.mesh.material.opacity = 0.8 * (1 - ind.age / ind.maxAge);
+      
+      if (ind.age >= ind.maxAge) {
+        threeScene.remove(ind.mesh);
+        ind.mesh.geometry.dispose();
+        ind.mesh.material.dispose();
+        return false;
+      }
+      return true;
+    });
+
+    // Nếu người dùng vừa nhấn nút đổi góc camera, ta lerp camera một lần
+    if (shouldResetCameraView) {
+      const hoverWave = Math.sin(now * 0.0012) * 0.12;
       const camHeight = (isCinematicView ? 24 : 14) + hoverWave;
       const camDistance = isCinematicView ? 28 : 16;
       const camSideOffset = isCinematicView ? -8 : 0;
@@ -4965,8 +5956,10 @@ function animate3D() {
       const defaultLocalOffset = new THREE.Vector3(camSideOffset, camHeight, camDistance);
       const targetCameraPosition = threeControls.target.clone().add(defaultLocalOffset);
 
-      // Lerping camera translation
       threeCamera.position.lerp(targetCameraPosition, 0.05);
+      if (threeCamera.position.distanceTo(targetCameraPosition) < 0.3) {
+        shouldResetCameraView = false;
+      }
     }
 
     // 5. Zone collision
@@ -5274,6 +6267,8 @@ function disposeThreeJS() {
   });
   threeAssets = [];
   physicsBoxes = [];
+  interactiveObjects = [];
+  decryptParticles = [];
   emissiveMaterials = [];
   zoneBoxes = [];
   activeHotspots = [];
@@ -5377,7 +6372,10 @@ async function enter3DMode() {
   const gameCanvas = document.getElementById('retro_game_map_canvas');
   const loadingOverlay = document.getElementById('threejs_loading_overlay');
 
-  if (container) container.classList.add('transition-dimension');
+  if (container) {
+    container.classList.add('transition-dimension');
+    container.classList.add('three-fullscreen');
+  }
 
   const failBackTo2D = (message, error) => {
     console.error('[3D] Enter failed:', message, error);
@@ -5470,6 +6468,7 @@ async function enter3DMode() {
     });
     document.getElementById('container_exit_3d')?.classList.remove('hidden');
     document.getElementById('radar_minimap_container')?.classList.remove('hidden');
+    document.getElementById('container_char_switcher')?.classList.add('hidden');
     
     // Update status labels and move HUD position to avoid overlay issues
     const engineStatus = document.getElementById('lbl_engine_status');
@@ -5479,6 +6478,12 @@ async function enter3DMode() {
       hud.classList.remove('left-4');
       hud.classList.add('left-32');
     }
+    const quickNav = document.getElementById('hud_3d_quick_nav');
+    if (quickNav) {
+      quickNav.classList.remove('hidden');
+    }
+    shouldResetCameraView = true;
+    clickTargetPosition = null;
 
     updateDimensionToggleBtnText();
     if (loadingOverlay) loadingOverlay.classList.add('hidden');
@@ -5514,6 +6519,15 @@ function exit3DMode() {
 
   const container = document.getElementById('retro_game_map_canvas').parentElement;
   container.classList.add('transition-dimension');
+  container.classList.remove('three-fullscreen');
+
+  // Đảm bảo ẩn modal thông tin nếu đang mở khi thoát
+  const infoModal = document.getElementById('threejs_info_modal');
+  if (infoModal) {
+    infoModal.classList.add('hidden');
+    infoModal.classList.remove('active');
+    infoModal.style.opacity = '0';
+  }
 
   disposeThreeJS();
 
@@ -5521,6 +6535,7 @@ function exit3DMode() {
   document.getElementById('threejs_3d_viewport').classList.add('hidden');
   document.getElementById('container_exit_3d').classList.add('hidden');
   document.getElementById('radar_minimap_container').classList.add('hidden');
+  document.getElementById('container_char_switcher')?.classList.remove('hidden');
 
   // Reset status labels and HUD position back to default
   const engineStatus = document.getElementById('lbl_engine_status');
@@ -5529,6 +6544,10 @@ function exit3DMode() {
   if (hud) {
     hud.classList.remove('left-32');
     hud.classList.add('left-4');
+  }
+  const quickNav = document.getElementById('hud_3d_quick_nav');
+  if (quickNav) {
+    quickNav.classList.add('hidden');
   }
 
   // Safely translate 2D player coordinates away from Portal Zone trigger
@@ -5550,7 +6569,188 @@ function exit3DMode() {
   }, 600);
 }
 
+// Preview loops variables for starting character selector
+let previewFrameId = null;
+let miniPreviewFrameId = null;
+
+function startPreviewLoops() {
+  const canvasAstronaut = document.getElementById('canvas_preview_astronaut');
+  const canvasSpaceship = document.getElementById('canvas_preview_spaceship');
+  const canvasUfo = document.getElementById('canvas_preview_ufo');
+  
+  if (!canvasAstronaut || !canvasSpaceship || !canvasUfo) return;
+  
+  const ctxA = canvasAstronaut.getContext('2d');
+  const ctxS = canvasSpaceship.getContext('2d');
+  const ctxU = canvasUfo.getContext('2d');
+  
+  let frame = 0;
+  const render = () => {
+    frame++;
+    
+    // Clear and draw Astronaut
+    ctxA.fillStyle = '#09090b';
+    ctxA.fillRect(0, 0, canvasAstronaut.width, canvasAstronaut.height);
+    ctxA.save();
+    ctxA.scale(1.5, 1.5);
+    drawGameAstronaut(ctxA, canvasAstronaut.width / 3, canvasAstronaut.height / 3, 22, frame * 0.05);
+    ctxA.restore();
+    
+    // Clear and draw Spaceship
+    ctxS.fillStyle = '#09090b';
+    ctxS.fillRect(0, 0, canvasSpaceship.width, canvasSpaceship.height);
+    ctxS.save();
+    ctxS.scale(1.5, 1.5);
+    drawGameSpaceship(ctxS, canvasSpaceship.width / 3, canvasSpaceship.height / 3, 22, -Math.PI / 2, true);
+    ctxS.restore();
+    
+    // Clear and draw UFO
+    ctxU.fillStyle = '#09090b';
+    ctxU.fillRect(0, 0, canvasUfo.width, canvasUfo.height);
+    ctxU.save();
+    ctxU.scale(1.5, 1.5);
+    drawGameUFO(ctxU, canvasUfo.width / 3, canvasUfo.height / 3.4, 22, frame * 0.05);
+    ctxU.restore();
+    
+    previewFrameId = requestAnimationFrame(render);
+  };
+  
+  // Set canvas sizes
+  canvasAstronaut.width = 64;
+  canvasAstronaut.height = 64;
+  canvasSpaceship.width = 64;
+  canvasSpaceship.height = 64;
+  canvasUfo.width = 64;
+  canvasUfo.height = 64;
+  
+  render();
+}
+
+function stopPreviewLoops() {
+  if (previewFrameId) {
+    cancelAnimationFrame(previewFrameId);
+    previewFrameId = null;
+  }
+}
+
+function startMiniPreviewLoops() {
+  const canvasAstronaut = document.getElementById('mini_preview_astronaut');
+  const canvasSpaceship = document.getElementById('mini_preview_spaceship');
+  const canvasUfo = document.getElementById('mini_preview_ufo');
+  
+  if (!canvasAstronaut || !canvasSpaceship || !canvasUfo) return;
+  
+  const ctxA = canvasAstronaut.getContext('2d');
+  const ctxS = canvasSpaceship.getContext('2d');
+  const ctxU = canvasUfo.getContext('2d');
+  
+  let frame = 0;
+  const render = () => {
+    frame++;
+    
+    // Clear and draw Astronaut
+    ctxA.fillStyle = '#09090b';
+    ctxA.fillRect(0, 0, canvasAstronaut.width, canvasAstronaut.height);
+    ctxA.save();
+    drawGameAstronaut(ctxA, canvasAstronaut.width / 2, canvasAstronaut.height / 2, 22, frame * 0.05);
+    ctxA.restore();
+    
+    // Clear and draw Spaceship
+    ctxS.fillStyle = '#09090b';
+    ctxS.fillRect(0, 0, canvasSpaceship.width, canvasSpaceship.height);
+    ctxS.save();
+    drawGameSpaceship(ctxS, canvasSpaceship.width / 2, canvasSpaceship.height / 2, 22, -Math.PI / 2, true);
+    ctxS.restore();
+    
+    // Clear and draw UFO
+    ctxU.fillStyle = '#09090b';
+    ctxU.fillRect(0, 0, canvasUfo.width, canvasUfo.height);
+    ctxU.save();
+    drawGameUFO(ctxU, canvasUfo.width / 2, canvasUfo.height / 2.3, 22, frame * 0.05);
+    ctxU.restore();
+    
+    miniPreviewFrameId = requestAnimationFrame(render);
+  };
+  
+  canvasAstronaut.width = 40;
+  canvasAstronaut.height = 40;
+  canvasSpaceship.width = 40;
+  canvasSpaceship.height = 40;
+  canvasUfo.width = 40;
+  canvasUfo.height = 40;
+  
+  render();
+}
+
+function stopMiniPreviewLoops() {
+  if (miniPreviewFrameId) {
+    cancelAnimationFrame(miniPreviewFrameId);
+    miniPreviewFrameId = null;
+  }
+}
+
+function initCharacterSwitcherButton() {
+  const openBtn = document.getElementById('btn_open_char_switcher');
+  const closeBtn = document.getElementById('btn_close_mini_char');
+  const popup = document.getElementById('mini_char_selector');
+  
+  if (!openBtn || !popup) return;
+  
+  openBtn.addEventListener('click', () => {
+    playClickSound();
+    popup.classList.remove('hidden');
+    
+    // Highlight current active selection in mini panel
+    document.querySelectorAll('.mini-char-option').forEach(opt => {
+      if (opt.getAttribute('data-char') === state.selectedCharacter) {
+        opt.classList.add('active-char');
+      } else {
+        opt.classList.remove('active-char');
+      }
+    });
+    
+    startMiniPreviewLoops();
+  });
+  
+  if (closeBtn) {
+    closeBtn.addEventListener('click', () => {
+      playClickSound();
+      popup.classList.add('hidden');
+      stopMiniPreviewLoops();
+    });
+  }
+  
+  document.querySelectorAll('.mini-char-option').forEach(opt => {
+    opt.addEventListener('click', (e) => {
+      const target = e.currentTarget;
+      const charName = target.getAttribute('data-char');
+      
+      playClickSound();
+      state.selectedCharacter = charName;
+      localStorage.setItem('cyber_portfolio_selected_character', charName);
+      
+      document.querySelectorAll('.mini-char-option').forEach(o => o.classList.remove('active-char'));
+      target.classList.add('active-char');
+      
+      // Auto close and clean
+      setTimeout(() => {
+        popup.classList.add('hidden');
+        stopMiniPreviewLoops();
+      }, 300);
+    });
+  });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
+  // Khởi tạo Lucide Icons
+  if (window.lucide) {
+    try {
+      lucide.createIcons();
+    } catch (e) {
+      console.warn("Failed to initialize Lucide Icons:", e);
+    }
+  }
+
   // Khởi tạo lưu trữ cục bộ cho Thành tựu (Achievements)
   initAchievements();
 

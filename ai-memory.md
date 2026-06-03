@@ -1,6 +1,24 @@
 # Project Memory
 
 - Current updates & fixes:
+  - **[TOÀN MÀN HÌNH 3D VÀ VẬT THỂ TƯƠNG TÁC GIẢI MÃ THÔNG TIN PHONG CÁCH RPG]**
+    - **Toàn màn hình 3D (Fullscreen Mode)**: Tự động biến đổi container 3D thành toàn màn hình (sử dụng position fixed, inset-0, z-9999 thông qua class `.three-fullscreen`) khi kích hoạt chế độ 3D. Đồng thời phục hồi kích thước bento-grid ban đầu khi nhấn thoát 3D.
+    - **6 Vật thể tương tác 3D (Interactive Objects) độc đáo**: Đặt các mô hình hình học phức tạp bay lơ lửng, tự xoay và phát ánh sáng neon màu sắc đặc trưng kèm nhãn động thay đổi trạng thái theo khoảng cách: hiển thị "APPROACH TO DECRYPT" khi ở xa và tự động chuyển sang "CLICK TO DECRYPT" phát sáng khi người chơi đứng lại gần (khoảng cách <= 4.5).
+    - **Cơ chế click phá hủy hoặc dẫn đường tự động theo khoảng cách**:
+      - Nếu người chơi click vào vật thể khi đang **ở xa** (khoảng cách > 4.5): Hệ thống sẽ tự động điều hướng và di chuyển nhân vật di chuyển trực tiếp đến chân vật thể đó (click-to-move).
+      - Nếu người chơi click vào vật thể khi đang **ở gần** (khoảng cách <= 4.5): Kích hoạt hiệu ứng phá hủy (GSAP scale down về 0, phun hạt năng lượng neon và mở cửa sổ thông tin giải mã kính mờ `#threejs_info_modal`).
+    - **Đồng bộ hóa dữ liệu 2D/3D & Tái tạo**: Nội dung chi tiết của khu vực được chèn động vào modal từ cấu trúc dữ liệu 2D có sẵn. Khi đóng cửa sổ, vật thể tự động được tái tạo lại từ vị trí cũ bằng hiệu ứng phóng to mượt mà.
+  - **[SỬA 3 LỖI GỐC RỄ DI CHUYỂN 3D]**
+    - **Lỗi 1 - THREE.MOUSE.NONE không tồn tại**: OrbitControls chuột phải vẫn pan camera → chặn sự kiện click-to-move. Sửa bằng `enablePan = false`.
+    - **Lỗi 2 - OrbitControls bắt phím mũi tên**: Arrow keys bị OrbitControls chặn → nhân vật không di chuyển. Sửa bằng `enableKeys = false`.
+    - **Lỗi 3 - WASD di chuyển theo tọa độ thế giới cố định**: Khi xoay camera, W không đi "về phía trước" mà đi theo trục Z cố định → rất khó điều khiển. Sửa bằng cơ chế camera-relative movement dùng `getWorldDirection()`.
+    - **Click-to-Move chuyển sang pointerup thay vì mouseup**: Sử dụng `pointerup` event + chỉ xử lý `button === 2` (chuột phải) để tránh xung đột hoàn toàn với OrbitControls rotate (chuột trái). Bổ sung fallback raycast 3 tầng: worldGroup → mặt phẳng ảo → threeScene.
+  - **[DI CHUYỂN BẰNG CHUỘT PHẢI, ĐIỀU HƯỚNG VÙNG NHANH & GIẢI PHÓNG GÓC CAMERA TỰ DO]**
+  - **[ĐỒNG BỘ HÓA & LÀM ĐẸP GIAO DIỆN 3D HUD - CONTROL PANEL & DIAGNOSTICS Ở INDEX.HTML]**
+    - **Làm đẹp 3D HUD ở trang index.html**: Cập nhật toàn bộ các widget điều khiển 3D bao gồm Control Panel, hệ thống nút Exit/Camera view, và HUD hiển thị khu vực hoạt động (Active navigation sector) sang phong cách Sci-Fi kính mờ cao cấp lồng ghép Lucide Icons, đồng bộ với thiết kế của `3d.html`.
+    - **Cài đặt font chữ công nghệ**: Import và sử dụng hai font chữ chuyên dụng `Orbitron` và `Share Tech Mono` để hiển thị tiêu đề và thông số hệ thống, tạo cảm giác buồng lái phi thuyền hiện đại.
+    - **Giải pháp Diagnostics chính xác bằng Scene Traversal**: Khắc phục lỗi Vertices và Draw Calls hiển thị không đúng (0 và 1) do `renderer.info.render` bị reset bởi EffectComposer postprocessing bằng cách duyệt qua `threeScene` để đếm tổng số đỉnh và mesh đang hiển thị thời gian thực.
+    - **Tích hợp các tài nguyên phụ**: Khởi tạo Lucide Icons tự động trong DOMContentLoaded của `app.js` và phơi bày các biến `threeScene`, `threeCamera`, `threeRenderer` ra đối tượng `window` để liên kết chéo với `control-panel-handler.js`.
   - **[NÂNG CẤP PORTFOLIO 3D - CINEMATIC SET DESIGN & THEME SWITCHER]**
     - Tạo file `js/state-manager.js` để quản lý trạng thái toàn cục và **themeManager singleton** với 2 theme chính:
       - **Cyberpunk Theme**: Ánh sáng Tím/Cyan lạnh lùng, huyền ảo (#8a2be2 dirLight, #06b6d4 pointLight), fogColor #020208, bloomEnabled, shadowsEnabled.
@@ -105,27 +123,32 @@
     - Tích hợp thẻ chọn `<select id="ai_voice_select">` trên thanh Header của Chatbot, tự động tải các giọng đọc có sẵn trên thiết bị tương ứng với ngôn ngữ đang chọn (Tiếng Việt/Tiếng Anh). Cho phép người dùng chuyển giọng (VD: Giọng nam, giọng nữ, giọng vùng miền) tùy theo sở thích và lưu trữ lựa chọn này trong trạng thái hoạt động của phiên.
     - Thiết kế thêm nút Bật/Tắt giọng nói AI (`btn_toggle_ai_voice` dạng icon chiếc loa) ngay bên cạnh ô chọn giọng nói, cho phép người dùng tắt tiếng đọc của AI hoàn toàn khi đang ở môi trường công cộng và ghi nhớ trạng thái này qua `localStorage` (`cyber_portfolio_ai_voice_enabled`).
     - Khắc phục lỗi phát giọng Tiếng Anh lỗi âm cho Tiếng Việt: Thêm logic kiểm tra so khớp ngôn ngữ nghiêm ngặt (case-insensitive `toLowerCase().startsWith('vi')`). Nếu trong `vi` mode mà không tìm thấy giọng Tiếng Việt tương thích trên hệ thống, AI sẽ chủ động im lặng thay vì dùng giọng đọc Tiếng Anh để phát chữ tiếng Việt.
-  - **Chú thích chi tiết (Commenting Code):**
-    - Hoàn tất viết chú thích Tiếng Việt chi tiết (từng dòng mã nguồn) cho tất cả các file xử lý backend cốt lõi: `api/chat.php`, `api/admin.php`, `api/guestbook.php`, `api/config/Database.php`, `api/controllers/GuestbookController.php`, `api/utils/TOTP.php`, và `api/utils/Mailer.php`.
-  - **Git Merge:** Đã tiến hành merge thành công toàn bộ mã nguồn từ nhánh `profile_3d_html` vào nhánh `master` không gặp xung đột (conflicts).
+  - **[CHỌN NHÂN VẬT KHỞI ĐẦU & NÂNG CẤP VECTOR SPRITES 2D]**
+    - Thiết kế giao diện **Chọn nhân vật khởi đầu (Character Selection Modal)** ngay sau màn hình Loading:
+      - Tùy chọn 3 thực thể phân thân: **Phi Hành Gia (Astronaut)**, **Phi Thuyền (Spaceship)**, **Đĩa Bay (UFO)**.
+      - Tích hợp preview chuyển động xoay tròn/nhấp nhô thời gian thực cho từng thực thể trên các thẻ card bằng 2D Canvas phụ.
+      - Hiển thị mô tả động tương ứng với từng nhân vật khi người chơi nhấp chọn và lưu cấu hình vào `localStorage`.
+    - Nâng cấp **Hệ thống sprite 2D vẽ thủ tục (Procedural Vector Drawing)**:
+      - Xây dựng 5 hàm vẽ vector Canvas chi tiết: `drawGameSpaceship` (có lửa đuôi phản lực thay đổi kích thước ngẫu nhiên), `drawGameUFO` (có hiệu ứng chùm sáng hút và hệ thống đèn nháy chuyển màu liên tục), `drawGameAstronaut` (có dây thở oxy nhấp nhô mềm mại), `drawGameSatellite` (vệ tinh phát sóng), và `drawGamePortal` (lỗ đen vũ trụ có 4 cánh tay xoắn ốc chuyển động).
+    - Cập nhật logic **Player Trail & Rendering**:
+      - Vệt di chuyển (Trail) của nhân vật được đổi màu linh hoạt dựa trên thực thể được chọn (Lửa xanh lục cho Astronaut, Plasma tím cho Spaceship, và Cyan cho UFO).
+      - Vẽ nhân vật tự xoay hướng 360 độ mượt mà dựa trên hướng vector vận tốc di chuyển thực tế bằng phép nội suy góc quay.
+    - Cải tiến giao diện các **Zone Pads**:
+      - Thay đổi biểu tượng chữ đơn điệu tại trung tâm mỗi zone thành **Bệ Hologram mờ** được lồng các sprite vector chuyển động liên tục (Astronaut lơ lửng tại Home, Vệ tinh phát tín hiệu tại Academy, UFO chớp đèn tại Lab, Phi thuyền neo đậu tại Museum, và Lỗ đen vũ trụ xoáy tròn tại Portal).
+    - Tích hợp **Nút đổi nhân vật nhanh trong 2D game**:
+      - Nút "ĐỔI NHÂN VẬT" (glassmorphism) ở góc trên bên phải màn hình 2D canvas mở ra panel mini cho phép chuyển đổi tức thì giữa 3 thực thể mà không cần reset game.
+      - Ẩn nút đổi nhân vật khi người chơi đi vào cổng không gian 3D và hiện lại khi thoát 3D để tối ưu hóa không gian hiển thị.
 - Edited files:
-  - `ai-memory.md`
-  - `api/config/Database.php`
-  - `api/controllers/GuestbookController.php`
-  - `api/utils/TOTP.php`
-  - `index.html`
-  - `css/style.css`
-  - `js/app.js`
-  - `docker-compose.yml`
-  - `.github/workflows/deploy.yml`
-  - `api/chat.php`
-  - `api/utils/Mailer.php`
-  - `api/admin.php`
-  - `api/controllers/AdminController.php`
-  - `admin/index.html`
-  - `admin/admin.js`
-  - `.env`
+  - `index.html` (Thêm HTML cấu trúc cho cửa sổ giải mã 3D kính mờ)
+  - `css/style.css` (Thêm class `.three-fullscreen` và định dạng modal phong cách viễn tưởng)
+  - `js/app.js` (Tích hợp cơ chế Toàn màn hình, spawn các vật thể giải mã, xử lý click phá hủy, nổ hạt và tái tạo)
   - `ai-memory.md`
 - TODO:
+  - Tái cấu trúc 4 bối cảnh 3D (Desk Setup, Studio Phim, Timeline Quy trình, Portal).
+  - Tích hợp Cinematic Camera transitions & Depth of Field (DoF) effect.
+  - Xây dựng Timeline 3D interactive cho "Quy trình làm việc tối ưu hóa 3D" (Blender -> Low-poly -> Lightmap -> Interactive Programming).
+  - Kiểm thử Control Panel trên các thiết bị di động (responsive design).
+  - Tối ưu hóa FPS trên di động bằng Eco Mode (giảm renderTarget resolution, disable post-processing).
   - Kiểm thử giao diện Admin Dashboard (`/admin/index.html` và `/admin/admin.js`) với luồng đăng nhập 2FA TOTP và duyệt/xóa các lời nhắn Guestbook.
   - Chạy thử nghiệm Docker Compose với Nginx Proxy Manager trên VPS thực tế và thiết lập Proxy Host trỏ đến container `app:3000`.
+

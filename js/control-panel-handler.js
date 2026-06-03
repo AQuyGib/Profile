@@ -159,6 +159,41 @@ function initControlPanel() {
       }
     }
 
+    // Update diagnostics: Vertices, Draw Calls, Est. VRAM (Scene Traversal)
+    if (window.threeScene) {
+      try {
+        let totalVertices = 0;
+        let totalMeshes = 0;
+        
+        window.threeScene.traverse(child => {
+          if (child.isMesh && child.geometry && child.geometry.attributes && child.geometry.attributes.position) {
+            totalVertices += child.geometry.attributes.position.count;
+            totalMeshes++;
+          }
+        });
+
+        const statusVertices = document.getElementById('status_vertices');
+        if (statusVertices) {
+          statusVertices.textContent = totalVertices.toLocaleString();
+        }
+        
+        const statusDrawcalls = document.getElementById('status_drawcalls');
+        if (statusDrawcalls) {
+          // Số mesh hoạt động tương ứng với số draw calls tối thiểu
+          statusDrawcalls.textContent = totalMeshes;
+        }
+
+        const statusVram = document.getElementById('status_vram');
+        if (statusVram) {
+          // Tính toán dung lượng VRAM tối thiểu cho thuộc tính vị trí của các đỉnh
+          const estimatedVramMB = (totalVertices * 32) / (1024 * 1024);
+          statusVram.textContent = estimatedVramMB < 0.1 ? '< 0.1 MB' : estimatedVramMB.toFixed(2) + ' MB';
+        }
+      } catch (err) {
+        console.warn("Diagnostics update failed:", err);
+      }
+    }
+
     // Update memory usage (if available)
     if (performance.memory) {
       const memoryMB = Math.round(performance.memory.usedJSHeapSize / 1048576);
@@ -189,21 +224,21 @@ function updateThemeUI(themeId) {
 
   if (themeId === 'cyberpunk') {
     if (btnCyberpunk) {
-      btnCyberpunk.classList.add('active-theme', 'bg-purple-900', 'border-purple-600', 'text-purple-200');
-      btnCyberpunk.classList.remove('bg-zinc-800/30', 'border-zinc-700', 'text-zinc-400', 'hover:bg-zinc-700');
+      btnCyberpunk.classList.add('active-theme', 'bg-purple-950/50', 'border-purple-700', 'text-purple-300');
+      btnCyberpunk.classList.remove('bg-zinc-800/30', 'border-zinc-700', 'text-zinc-400', 'hover:bg-zinc-750');
     }
     if (btnWarmStudio) {
-      btnWarmStudio.classList.remove('active-theme', 'bg-amber-900', 'border-amber-600', 'text-amber-200');
-      btnWarmStudio.classList.add('bg-zinc-800/30', 'border-zinc-700', 'text-zinc-400', 'hover:bg-zinc-700');
+      btnWarmStudio.classList.remove('active-theme', 'bg-amber-950/50', 'border-amber-700', 'text-amber-300', 'bg-purple-950/50', 'border-purple-700', 'text-purple-300');
+      btnWarmStudio.classList.add('bg-zinc-800/30', 'border-zinc-700', 'text-zinc-400', 'hover:bg-zinc-750');
     }
   } else if (themeId === 'warmStudio') {
     if (btnWarmStudio) {
-      btnWarmStudio.classList.add('active-theme', 'bg-amber-900', 'border-amber-600', 'text-amber-200');
-      btnWarmStudio.classList.remove('bg-zinc-800/30', 'border-zinc-700', 'text-zinc-400', 'hover:bg-zinc-700');
+      btnWarmStudio.classList.add('active-theme', 'bg-amber-950/50', 'border-amber-700', 'text-amber-300');
+      btnWarmStudio.classList.remove('bg-zinc-800/30', 'border-zinc-700', 'text-zinc-400', 'hover:bg-zinc-750');
     }
     if (btnCyberpunk) {
-      btnCyberpunk.classList.remove('active-theme', 'bg-purple-900', 'border-purple-600', 'text-purple-200');
-      btnCyberpunk.classList.add('bg-zinc-800/30', 'border-zinc-700', 'text-zinc-400', 'hover:bg-zinc-700');
+      btnCyberpunk.classList.remove('active-theme', 'bg-purple-950/50', 'border-purple-700', 'text-purple-300', 'bg-amber-950/50', 'border-amber-700', 'text-amber-300');
+      btnCyberpunk.classList.add('bg-zinc-800/30', 'border-zinc-700', 'text-zinc-400', 'hover:bg-zinc-750');
     }
   }
 }
