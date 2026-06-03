@@ -70,6 +70,9 @@
     - **Tối ưu hóa bóng đổ (Shadow Map Optimization)**: Giảm kích thước mapSize bóng của `DirectionalLight` từ `2048` xuống `1024`, thu nhỏ camera frustum quét bóng đổ vừa khít vùng di chuyển (-35 đến 35) và thêm shadow bias.
     - **Bỏ qua Bloom (EffectComposer Bypass)**: Tự động bỏ qua toàn bộ bước hậu kỳ EffectComposer nếu người dùng tắt Bloom hoặc bật Eco Mode, cho phép kết xuất (render) trực tiếp bằng WebGLRenderer gốc để loại bỏ hoàn toàn chi phí Blur Shader.
     - **Đồng bộ DOM & Persistence**: Tự động lưu cấu hình hiệu năng vào `localStorage` và đồng bộ các nút switch trong Control Panel khi khởi động chế độ 3D.
+  - **[MÔ HÌNH WARP GATE TỰ DỰNG & ĐỒNG BỘ VỊ TRÍ DỊCH CHUYỂN 2D]**:
+    - **Procedural Warp Gate**: Xây dựng mô hình 3D cổng dịch chuyển không gian tự động bằng code bằng cách kết hợp Torus, Cylinders phát sáng LED hồng, và vòng tròn Ring hố sâu chân không ảo (Warp Event Horizon).
+    - **Tối ưu hóa vị trí thoát 3D về 2D**: Di dời tọa độ nhận diện va chạm (exit trigger) từ `z: 24` (tâm hòn đảo cũ) sang `z: 29` để khớp 100% với vị trí đặt cổng Warp Gate mới, khắc phục lỗi người chơi bị văng về 2D từ xa trước khi chạm vào cổng. Đồng thời điều chỉnh bán kính va chạm lên `1.8` để người chơi đi qua tâm cổng mượt mà hơn.
 - Edited files:
   - `js/state-manager.js`
   - `js/control-panel-handler.js`

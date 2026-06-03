@@ -135,7 +135,7 @@ const ZONES_3D = [
   { id: 'library', x: 0, z: 0, radius: 4.5 },
   { id: 'lab', x: -20, z: 14, radius: 5.5 },
   { id: 'museum', x: 20, z: 14, radius: 5.5 },
-  { id: 'portal', x: 0, z: 24, radius: 4.5 }
+  { id: 'portal', x: 0, z: 26.5, radius: 6.0 }
 ];
 
 const ZONE_THEMES = {
@@ -1098,6 +1098,55 @@ function initThreeJS() {
   bridge(0, 0, 20, 14);
   bridge(0, 0, 0, 24);
 
+/**
+ * Tạo mô hình Cổng Dịch Chuyển Không Gian (Warp Gate)
+ * @returns {THREE.Group} Group chứa warp gate
+ */
+function createProceduralWarpGate() {
+    const gateGroup = new THREE.Group();
+
+    // Vòng tạo từ trường lớn (Torus)
+    const ring = new THREE.Mesh(
+        new THREE.TorusGeometry(4.5, 0.5, 12, 48),
+        new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.9, roughness: 0.2 })
+    );
+    gateGroup.add(ring);
+
+    // Các trạm phát năng lượng gắn trên vòng (Power Generators)
+    const generatorGeom = new THREE.CylinderGeometry(0.6, 0.6, 1.8, 12);
+    const generatorMat = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.8 });
+    const lightMat = new THREE.MeshBasicMaterial({ color: 0xec4899 }); // Màu hồng phát sáng
+
+    for(let i = 0; i < 4; i++) {
+        const angle = (i / 4) * Math.PI * 2;
+        const gen = new THREE.Mesh(generatorGeom, generatorMat);
+        gen.position.set(Math.cos(angle) * 4.5, Math.sin(angle) * 4.5, 0);
+        gen.rotation.z = angle + Math.PI / 2;
+        
+        // Thêm nhân LED phát sáng
+        const led = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.2, 0.8), lightMat);
+        led.position.set(Math.cos(angle) * 3.8, Math.sin(angle) * 3.8, 0);
+        led.rotation.z = angle + Math.PI / 2;
+
+        gateGroup.add(gen, led);
+    }
+
+    // Tâm hố sâu chân không ảo (Warp Event Horizon)
+    const horizon = new THREE.Mesh(
+        new THREE.RingGeometry(0.1, 4, 32),
+        new THREE.MeshBasicMaterial({ 
+            color: 0xec4899, 
+            transparent: true, 
+            opacity: 0.35, 
+            side: THREE.DoubleSide,
+            wireframe: true 
+        })
+    );
+    gateGroup.add(horizon);
+
+    return gateGroup;
+}
+
   const createLandmarkBase = (x, y, z, radius, color) => {
     const group = new THREE.Group();
     const pedestal = new THREE.Mesh(
@@ -1188,21 +1237,12 @@ function initThreeJS() {
 
     // Portal landmark
     const portal = createLandmarkBase(0, 0, 29, 3.2, '#ec4899');
-    const portalRing = new THREE.Mesh(
-      new THREE.TorusGeometry(4.8, 0.5, 14, 36),
-      new THREE.MeshStandardMaterial({ color: '#831843', emissive: '#fb7185', emissiveIntensity: 0.55, metalness: 0.7, roughness: 0.22 })
-    );
-    portalRing.rotation.y = Math.PI / 2;
-    portalRing.position.y = 7.2;
-    portal.add(portalRing);
-    const portalCore = new THREE.Mesh(new THREE.SphereGeometry(1.5, 18, 16), new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0.9 }));
-    portalCore.position.y = 7.2;
-    portal.add(portalCore);
-    const portalPillarLeft = new THREE.Mesh(new THREE.BoxGeometry(0.6, 10, 0.6), new THREE.MeshStandardMaterial({ color: '#fb7185', emissive: '#fb7185', emissiveIntensity: 0.35, roughness: 0.25 }));
-    const portalPillarRight = portalPillarLeft.clone();
-    portalPillarLeft.position.set(-4.1, 5, 0);
-    portalPillarRight.position.set(4.1, 5, 0);
-    portal.add(portalPillarLeft, portalPillarRight);
+    
+    // Sử dụng mô hình Cổng Dịch Chuyển Không Gian tự dựng mới (Procedural Warp Gate)
+    const warpGate = createProceduralWarpGate();
+    warpGate.position.y = 4.5; // Tâm hố đen cao 4.5m để tiếp đất vừa vặn
+    warpGate.rotation.y = Math.PI / 2; // Xoay dọc 90 độ để đi xuyên qua
+    portal.add(warpGate);
   };
 
   addZoneLandmarks();
@@ -3307,13 +3347,13 @@ function detect3DZoneCollision() {
     }
   }
 
-  // 3. If on Portal island, only trigger 3D exit when stepping directly into the gateway center (< 1.5 units)
+  // 3. If on Portal island, only trigger 3D exit when stepping directly into the gateway center (< 1.8 units)
   if (detectedZoneId === 'portal') {
     const distToPortalCenter = Math.sqrt(
       (threePlayerMesh.position.x - 0) ** 2 + 
-      (threePlayerMesh.position.z - 24) ** 2
+      (threePlayerMesh.position.z - 29) ** 2 // Khớp chính xác với tọa độ z: 29 của Cổng dịch chuyển mới
     );
-    if (distToPortalCenter < 1.5) {
+    if (distToPortalCenter < 1.8) {
       if (state.is3DActive && !isExiting3D) {
         isExiting3D = true;
         setTimeout(() => {
