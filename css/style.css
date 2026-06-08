@@ -579,4 +579,20 @@ body {
   transform: scale(1) !important;
 }
 
+/* Virtual Joystick for Mobile */
+#virtual_joystick_container {
+  touch-action: none;
+}
+#joystick_base {
+  transition: border-color 0.2s, box-shadow 0.2s;
+  user-select: none;
+}
+#joystick_base:active {
+  border-color: rgba(6, 182, 212, 0.65);
+  box-shadow: 0 0 25px rgba(6, 182, 212, 0.25);
+}
+#joystick_knob {
+  user-select: none;
+}
+
 

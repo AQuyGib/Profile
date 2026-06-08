@@ -115,6 +115,9 @@
             class="h-full bg-gradient-to-r from-emerald-600 to-emerald-400 rounded-full transition-all duration-100 ease-out shadow-lg"
             style="width: 0%"></div>
         </div>
+        <div id="loading_progress_ascii" class="text-[9px] font-mono text-emerald-500/70 text-center tracking-normal select-none leading-none pt-0.5">
+          [░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░]
+        </div>
       </div>
 
       <!-- Enter Trigger Button (Hidden by default) -->
@@ -245,6 +248,17 @@
           </button>
         </div>
 
+        <!-- Download CV -->
+        <a id="btn_download_cv" href="assets/cv/Nguyen-Anh-Quy-VN.pdf" download="Nguyen-Anh-Quy-VN.pdf"
+          class="flex items-center gap-1.5 bg-emerald-500/10 hover:bg-emerald-500 px-3 py-1 rounded-lg border border-emerald-500/30 text-emerald-400 hover:text-zinc-950 transition-all cursor-pointer font-semibold"
+          title="Tai CV ban tieng Viet">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round"
+              d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1M12 4v12m0 0l-4-4m4 4l4-4" />
+          </svg>
+          <span id="lbl_download_cv">T&#7842;I CV</span>
+        </a>
+
         <!-- Ambient Music Toggle -->
         <button id="btn_ambient_music"
           class="flex items-center gap-1.5 bg-zinc-900 hover:bg-zinc-850 px-3 py-1 rounded-lg border border-zinc-800 text-zinc-500 hover:text-emerald-400 transition-all cursor-pointer"
@@ -325,7 +339,14 @@
               class="w-full h-full cursor-crosshair display-block"></canvas>
 
             <!-- 3D Viewport (Hidden by default) -->
-            <div id="threejs_3d_viewport" class="w-full h-full absolute inset-0 hidden"></div>
+            <div id="threejs_3d_viewport" class="w-full h-full absolute inset-0 hidden">
+              <!-- Virtual Joystick for Mobile Devices -->
+              <div id="virtual_joystick_container" class="absolute bottom-6 left-6 w-32 h-32 flex items-center justify-center z-30 select-none touch-none hidden">
+                <div id="joystick_base" class="w-24 h-24 rounded-full border border-cyan-500/35 bg-zinc-950/60 backdrop-blur-md flex items-center justify-center relative shadow-lg shadow-cyan-500/5">
+                  <div id="joystick_knob" class="w-10 h-10 rounded-full border border-cyan-400 bg-cyan-500/20 shadow-[0_0_10px_rgba(6,182,212,0.5)] cursor-pointer absolute transition-[transform] duration-75"></div>
+                </div>
+              </div>
+            </div>
 
             <!-- Cửa sổ giải mã thông tin 3D tương tác (Interactive Object Decrypt Modal) -->
             <div id="threejs_info_modal" class="absolute inset-0 z-40 hidden flex items-center justify-center bg-zinc-950/75 backdrop-blur-md p-4 opacity-0">
@@ -905,6 +926,9 @@
         <!-- Progress Bar -->
         <div class="w-full h-1 bg-zinc-900 border border-zinc-800/80 rounded-full overflow-hidden p-px">
           <div id="warp_loading_bar_fill" class="h-full w-0 bg-gradient-to-r from-emerald-500 via-cyan-400 to-purple-500 rounded-full transition-all duration-75"></div>
+        </div>
+        <div id="warp_loading_ascii" class="text-[8px] font-mono text-cyan-500/70 text-center tracking-normal select-none leading-none pt-0.5">
+          [░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░]
         </div>
       </div>
       

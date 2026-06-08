@@ -332,13 +332,60 @@ async function handleUserSendMessage(text) {
 
   } catch (err) {
     console.error("AI chatbot error:", err);
-    appendChatMessage('ai', state.language === 'vi'
-      ? "Hệ thống có chút gián đoạn khi kết nối tới bộ não AI của Quý. Có thể khóa API chưa được cấu hình ở file .env. Anh/chị có thể liên hệ trực tiếp cho Quý qua SĐT: 0338740475 nhé ạ!"
-      : "I am experiencing a slight interface connection lag to Quy's AI processor. Please check if the GEMINI_API_KEY environment variable is missing. Alternatively, you can dial him directly at: 0338740475!");
+    const fallbackReply = await buildLocalPortfolioFallback(text);
+    appendChatMessage('ai', fallbackReply);
   } finally {
     state.isLoadingAI = false;
     showThinkingIndicator(false);
   }
+}
+
+async function buildLocalPortfolioFallback(questionText) {
+  const isVi = state.language === 'vi';
+  let zones = Array.isArray(state.zones) ? state.zones : [];
+
+  if (!zones.length) {
+    try {
+      const res = await fetch('./data.json', { cache: 'no-store' });
+      const data = await res.json();
+      zones = Array.isArray(data.zones) ? data.zones : [];
+    } catch (error) {
+      console.warn('Could not load local portfolio fallback data:', error);
+    }
+  }
+
+  const query = String(questionText || '').toLowerCase();
+  const match = zones.find((zone) => {
+    const haystack = [
+      zone.id,
+      zone.name,
+      zone.vietnameseName,
+      zone.description_vi,
+      zone.description_en,
+      JSON.stringify(zone.details_vi || {}),
+      JSON.stringify(zone.details_en || {}),
+    ].join(' ').toLowerCase();
+
+    return query.split(/\s+/)
+      .filter((word) => word.length > 3)
+      .some((word) => haystack.includes(word));
+  }) || zones.find((zone) => zone.id === 'home') || zones[0];
+
+  if (!match) {
+    return isVi
+      ? 'Hệ thống AI đang tạm gián đoạn và dữ liệu cục bộ chưa sẵn sàng. Anh/chị có thể liên hệ trực tiếp Quý qua SĐT 0338 740 475 hoặc email nguyquy67@gmail.com.'
+      : 'The AI service is temporarily unavailable and local portfolio data is not ready. You can contact Quy directly at 0338 740 475 or nguyquy67@gmail.com.';
+  }
+
+  const title = isVi ? (match.vietnameseName || match.name) : (match.name || match.vietnameseName);
+  const summary = isVi ? (match.description_vi || match.description_en || '') : (match.description_en || match.description_vi || '');
+  const contact = isVi
+    ? 'Nếu cần trao đổi sâu hơn, anh/chị có thể liên hệ Quý qua SĐT 0338 740 475 hoặc email nguyquy67@gmail.com.'
+    : 'For deeper discussion, you can contact Quy at 0338 740 475 or nguyquy67@gmail.com.';
+
+  return isVi
+    ? `AI Gemini đang tạm gián đoạn, nên tôi trả lời bằng dữ liệu portfolio cục bộ.\n\n${title}: ${summary}\n\n${contact}`
+    : `Gemini AI is temporarily unavailable, so I am answering from the local portfolio data.\n\n${title}: ${summary}\n\n${contact}`;
 }
 
 // Hàm cập nhật giao diện của nút loa bật/tắt giọng nói AI

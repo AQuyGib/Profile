@@ -9,6 +9,23 @@
  * - Eco Mode tự động hạ FPS trên thiết bị di động
  */
 
+function detectLowPowerDevice() {
+  const coarsePointer = window.matchMedia?.('(pointer: coarse)').matches === true;
+  const narrowScreen = window.matchMedia?.('(max-width: 768px)').matches === true;
+  const lowMemory = typeof navigator.deviceMemory === 'number' && navigator.deviceMemory <= 4;
+  const lowCpu = typeof navigator.hardwareConcurrency === 'number' && navigator.hardwareConcurrency <= 4;
+  return coarsePointer || narrowScreen || lowMemory || lowCpu;
+}
+
+function getStoredBoolean(key, fallback) {
+  const value = localStorage.getItem(key);
+  if (value === null) return fallback;
+  return value === 'true';
+}
+
+const defaultEcoModeEnabled = detectLowPowerDevice();
+const initialEcoModeEnabled = getStoredBoolean('eco_mode_enabled', defaultEcoModeEnabled);
+
 // Global Application State
 const state = {
   loaded: false,
@@ -24,8 +41,8 @@ const state = {
   isAiVoiceEnabled: localStorage.getItem('cyber_portfolio_ai_voice_enabled') !== 'false',
   selectedVoiceURI: localStorage.getItem('cyber_portfolio_selected_voice_uri') || '',
   selectedCharacter: localStorage.getItem('cyber_portfolio_selected_character') || 'astronaut',
-  ecoModeEnabled: localStorage.getItem('eco_mode_enabled') === 'true',
-  targetFPS: 60
+  ecoModeEnabled: initialEcoModeEnabled,
+  targetFPS: initialEcoModeEnabled ? 30 : 60
 };
 
 // ============================================
@@ -507,9 +524,9 @@ function playThemeSwitchSound() {
 
 const controlPanelState = {
   isOpen: localStorage.getItem('control_panel_open') !== 'false',
-  bloomEnabled: localStorage.getItem('bloom_enabled') !== 'false',
-  shadowsEnabled: localStorage.getItem('shadows_enabled') !== 'false',
-  ecoModeEnabled: localStorage.getItem('eco_mode_enabled') === 'true',
+  bloomEnabled: getStoredBoolean('bloom_enabled', !defaultEcoModeEnabled),
+  shadowsEnabled: getStoredBoolean('shadows_enabled', !defaultEcoModeEnabled),
+  ecoModeEnabled: state.ecoModeEnabled,
   currentTheme: themeManager.loadPreference(),
 
   toggleOpen() {

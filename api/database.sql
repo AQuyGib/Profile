@@ -26,9 +26,6 @@ CREATE TABLE IF NOT EXISTS `admins` (
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Thêm một tài khoản quản trị mặc định (username: admin, password: password123)
--- Mật khẩu đã được mã hóa bằng Bcrypt (PASSWORD_BCRYPT)
--- Bạn có thể thay đổi sau trong trang quản trị.
-INSERT INTO `admins` (`username`, `password_hash`, `two_fa_secret`) 
-VALUES ('admin', '$2y$10$UoW2o.5a8TzJ30H4V8tMhO.iN/uVbA/B76p605k.cpeAHzqKj.v/K', 'JBSWY3DPEHPK3PXP')
-ON DUPLICATE KEY UPDATE `username`=`username`;
+-- Không seed tài khoản admin mặc định trong production.
+-- Tạo admin thủ công bằng password_hash() của PHP hoặc công cụ quản trị nội bộ,
+-- rồi insert username, password_hash và two_fa_secret riêng cho từng môi trường.

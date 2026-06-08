@@ -351,6 +351,26 @@ function updateUIForActiveZone() {
             ` : ''}
           </div>
 
+          <!-- Storytelling additions: Biggest Challenge & Tech Stack -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-[11px]">
+            <div class="bg-amber-500/5 border border-amber-500/15 rounded-xl p-3">
+              <span class="text-amber-400 font-mono text-[9px] font-bold uppercase tracking-wider block mb-1">
+                ${state.language === 'vi' ? '⚠️ THỬ THÁCH LỚN NHẤT' : '⚠️ BIGGEST CHALLENGE'}
+              </span>
+              <p class="text-zinc-300 leading-relaxed font-sans">
+                ${currentProj.biggestChallenge || ''}
+              </p>
+            </div>
+            <div class="bg-blue-500/5 border border-blue-500/15 rounded-xl p-3">
+              <span class="text-blue-400 font-mono text-[9px] font-bold uppercase tracking-wider block mb-1">
+                ${state.language === 'vi' ? '🛠️ CÔNG NGHỆ SỬ DỤNG' : '🛠️ TECHNOLOGIES USED'}
+              </span>
+              <p class="text-zinc-300 leading-relaxed font-sans">
+                ${currentProj.techStack || ''}
+              </p>
+            </div>
+          </div>
+
           <div class="space-y-2 text-xs max-h-[160px] overflow-y-auto pr-1">
             ${(currentProj.accomplishments || []).map(acc => `
               <div class="bg-zinc-900/40 p-2.5 rounded-xl border border-zinc-800/40 hover:border-zinc-700/40 transition-colors">
@@ -627,6 +647,19 @@ function initQuickTeleportButtons() {
 // -------------------------------------------------------------
 // Interactive Core Initialization & Language Toggle
 // -------------------------------------------------------------
+function updateDownloadCvButton(lang) {
+  const btnDownloadCv = document.getElementById('btn_download_cv');
+  const lblDownloadCv = document.getElementById('lbl_download_cv');
+  if (!btnDownloadCv || !lblDownloadCv) return;
+
+  const isVi = lang === 'vi';
+  const fileName = isVi ? 'Nguyen-Anh-Quy-VN.pdf' : 'Nguyen-Anh-Quy-EN.pdf';
+  btnDownloadCv.href = `assets/cv/${fileName}`;
+  btnDownloadCv.download = fileName;
+  btnDownloadCv.title = isVi ? 'Tai CV ban tieng Viet' : 'Download English CV';
+  lblDownloadCv.innerHTML = isVi ? 'T&#7842;I CV' : 'DOWNLOAD CV';
+}
+
 function switchLanguage(lang) {
   playClickSound();
   state.language = lang;
@@ -731,6 +764,7 @@ function switchLanguage(lang) {
   updateUIForActiveZone();
   resetChatbotHistory(false);
   updateDimensionToggleBtnText();
+  updateDownloadCvButton(lang);
   updateMusicUIButton(bgMusicPlaying);
   updateAiVoiceButtonUI();
   populateAiVoices();
@@ -833,6 +867,7 @@ function startLoadingSequence() {
   const logViewport = document.getElementById('loading_console_logs');
   const progressText = document.getElementById('loading_progress_percent');
   const progressBar = document.getElementById('loading_progress_bar_fill');
+  const progressAscii = document.getElementById('loading_progress_ascii');
   const enterBtn = document.getElementById('btn_enter_workspace');
   const statusLight = document.getElementById('sys_status_light');
   const statusText = document.getElementById('sys_status_text');
@@ -878,6 +913,13 @@ function startLoadingSequence() {
     progress++;
     progressText.textContent = `${progress}%`;
     progressBar.style.width = `${progress}%`;
+
+    if (progressAscii) {
+      const totalBlocks = 30;
+      const filledBlocks = Math.round((progress / 100) * totalBlocks);
+      const emptyBlocks = totalBlocks - filledBlocks;
+      progressAscii.textContent = `[${'█'.repeat(filledBlocks)}${'░'.repeat(emptyBlocks)}]`;
+    }
 
     // Map progress to steps weight
     let cumulativeWeight = 0;
@@ -1223,6 +1265,14 @@ document.addEventListener('DOMContentLoaded', () => {
   // Bind Language selectors
   document.getElementById('btn_lang_vi').addEventListener('click', () => switchLanguage('vi'));
   document.getElementById('btn_lang_en').addEventListener('click', () => switchLanguage('en'));
+  updateDownloadCvButton(state.language);
+
+  const btnDownloadCv = document.getElementById('btn_download_cv');
+  if (btnDownloadCv) {
+    btnDownloadCv.addEventListener('click', () => {
+      playClickSound();
+    });
+  }
 
   // Bind Ambient Music Toggle
   const btnMusic = document.getElementById('btn_ambient_music');

@@ -1,6 +1,45 @@
 # Project Memory
 
 - Current updates & fixes:
+  - **[SỬA LỖI CAMERA 3D BỊ KHÓA CỨNG (CAMERA LOCKOUT FIX)]**:
+    - **Yêu cầu**: Khắc phục tình trạng camera 3D bị cố định góc nhìn, không thể kéo xoay tự do bằng chuột/tay sau khi nhấn nút chuyển góc hoặc chuyển phân cảnh.
+    - **Thực hiện**:
+      - **Nguyên nhân**: Do giá trị `hoverWave` (sóng sin dao động liên tục theo thời gian) được cộng dồn trực tiếp vào toạ độ đích lerp của camera (`targetCameraPosition`) trong mỗi frame vẽ, biến nó thành mục tiêu động liên tục di chuyển khiến điều kiện kết thúc lerp (`distanceTo < 0.3`) không bao giờ được thỏa mãn. Vì vậy cờ `shouldResetCameraView` bị kẹt ở trạng thái `true`, liên tục ghi đè và kéo camera trở lại góc cũ.
+      - **Giải pháp**: Tách biệt `hoverWave` khỏi quá trình lerp camera. Camera sẽ lerp về đích tĩnh chuẩn xác và đặt cờ `shouldResetCameraView = false` dứt khoát. Chỉ khi camera đã đứng yên (`shouldResetCameraView === false`) và người dùng không dùng chuột tương tác (`!isCameraUserInteracting`), hiệu ứng nhấp nhô nhẹ mới được áp dụng.
+  - **[BỔ SUNG ĐỊA HÌNH TINH THỂ NEON 3D (PROCEDURAL GLOWING CYBER CRYSTALS)]**:
+    - **Yêu cầu**: Sửa lỗi tinh thể 3D không hiển thị do chìm dưới lòng đất và lỗi truyền đỉnh lên GPU.
+    - **Thực hiện**:
+      - **Cụm Tinh thể Phát sáng (`glowingCrystals`)**: Thiết lập **8 cụm tinh thể lớn** tại các vị trí trống cách xa đường đi (4 góc chéo: Đông Bắc, Tây Bắc, Đông Nam, Tây Nam và 4 hướng chính: Bắc, Nam, Đông, Tây).
+      - **Sửa lỗi Kỹ thuật (NeedsUpdate)**: Bổ sung dòng `posAttr.needsUpdate = true` sau khi chỉnh sửa các đỉnh lăng trụ để ép GPU vẽ lại các chóp tinh thể nhọn.
+      - **Nâng cao Địa hình & Kích thước**: Điều chỉnh cao độ Y lên `0.28` (thay vì `0.1` vốn bị chìm dưới gầm các bệ sàn GLB dày) và tăng đáng kể chiều cao tinh thể lên `2.8` - `5.5` đơn vị để tạo độ hoành tráng trực quan.
+      - **Nguồn sáng động & Hoạt ảnh**: Tăng cường PointLight lên độ sáng `3.5` và bán kính `8`, làm tinh thể nhấp nháy phát sáng (breathing glow) rực rỡ trong `animate3D()`.
+  - **[BỔ SUNG THIÊN THẠCH TRANG TRÍ 3D (PROCEDURAL 3D SPACE ASTEROIDS)]**:
+    - **Yêu cầu**: Giải quyết tình trạng trống trải ở các vùng không gian rìa xung quanh hòn đảo chính trong chế độ 3D mà không làm giảm hiệu năng kết xuất của GPU.
+    - **Thực hiện**:
+      - **Tạo sinh Thuật toán (Procedural Generation)**: Viết hàm `createProceduralSpaceAsteroids()` để tự sinh 35 thiên thạch đá (low-poly Icosahedron) bằng code Three.js, biến dạng ngẫu nhiên các đỉnh để tạo bề mặt lồi lõm tự nhiên của đá vũ trụ.
+      - **Bố trí Không gian**: Đặt các thiên thạch trong một vùng vành đai bao quanh hòn đảo chính (bán kính từ 38 đến 66 đơn vị) ở nhiều cao độ khác nhau (y từ -8 đến 14).
+      - **Hoạt ảnh Tự nhiên**: Trong `animate3D()`, lập trình cho mỗi thiên thạch tự quay quanh các trục X/Y/Z với tốc độ ngẫu nhiên riêng biệt, đồng thời nhấp nhô lên xuống điều hòa (bobbing) để tạo chuyển động không trọng lực mượt mà.
+      - **Tối ưu Bụi Vũ trụ**: Bổ sung hiệu ứng xoay trôi dạt chậm cho hệ thống hạt `spaceParticles` để tăng cảm xúc chiều sâu của bầu trời sao Cyberpunk.
+  - **[BỔ SUNG TRANG TRÍ KHÔNG GIAN RETRO 2D MAP]**:
+    - **Yêu cầu**: Làm phong phú giao diện bản đồ 2D Retro bằng các mô hình động để tránh cảm giác trống trải và tăng chiều sâu nghệ thuật viễn tưởng.
+    - **Thực hiện**:
+      - **Vũ trụ Trang trí (`spaceDecorations`)**: Thiết lập và tạo sinh tự động các thực thể: Thiên thạch góc cạnh tự xoay (Asteroids) lơ lửng ở các vùng an toàn ngoài biên, đám mây tinh vân phát sáng (Nebula) sử dụng Radial Gradients neon, và các chòm sao nhỏ lấp lánh (Constellations) với hiệu ứng sao nhấp nháy (twinkling).
+      - **Tàu tuần tra (`spacePatrols`)**: Khởi tạo 2 phi thuyền mini tuần tra di chuyển tự động qua lại theo trục X và Y của bản đồ.
+      - **Phân lớp Render**: Tích hợp các hàm vẽ vector Canvas `drawSpaceDecorations` và `drawSpacePatrols` chạy trực tiếp trong `drawScene` của `game2d-manager.js`, render ngay phía trên hạt bụi nền và phía dưới đường ống/cổng hub để tạo chiều sâu chiều không gian (layering).
+  - **[TỐI ƯU HÓA TẢI TRÌ HOÃN TÀI NGUYÊN 3D (3D ASSET LAZY LOADING & QUEUE)]**:
+    - **Yêu cầu**: Giảm thời gian chờ màn hình loading 3D, giảm tải CPU/GPU khi khởi dựng và nâng cao FPS bằng cách trì hoãn tải các mô hình trang trí không thiết yếu.
+    - **Thực hiện**:
+      - **Phân loại Asset**: Cải tiến `addStaticAsset` để phân loại vật thể. Các vật thể cốt lõi/structural (`platform_large`, `floor-large`, `wall`, `gate`, `door`) được tải ngay lập tức để giữ khung đảo.
+      - **Hàng đợi Lazy Load (`lazyLoadQueue`)**: Tất cả các tài nguyên phụ như bánh răng xoay, phi thuyền bay xung quanh, đồ nội thất trang trí nhỏ, physics boxes, và instanced props được đưa vào hàng đợi tải trì hoãn thông qua `enqueueLazyLoad`.
+      - **Xử lý tuần tự**: Khởi chạy `startLazyLoading()` ngay khi kết thúc warp transition (màn hình loading ẩn đi), tải tuần tự mỗi vật thể cách nhau 80ms để tránh nghẽn luồng chính.
+      - **Dọn dẹp tài nguyên**: Tích hợp `clearLazyLoading()` vào `disposeThreeJS()` để giải phóng hàng đợi và xóa các hàm export tạm thời trên `window` (`addStaticAssetReal`, `addCogAssetReal`, v.v.) khi người dùng quay về chế độ 2D.
+  - **[TỐI ƯU HÓA DI CHUYỂN 3D TRÊN DI ĐỘNG (MOBILE 3D NAVIGATION)]**:
+    - **Yêu cầu**: Nâng cao trải nghiệm di chuyển 3D trên thiết bị di động bằng cách thay thế các nút điều hướng cứng nhắc và chuột phải (vốn không khả dụng trên màn hình cảm ứng) bằng các phương thức trực quan, thân thiện với di động.
+    - **Thực hiện**:
+      - **Virtual Joystick**: Thiết kế bộ joystick ảo kiểu glassmorphism phát sáng cyan trong `#threejs_3d_viewport` gồm `#joystick_base` và `#joystick_knob`. Lắng nghe các sự kiện pointerdown/move/up và truyền dữ liệu góc kéo `(joystickVector)` vào vòng lặp kết xuất 3D.
+      - **Tối ưu di chuyển & Tốc độ**: Tích hợp joystick vào vòng lặp `animate3D()` song song với hệ thống phím WASD. Hỗ trợ thay đổi tốc độ di chuyển của nhân vật linh hoạt theo độ kéo (lực kéo ngón tay) của joystick từ `0` đến `0.16`.
+      - **Touch-to-Move**: Cải tiến sự kiện click-to-move để trên thiết bị di động/touch, người dùng có thể nhấp chạm (touch/chuột trái `button === 0`) trực tiếp lên nền đất để di chuyển nhân vật một cách tự động, kết hợp với bộ lọc khoảng cách kéo và thời gian click để tránh xung đột với cử chỉ vuốt xoay camera.
+      - **Đồng bộ UI Modal**: Tự động ẩn joystick khi mở modal giải mã (`#threejs_info_modal`) và hiện lại sau khi đóng modal thành công để tránh che khuất tầm nhìn của người dùng.
   - **[CẬP NHẬT ĐƯỜNG DẪN DỰ ÁN 2]**:
     - **Yêu cầu**: Thay đổi đường dẫn trải nghiệm của "Hệ thống E-commerce & Mini-ERP Điện Máy Nâng Cao" thành URL mới.
     - **Thực hiện**: Đổi giá trị trường `"link"` của dự án 2 trong file `data.json` (ở cả 2 phần ngôn ngữ `details_vi` và `details_en`) từ `https://dienmaypro.nthanhhien.id.vn` thành `https://tmdtgroupg.nthanhhien.id.vn/Home`.

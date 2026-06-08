@@ -194,6 +194,8 @@
             "link": "https://dienmaypro.nguyenanhquy.id.vn",
             "oldPortfolioTitle": "Ứng dụng Android (APK)",
             "oldPortfolioLink": "https://dienmaypro.nguyenanhquy.id.vn/app.apk",
+            "biggestChallenge": "Xử lý đồng bộ webhook thanh toán từ PayOS đảm bảo tính chính xác của đơn hàng và bảo mật chống giả mạo chữ ký (signature verification), kết hợp đồng bộ trạng thái đơn hàng thời gian thực sang giao diện client.",
+            "techStack": "PHP (PDO), MySQL, Docker, Flutter, Gemini AI (RAG), PayOS Webhook.",
             "accomplishments": [
               {
                 "title": "Kiến trúc & Bảo mật",
@@ -220,6 +222,8 @@
             "period": "02/2026 — 06/2026",
             "highlight": "Nền tảng bán lẻ và quản trị doanh nghiệp tích hợp AI, được thiết kế để xử lý lượng lớn dữ liệu, tự động hóa nghiệp vụ và tối ưu tỷ lệ chuyển đổi.",
             "link": "https://tmdtgroupg.nthanhhien.id.vn/Home",
+            "biggestChallenge": "Giải quyết tranh chấp dữ liệu (Race Condition) và hiện tượng Overselling khi có hàng ngàn lượt truy cập đồng thời vào cổng Flash Sale bằng cách áp dụng Pessimistic Locking kết hợp với hàng đợi Redis (Laravel Queue) để xử lý bất đồng bộ các luồng thông báo và giao dịch.",
+            "techStack": "Laravel 11, MySQL, TailwindCSS, Gemini AI (Vision & RAG), Pusher WebSockets, React.",
             "accomplishments": [
               {
                 "title": "Xử lý đồng thời & Chống thất thoát (Concurrency)",
@@ -252,6 +256,8 @@
             "link": "https://dienmaypro.nguyenanhquy.id.vn",
             "oldPortfolioTitle": "Android Application (APK)",
             "oldPortfolioLink": "https://dienmaypro.nguyenanhquy.id.vn/app.apk",
+            "biggestChallenge": "Synchronizing payment webhooks from PayOS ensuring transaction integrity and signature verification, combined with real-time order status updates to the client interface.",
+            "techStack": "PHP (PDO), MySQL, Docker, Flutter, Gemini AI (RAG), PayOS Webhook.",
             "accomplishments": [
               {
                 "title": "Architecture & Security",
@@ -278,6 +284,8 @@
             "period": "02/2026 — 06/2026",
             "highlight": "Retail and enterprise management platform integrated with GenAI, designed to handle heavy data, automate workflows, and optimize conversions.",
             "link": "https://tmdtgroupg.nthanhhien.id.vn/Home",
+            "biggestChallenge": "Resolving race conditions and overselling issues under heavy traffic spikes in Flash Sale events by implementing Pessimistic Locking and Redis queues (Laravel Queue) for asynchronous transaction handling.",
+            "techStack": "Laravel 11, MySQL, TailwindCSS, Gemini AI (Vision & RAG), Pusher WebSockets, React.",
             "accomplishments": [
               {
                 "title": "Concurrency & Loss Prevention",
@@ -323,7 +331,7 @@
         "philosophies": [
           {
             "title": "AI-Augmented Developer",
-            "desc": "Sử dụng sức mạnh các công cụ AI như Cursor, GitHub Copilot một cách tối đa để tăng tốc tốc độ triển khai (Vibe Coding)."
+            "desc": "Sử dụng sức mạnh các công cụ AI như Antigravity,Cursor, GitHub Copilot một cách tối đa để tăng tốc tốc độ triển khai (Vibe Coding)."
           },
           {
             "title": "Làm Chủ Mã Nguồn",

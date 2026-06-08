@@ -12,6 +12,14 @@ let threeAssets = [];
 let threeAnimId = null;
 let active3DZoneId = null;
 const threeKeys = {};
+
+// Virtual Joystick variables for mobile support
+let joystickVector = { x: 0, y: 0 };
+let joystickActive = false;
+let joystickStartPos = { x: 0, y: 0 };
+let joystickMoveHandler = null;
+let joystickEndHandler = null;
+const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 let threeMixer = null;
 let threeClips = {};
 let activeAction = null;
@@ -21,6 +29,8 @@ let clickTargetPosition = null;
 let clickIndicators = [];
 let shouldResetCameraView = true;
 let spaceParticles = null;
+let floatingAsteroids = [];
+let glowingCrystals = [];
 let animatedCogs = [];
 let animatedCrafts = [];
 let animatedDecorations = [];
@@ -71,6 +81,81 @@ const roverPhysics = {
   gravity: -0.016,
   onGround: true
 };
+
+// Lazy Loading Queue for 3D Decor assets to boost initial viewport FPS
+let lazyLoadQueue = [];
+let isProcessingLazyLoad = false;
+let lazyLoadTimeoutId = null;
+
+function enqueueLazyLoad(type, ...args) {
+  lazyLoadQueue.push({ type, args });
+}
+
+function startLazyLoading() {
+  if (isProcessingLazyLoad) return;
+  isProcessingLazyLoad = true;
+  console.info(`[LazyLoad] Starting lazy loading queue. Total items to load: ${lazyLoadQueue.length}`);
+  
+  const processNext = () => {
+    if (lazyLoadQueue.length === 0) {
+      isProcessingLazyLoad = false;
+      console.info('[LazyLoad] All 3D assets loaded successfully!');
+      return;
+    }
+    
+    // Stop loading if 3D space is exited
+    if (typeof state === 'undefined' || !state.is3DActive) {
+      isProcessingLazyLoad = false;
+      return;
+    }
+
+    const item = lazyLoadQueue.shift();
+    try {
+      if (item.type === 'static') {
+        const [path, x, y, z, scale, rotY] = item.args;
+        if (typeof addStaticAssetReal === 'function') {
+          addStaticAssetReal(path, x, y, z, scale, rotY);
+        }
+      } else if (item.type === 'cog') {
+        const [path, x, y, z, scale, speed] = item.args;
+        if (typeof addCogAssetReal === 'function') {
+          addCogAssetReal(path, x, y, z, scale, speed);
+        }
+      } else if (item.type === 'craft') {
+        const [path, x, y, z, scale, rotY, hoverRange, hoverSpeed] = item.args;
+        if (typeof addCraftAssetReal === 'function') {
+          addCraftAssetReal(path, x, y, z, scale, rotY, hoverRange, hoverSpeed);
+        }
+      } else if (item.type === 'destructible') {
+        const [x, y, z, scale] = item.args;
+        if (typeof addDestructibleBoxReal === 'function') {
+          addDestructibleBoxReal(x, y, z, scale);
+        }
+      } else if (item.type === 'instanced') {
+        const [modelPath, instances] = item.args;
+        if (typeof createInstancedPropsFromGLBReal === 'function') {
+          createInstancedPropsFromGLBReal(modelPath, instances);
+        }
+      }
+    } catch (err) {
+      console.error('[LazyLoad] Failed to load item:', item, err);
+    }
+    
+    // Wait 80ms before loading the next asset
+    lazyLoadTimeoutId = setTimeout(processNext, 80);
+  };
+  
+  processNext();
+}
+
+function clearLazyLoading() {
+  if (lazyLoadTimeoutId) {
+    clearTimeout(lazyLoadTimeoutId);
+    lazyLoadTimeoutId = null;
+  }
+  lazyLoadQueue = [];
+  isProcessingLazyLoad = false;
+}
 
 const STEPPING_ROCKS = [
   { x: -10, z: -7, y: -0.2, r: 2.2 },
@@ -496,6 +581,12 @@ function spawnExplosionParticles(pos, colorStr) {
 function show3DInfoModal(zoneId) {
   activeDecryptedObjId = zoneId;
   
+  // Tạm thời ẩn joystick ảo khi mở modal
+  const joystickContainer = document.getElementById('virtual_joystick_container');
+  if (joystickContainer) {
+    joystickContainer.classList.add('hidden');
+  }
+  
   // Dọn dẹp modalBody trước để tránh trùng lặp ID DOM khi updateUIForActiveZone chạy
   const modalBody = document.getElementById('modal_body_content');
   if (modalBody) {
@@ -565,6 +656,14 @@ function close3DInfoModal() {
     modal.style.opacity = '0';
     setTimeout(() => {
       modal.classList.add('hidden');
+      
+      // Hiện lại joystick ảo khi đóng modal trên thiết bị di động
+      if (isTouchDevice) {
+        const joystickContainer = document.getElementById('virtual_joystick_container');
+        if (joystickContainer) {
+          joystickContainer.classList.remove('hidden');
+        }
+      }
       
       // Trả lại các DOM nodes về zone_detail_content để bảo toàn cấu trúc cho 2D view
       const modalBody = document.getElementById('modal_body_content');
@@ -765,6 +864,158 @@ function addProceduralDecorations() {
   });
 }
 
+function createProceduralSpaceAsteroids() {
+  floatingAsteroids = [];
+
+  const asteroidMaterial = new THREE.MeshStandardMaterial({
+    color: 0x18161d,
+    roughness: 0.92,
+    metalness: 0.1,
+    bumpScale: 0.05
+  });
+
+  const count = 35;
+  for (let i = 0; i < count; i++) {
+    // 0 = simple 12-face dodecahedron, 1 = 20-face icosahedron
+    const detail = Math.random() > 0.55 ? 1 : 0;
+    const radius = 0.8 + Math.random() * 2.2;
+    const geom = new THREE.IcosahedronGeometry(radius, detail);
+    
+    // Perturb vertices slightly to look like jagged rocks
+    const posAttr = geom.attributes.position;
+    for (let j = 0; j < posAttr.count; j++) {
+      const x = posAttr.getX(j);
+      const y = posAttr.getY(j);
+      const z = posAttr.getZ(j);
+      
+      const factor = 0.78 + Math.random() * 0.44;
+      posAttr.setXYZ(j, x * factor, y * factor, z * factor);
+    }
+    geom.computeVertexNormals();
+
+    const mesh = new THREE.Mesh(geom, asteroidMaterial);
+    
+    // Place them in a ring surrounding the main island (radius 36 to 68)
+    const angle = Math.random() * Math.PI * 2;
+    const dist = 38 + Math.random() * 28;
+    const height = (Math.random() * 22) - 8; // y coordinates: -8 to 14
+    
+    mesh.position.set(
+      Math.cos(angle) * dist,
+      height,
+      Math.sin(angle) * dist
+    );
+
+    mesh.rotation.set(
+      Math.random() * Math.PI,
+      Math.random() * Math.PI,
+      Math.random() * Math.PI
+    );
+
+    floatingAsteroids.push({
+      mesh: mesh,
+      rotSpeedX: (Math.random() - 0.5) * 0.002,
+      rotSpeedY: (Math.random() - 0.5) * 0.003,
+      rotSpeedZ: (Math.random() - 0.5) * 0.002,
+      bobSpeed: 0.0008 + Math.random() * 0.0016,
+      bobRange: 0.8 + Math.random() * 1.6,
+      bobOffset: Math.random() * Math.PI * 2,
+      baseY: height
+    });
+
+    threeScene.add(mesh);
+  }
+}
+
+function createProceduralTerrainDecorations() {
+  glowingCrystals = [];
+  
+  // Outer borders and safe zones on the main floor to avoid overlap with pathways and zone structures
+  const clusterPositions = [
+    // 4 outer corners
+    { x: 23, z: -23, color: '#06b6d4', lightColor: '#0891b2' },  // Northeast (Cyan)
+    { x: -23, z: -23, color: '#10b981', lightColor: '#059669' }, // Northwest (Green)
+    { x: 23, z: 23, color: '#ec4899', lightColor: '#db2777' },   // Southeast (Pink)
+    { x: -23, z: 23, color: '#a855f7', lightColor: '#8b5cf6' },  // Southwest (Purple)
+    // 4 outer cardinal directions
+    { x: 0, z: -20, color: '#f59e0b', lightColor: '#d97706' },   // North (Orange)
+    { x: 0, z: 10, color: '#3b82f6', lightColor: '#2563eb' },    // South (Blue)
+    { x: -24, z: 0, color: '#ec4899', lightColor: '#db2777' },   // West (Pink)
+    { x: 24, z: 0, color: '#06b6d4', lightColor: '#0891b2' }     // East (Cyan)
+  ];
+
+  clusterPositions.forEach((pos, clusterIdx) => {
+    const clusterGroup = new THREE.Group();
+    // Raise Y coordinate to 0.28 to sit perfectly on top of GLB floors (which are slightly thick)
+    clusterGroup.position.set(pos.x, 0.28, pos.z);
+
+    const crystalCount = 4 + (clusterIdx % 3);
+    for (let i = 0; i < crystalCount; i++) {
+      // Significantly increase height to 2.8 - 5.5 units to make them clearly visible from a distance
+      const height = 2.8 + Math.sin(i * 1.7) * 1.5 + Math.random() * 1.2;
+      const radiusBottom = 0.35 + Math.cos(i * 2.3) * 0.12;
+      const radiusTop = 0.05 + Math.random() * 0.06;
+      
+      const geom = new THREE.CylinderGeometry(radiusTop, radiusBottom, height, 5);
+      
+      // Taper the tip of the crystal column
+      const posAttr = geom.attributes.position;
+      for (let j = 0; j < posAttr.count; j++) {
+        const y = posAttr.getY(j);
+        if (y > 0) {
+          const x = posAttr.getX(j);
+          const z = posAttr.getZ(j);
+          posAttr.setXYZ(j, x * 0.18, y, z * 0.18);
+        }
+      }
+      // CRITICAL: Mark attribute for update so GPU redraws it correctly
+      posAttr.needsUpdate = true;
+      geom.computeVertexNormals();
+
+      const mat = new THREE.MeshStandardMaterial({
+        color: pos.color,
+        roughness: 0.12,
+        metalness: 0.95,
+        transparent: true,
+        opacity: 0.86,
+        emissive: pos.color,
+        emissiveIntensity: 1.5,
+        flatShading: true
+      });
+
+      const mesh = new THREE.Mesh(geom, mat);
+      
+      const localAngle = (i / crystalCount) * Math.PI * 2;
+      const localDist = 0.3 + Math.random() * 0.6;
+      mesh.position.set(
+        Math.cos(localAngle) * localDist,
+        height / 2 - 0.3, // Embed base into ground slightly
+        Math.sin(localAngle) * localDist
+      );
+
+      mesh.rotation.z = (Math.random() - 0.5) * 0.22;
+      mesh.rotation.x = (Math.random() - 0.5) * 0.22;
+      mesh.rotation.y = Math.random() * Math.PI;
+
+      clusterGroup.add(mesh);
+
+      glowingCrystals.push({
+        material: mat,
+        baseIntensity: 1.2 + Math.random() * 0.4,
+        pulseSpeed: 1.5 + Math.random() * 1.5,
+        offset: i * 0.5
+      });
+    }
+
+    // Dynamic light glow at the heart of the crystal cluster
+    const pointLight = new THREE.PointLight(pos.lightColor, 3.5, 8);
+    pointLight.position.set(0, 1.2, 0);
+    clusterGroup.add(pointLight);
+
+    threeScene.add(clusterGroup);
+  });
+}
+
 function initThreeJS() {
   const container = document.getElementById('threejs_3d_viewport');
   if (!container) return;
@@ -892,8 +1143,9 @@ function initThreeJS() {
       return; // Dừng xử lý click-to-move
     }
 
-    // 2. Di chuyển nhân vật: chỉ kích hoạt khi click chuột phải
-    if (e.button !== 2) return;
+    // 2. Di chuyển nhân vật: kích hoạt bằng chuột phải (hoặc touch/chuột trái trên thiết bị di động)
+    const allowedButton = isTouchDevice ? (e.button === 0 || e.button === 2) : (e.button === 2);
+    if (!allowedButton) return;
 
     let hitPoint = null;
 
@@ -1780,6 +2032,9 @@ function createProceduralWarpGate(color = 0xec4899) {
   spaceParticles = new THREE.Points(particlesGeo, particlesMat);
   threeScene.add(spaceParticles);
 
+  createProceduralSpaceAsteroids();
+  createProceduralTerrainDecorations();
+
   // Keyboard Event Listeners for 3D navigation
   window.addEventListener('keydown', handle3DKeyDown);
   window.addEventListener('keyup', handle3DKeyUp);
@@ -1792,6 +2047,82 @@ function createProceduralWarpGate(color = 0xec4899) {
 
   // Listen for window resize
   window.addEventListener('resize', handle3DResize);
+  
+  // Initialize mobile virtual joystick
+  initVirtualJoystick();
+}
+
+function initVirtualJoystick() {
+  const container = document.getElementById('virtual_joystick_container');
+  const base = document.getElementById('joystick_base');
+  const knob = document.getElementById('joystick_knob');
+  if (!container || !base || !knob) return;
+
+  const maxRadius = 40; // max drag radius in pixels
+
+  const handleStart = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    joystickActive = true;
+    
+    const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+    const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+    joystickStartPos = { x: clientX, y: clientY };
+    
+    knob.style.transition = 'none';
+  };
+
+  const handleMove = (e) => {
+    if (!joystickActive) return;
+    
+    e.preventDefault();
+    e.stopPropagation();
+
+    const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+    const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+
+    const dx = clientX - joystickStartPos.x;
+    const dy = clientY - joystickStartPos.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+
+    let limitedDx = dx;
+    let limitedDy = dy;
+
+    if (distance > maxRadius) {
+      limitedDx = (dx / distance) * maxRadius;
+      limitedDy = (dy / distance) * maxRadius;
+    }
+
+    knob.style.transform = `translate(${limitedDx}px, ${limitedDy}px)`;
+
+    joystickVector.x = limitedDx / maxRadius;
+    joystickVector.y = -(limitedDy / maxRadius);
+  };
+
+  const handleEnd = (e) => {
+    if (!joystickActive) return;
+    e.preventDefault();
+    e.stopPropagation();
+    joystickActive = false;
+    
+    knob.style.transition = 'transform 0.15s cubic-bezier(0.25, 1, 0.5, 1)';
+    knob.style.transform = 'translate(0px, 0px)';
+    
+    joystickVector = { x: 0, y: 0 };
+  };
+
+  base.addEventListener('pointerdown', handleStart, { passive: false });
+  
+  joystickMoveHandler = handleMove;
+  joystickEndHandler = handleEnd;
+  
+  window.addEventListener('pointermove', joystickMoveHandler, { passive: false });
+  window.addEventListener('pointerup', joystickEndHandler, { passive: false });
+  window.addEventListener('pointercancel', joystickEndHandler, { passive: false });
+  
+  if (isTouchDevice) {
+    container.classList.remove('hidden');
+  }
 }
 
 function buildZoneParticles() {
@@ -2187,7 +2518,7 @@ async function load3DModels() {
   };
 
   // Helper method to download and inject static environments (uses fast cloning & async caching)
-  const addStaticAsset = (path, x, y, z, scale = 1, rotY = 0) => {
+  const addStaticAssetReal = (path, x, y, z, scale = 1, rotY = 0) => {
     const applyToScene = (sourceScene) => {
       const mesh = sourceScene.clone();
       mesh.position.set(x, y, z);
@@ -2299,8 +2630,22 @@ async function load3DModels() {
     });
   };
 
+  const addStaticAsset = (path, x, y, z, scale = 1, rotY = 0) => {
+    const file = path.toLowerCase();
+    const isStructural = file.includes('platform_large') || 
+                         file.includes('floor-large') || 
+                         file.includes('wall') || 
+                         file.includes('gate') || 
+                         file.includes('door');
+    if (isStructural) {
+      addStaticAssetReal(path, x, y, z, scale, rotY);
+    } else {
+      enqueueLazyLoad('static', path, x, y, z, scale, rotY);
+    }
+  };
+
   // Performance Optimization: InstancedMesh generator for repetitive static props (Pipes, Rails, Crates)
-  const createInstancedPropsFromGLB = (modelPath, instances) => {
+  const createInstancedPropsFromGLBReal = (modelPath, instances) => {
     loader.load(modelPath, (gltf) => {
       let sourceMesh = null;
       gltf.scene.traverse((child) => {
@@ -2364,6 +2709,10 @@ async function load3DModels() {
     });
   };
 
+  const createInstancedPropsFromGLB = (modelPath, instances) => {
+    enqueueLazyLoad('instanced', modelPath, instances);
+  };
+
   // Reusable function to optimize repeating props using InstancedMesh
   const createInstancedProps = (modelPath, positionArray) => {
     createInstancedPropsFromGLB(modelPath, positionArray);
@@ -2388,7 +2737,7 @@ async function load3DModels() {
   };
 
   // Helper method to load cogs rotating below islands
-  const addCogAsset = (path, x, y, z, scale = 1, speed = 0.01) => {
+  const addCogAssetReal = (path, x, y, z, scale = 1, speed = 0.01) => {
     loader.load(path, (gltf) => {
       const mesh = gltf.scene;
       mesh.position.set(x, y, z);
@@ -2419,8 +2768,12 @@ async function load3DModels() {
     });
   };
 
+  const addCogAsset = (path, x, y, z, scale = 1, speed = 0.01) => {
+    enqueueLazyLoad('cog', path, x, y, z, scale, speed);
+  };
+
   // Helper method to load floating speeders & spacecrafts
-  const addCraftAsset = (path, x, y, z, scale = 1, rotY = 0, hoverRange = 0.4, hoverSpeed = 0.002) => {
+  const addCraftAssetReal = (path, x, y, z, scale = 1, rotY = 0, hoverRange = 0.4, hoverSpeed = 0.002) => {
     loader.load(path, (gltf) => {
       const mesh = gltf.scene;
       mesh.position.set(x, y, z);
@@ -2465,8 +2818,12 @@ async function load3DModels() {
     });
   };
 
+  const addCraftAsset = (path, x, y, z, scale = 1, rotY = 0, hoverRange = 0.4, hoverSpeed = 0.002) => {
+    enqueueLazyLoad('craft', path, x, y, z, scale, rotY, hoverRange, hoverSpeed);
+  };
+
   // Helper method to load and register destructible physics boxes (HTML/CSS/JS boxes)
-  const addDestructibleBox = (x, y, z, scale = 1.0) => {
+  const addDestructibleBoxReal = (x, y, z, scale = 1.0) => {
     loader.load('3d/factory/GLB format/box-small.glb', (gltf) => {
       const mesh = gltf.scene;
       mesh.position.set(x, y, z);
@@ -2523,6 +2880,17 @@ async function load3DModels() {
       });
     });
   };
+
+  const addDestructibleBox = (x, y, z, scale = 1.0) => {
+    enqueueLazyLoad('destructible', x, y, z, scale);
+  };
+
+  // Expose real functions globally so the outer queue can call them
+  window.addStaticAssetReal = addStaticAssetReal;
+  window.createInstancedPropsFromGLBReal = createInstancedPropsFromGLBReal;
+  window.addCogAssetReal = addCogAssetReal;
+  window.addCraftAssetReal = addCraftAssetReal;
+  window.addDestructibleBoxReal = addDestructibleBoxReal;
 
   const decorateZoneTheme = (theme, x, z) => {
     // Sửa lỗi chia GRID_SIZE để kéo toàn bộ vật thể trang trí đang bị bay lơ lửng về lại đúng hòn đảo
@@ -3117,6 +3485,29 @@ function animate3D() {
     });
   }
 
+  // Update space asteroids & drifting particles
+  if (typeof floatingAsteroids !== 'undefined' && floatingAsteroids.length > 0) {
+    const t = now * 0.001;
+    floatingAsteroids.forEach(ast => {
+      ast.mesh.rotation.x += ast.rotSpeedX;
+      ast.mesh.rotation.y += ast.rotSpeedY;
+      ast.mesh.rotation.z += ast.rotSpeedZ;
+      ast.mesh.position.y = ast.baseY + Math.sin(t * ast.bobSpeed + ast.bobOffset) * ast.bobRange;
+    });
+  }
+  if (spaceParticles) {
+    spaceParticles.rotation.y += 0.00015;
+    spaceParticles.rotation.x += 0.00008;
+  }
+
+  // Update glowing terrain crystals
+  if (typeof glowingCrystals !== 'undefined' && glowingCrystals.length > 0) {
+    const t = now * 0.001;
+    glowingCrystals.forEach(cry => {
+      cry.material.emissiveIntensity = cry.baseIntensity + Math.sin(t * cry.pulseSpeed + cry.offset) * 0.35;
+    });
+  }
+
   // Update interactive objects
   if (typeof interactiveObjects !== 'undefined' && interactiveObjects.length > 0) {
     const t = now * 0.0015;
@@ -3196,6 +3587,8 @@ function animate3D() {
     let finalMoveZ = 0;
 
     const hasKeyboardInput = (inputX !== 0 || inputZ !== 0);
+    const hasJoystickInput = (Math.abs(joystickVector.x) > 0.05 || Math.abs(joystickVector.y) > 0.05);
+
     if (hasKeyboardInput) {
       clickTargetPosition = null; // Bấm phím hủy click-to-move
 
@@ -3212,11 +3605,28 @@ function animate3D() {
       // Kết hợp input với hướng camera
       finalMoveX = camRight.x * inputX + camForward.x * inputZ;
       finalMoveZ = camRight.z * inputX + camForward.z * inputZ;
+    } else if (hasJoystickInput) {
+      clickTargetPosition = null; // Di chuyển bằng joystick hủy click-to-move
+
+      // Tính hướng "trước" của camera trên mặt phẳng XZ (bỏ thành phần Y)
+      const camForward = new THREE.Vector3();
+      threeCamera.getWorldDirection(camForward);
+      camForward.y = 0;
+      camForward.normalize();
+
+      // Hướng "phải" vuông góc
+      const camRight = new THREE.Vector3();
+      camRight.crossVectors(camForward, new THREE.Vector3(0, 1, 0)).normalize();
+
+      // Kết hợp joystick vector với hướng camera
+      // joystickVector.y hướng lên là tiến (+Z camera), joystickVector.x hướng phải là sang phải (+Right camera)
+      finalMoveX = camRight.x * joystickVector.x + camForward.x * joystickVector.y;
+      finalMoveZ = camRight.z * joystickVector.x + camForward.z * joystickVector.y;
     }
 
     // === Click-to-Move: tự động lướt đến điểm click ===
-    let isMoving = hasKeyboardInput;
-    if (!hasKeyboardInput && clickTargetPosition) {
+    let isMoving = hasKeyboardInput || hasJoystickInput;
+    if (!isMoving && clickTargetPosition) {
       const dx = clickTargetPosition.x - threePlayerMesh.position.x;
       const dz = clickTargetPosition.z - threePlayerMesh.position.z;
       const distance = Math.sqrt(dx * dx + dz * dz);
@@ -3231,7 +3641,13 @@ function animate3D() {
     }
 
     if (isMoving) {
-      const speed = 0.16;
+      let speed = 0.16;
+      // Điều chỉnh tốc độ dựa trên cường độ kéo của joystick
+      if (!hasKeyboardInput && hasJoystickInput) {
+        const joystickLen = Math.min(1.0, Math.sqrt(joystickVector.x * joystickVector.x + joystickVector.y * joystickVector.y));
+        speed = 0.16 * joystickLen;
+      }
+
       const moveLen = Math.sqrt(finalMoveX * finalMoveX + finalMoveZ * finalMoveZ);
       if (moveLen > 0) {
         finalMoveX /= moveLen;
@@ -3390,17 +3806,22 @@ function animate3D() {
 
     // Nếu người dùng vừa nhấn nút đổi góc camera, ta lerp camera một lần
     if (shouldResetCameraView) {
-      const hoverWave = Math.sin(now * 0.0012) * 0.12;
-      const camHeight = (isCinematicView ? 24 : 14) + hoverWave;
+      const camHeight = isCinematicView ? 24 : 14;
       const camDistance = isCinematicView ? 28 : 16;
       const camSideOffset = isCinematicView ? -8 : 0;
 
       const defaultLocalOffset = new THREE.Vector3(camSideOffset, camHeight, camDistance);
       const targetCameraPosition = threeControls.target.clone().add(defaultLocalOffset);
 
-      threeCamera.position.lerp(targetCameraPosition, 0.05);
-      if (threeCamera.position.distanceTo(targetCameraPosition) < 0.3) {
+      threeCamera.position.lerp(targetCameraPosition, 0.08);
+      if (threeCamera.position.distanceTo(targetCameraPosition) < 0.45) {
         shouldResetCameraView = false;
+      }
+    } else {
+      // Gently apply a hover wave only when not resetting and not user-manipulating the camera
+      if (!isCameraUserInteracting && threePlayerMesh) {
+        const hoverWave = Math.sin(now * 0.0012) * 0.003;
+        threeCamera.position.y += hoverWave;
       }
     }
 
@@ -3678,9 +4099,31 @@ function handle3DResize() {
 }
 
 function disposeThreeJS() {
+  clearLazyLoading();
+  delete window.addStaticAssetReal;
+  delete window.createInstancedPropsFromGLBReal;
+  delete window.addCogAssetReal;
+  delete window.addCraftAssetReal;
+  delete window.addDestructibleBoxReal;
+
   window.removeEventListener('keydown', handle3DKeyDown);
   window.removeEventListener('keyup', handle3DKeyUp);
   window.removeEventListener('resize', handle3DResize);
+
+  // Clean up virtual joystick events
+  if (joystickMoveHandler) {
+    window.removeEventListener('pointermove', joystickMoveHandler);
+    joystickMoveHandler = null;
+  }
+  if (joystickEndHandler) {
+    window.removeEventListener('pointerup', joystickEndHandler);
+    window.removeEventListener('pointercancel', joystickEndHandler);
+    joystickEndHandler = null;
+  }
+  const joystickContainer = document.getElementById('virtual_joystick_container');
+  if (joystickContainer) joystickContainer.classList.add('hidden');
+  joystickActive = false;
+  joystickVector = { x: 0, y: 0 };
 
   if (threeResizeObserver) {
     threeResizeObserver.disconnect();
@@ -3823,6 +4266,7 @@ function triggerWarpTransition(isEntering, callback) {
   const status = document.getElementById('warp_loading_status');
   const percentText = document.getElementById('warp_loading_percent');
   const barFill = document.getElementById('warp_loading_bar_fill');
+  const barAscii = document.getElementById('warp_loading_ascii');
 
   if (!overlay || !hud) {
     if (callback) callback();
@@ -3855,6 +4299,9 @@ function triggerWarpTransition(isEntering, callback) {
 
   percentText.textContent = "0%";
   barFill.style.width = "0%";
+  if (barAscii) {
+    barAscii.textContent = "[░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░]";
+  }
   status.textContent = logs[0];
 
   overlay.classList.remove('fade-out');
@@ -3873,6 +4320,13 @@ function triggerWarpTransition(isEntering, callback) {
     percentText.textContent = `${progress}%`;
     barFill.style.width = `${progress}%`;
 
+    if (barAscii) {
+      const totalBlocks = 30;
+      const filledBlocks = Math.round((progress / 100) * totalBlocks);
+      const emptyBlocks = totalBlocks - filledBlocks;
+      barAscii.textContent = `[${'█'.repeat(filledBlocks)}${'░'.repeat(emptyBlocks)}]`;
+    }
+
     const step = Math.min(logs.length - 1, Math.floor((progress / 100) * logs.length));
     status.textContent = logs[step];
 
@@ -3888,6 +4342,9 @@ function triggerWarpTransition(isEntering, callback) {
       setTimeout(() => {
         overlay.classList.remove('active');
         overlay.classList.add('fade-out');
+        if (isEntering) {
+          startLazyLoading();
+        }
         setTimeout(() => {
           overlay.classList.remove('fade-out');
         }, 500);

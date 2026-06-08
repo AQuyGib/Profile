@@ -27,11 +27,16 @@ const keysPressed = {};
 let mouseTarget = null;
 let particles2D = [];
 let playerTrail = [];
+let spaceDecorations = [];
+let spacePatrols = [];
 
 function initGameEngine() {
   canvas = document.getElementById('retro_game_map_canvas');
   if (!canvas) return;
   ctx = canvas.getContext('2d');
+
+  initSpaceDecorations();
+  initSpacePatrols();
 
   // Event Listeners for Movement
   window.addEventListener('keydown', (e) => {
@@ -55,6 +60,7 @@ function initGameEngine() {
     keysPressed[e.code] = false;
   });
 
+  canvas.addEventListener('contextmenu', handleCanvasContextMenu);
   canvas.addEventListener('click', handleCanvasClick);
 
   // Setup D-pad triggers
@@ -108,6 +114,10 @@ function initGameEngine() {
   gameLoop();
 }
 
+function handleCanvasContextMenu(e) {
+  e.preventDefault();
+}
+
 function handleCanvasClick(e) {
   const rect = canvas.getBoundingClientRect();
   const scaleX = canvas.width / rect.width;
@@ -125,13 +135,13 @@ function moveManual(dir) {
   mouseTarget = null;
   player.isMoving = true;
   player.facing = dir;
-  
-  const impulse = player.speed * 2.2; 
+
+  const impulse = player.speed * 2.2;
   if (dir === 'up') player.vy = -impulse;
   if (dir === 'down') player.vy = impulse;
   if (dir === 'left') player.vx = -impulse;
   if (dir === 'right') player.vx = impulse;
-  
+
   playClickSound();
 }
 
@@ -170,6 +180,20 @@ function gameLoop() {
       particles2D.splice(i, 1);
     }
   }
+
+  // Update space patrols
+  spacePatrols.forEach(p => {
+    p.progress += p.speed * p.dir;
+    if (p.progress >= 1) {
+      p.progress = 1;
+      p.dir = -1;
+    } else if (p.progress <= 0) {
+      p.progress = 0;
+      p.dir = 1;
+    }
+    p.x = p.startX + (p.endX - p.startX) * p.progress;
+    p.y = p.startY + (p.endY - p.startY) * p.progress;
+  });
 
   // Update Player Trail
   const trailBobbing = player.isMoving ? Math.sin(localFrame * 0.2) * 2 : Math.sin(localFrame * 0.05) * 1.5;
@@ -409,10 +433,10 @@ function drawGameUFO(ctx, x, y, size = 40, time = 0) {
     let lightAngle = (i / numLights) * Math.PI * 2 + time * 2;
     let lx = Math.cos(lightAngle) * (size * 0.48);
     let ly = Math.sin(lightAngle) * (size * 0.08) + (size * 0.05);
-    
+
     ctx.beginPath();
     ctx.arc(lx, ly, size * 0.05, 0, Math.PI * 2);
-    
+
     let phase = Math.floor(time * 3 + i) % 3;
     ctx.fillStyle = phase === 0 ? '#f43f5e' : (phase === 1 ? '#10b981' : '#f59e0b');
     ctx.fill();
@@ -552,7 +576,7 @@ function drawGamePortal(ctx, x, y, size = 45, time = 0) {
   outerGrad.addColorStop(0.35, '#ec4899');
   outerGrad.addColorStop(0.7, '#8b5cf6');
   outerGrad.addColorStop(1, 'transparent');
-  
+
   ctx.beginPath();
   ctx.arc(0, 0, size, 0, Math.PI * 2);
   ctx.fillStyle = outerGrad;
@@ -563,14 +587,14 @@ function drawGamePortal(ctx, x, y, size = 45, time = 0) {
   for (let i = 0; i < armsCount; i++) {
     ctx.save();
     ctx.rotate(time * 3 + (i * Math.PI / 2));
-    
+
     ctx.beginPath();
     ctx.moveTo(size * 0.25, 0);
     ctx.bezierCurveTo(size * 0.5, size * 0.35, size * 0.75, -size * 0.35, size, 0);
     ctx.strokeStyle = '#db2777';
     ctx.lineWidth = 2.5;
     ctx.stroke();
-    
+
     ctx.restore();
   }
 
@@ -586,11 +610,233 @@ function drawGamePortal(ctx, x, y, size = 45, time = 0) {
   ctx.restore();
 }
 
+function initSpaceDecorations() {
+  const safeZones = [
+    { x: 80, y: 80 },     // Top-left
+    { x: 720, y: 80 },    // Top-right
+    { x: 80, y: 580 },    // Bottom-left
+    { x: 720, y: 560 },   // Bottom-right
+    { x: 100, y: 320 },   // Mid-left
+    { x: 720, y: 320 },   // Mid-right
+    { x: 310, y: 130 },   // Top-center-left
+    { x: 510, y: 130 }    // Top-center-right
+  ];
+
+  spaceDecorations = [];
+  safeZones.forEach((zone, index) => {
+    // 1-2 small asteroids per zone
+    const numAsteroids = 1 + (index % 2);
+    for (let i = 0; i < numAsteroids; i++) {
+      const angleCount = 6 + ((index + i) % 4); // 6-9 vertices
+      const points = [];
+      const baseRadius = 5 + ((index * i + 3) % 8);
+      for (let a = 0; a < angleCount; a++) {
+        const theta = (a / angleCount) * Math.PI * 2;
+        const seedValue = Math.sin(index * 12.3 + i * 4.56 + a) * 0.5 + 0.5;
+        const r = baseRadius * (0.75 + seedValue * 0.5);
+        points.push({
+          x: Math.cos(theta) * r,
+          y: Math.sin(theta) * r
+        });
+      }
+
+      spaceDecorations.push({
+        type: 'asteroid',
+        x: zone.x + ((index * i + 17) % 30) - 15,
+        y: zone.y + ((index + i * 23) % 30) - 15,
+        points: points,
+        angle: (index + i) * 0.7,
+        rotSpeed: 0.005 + ((index + i) % 3) * 0.005 * (index % 2 === 0 ? 1 : -1),
+        bobSpeed: 0.002 + ((index * 7) % 5) * 0.001,
+        bobRange: 3 + (index % 4),
+        bobOffset: (index + i) * 1.1,
+        color: ['#1e1b4b', '#18181b', '#0f172a'][index % 3],
+        borderColor: ['#38bdf8', '#a855f7', '#10b981'][index % 3]
+      });
+    }
+  });
+
+  // Glowing Nebula Cores (Visual atmospheric clouds)
+  spaceDecorations.push({
+    type: 'nebula',
+    x: 100,
+    y: 100,
+    radius: 65,
+    color1: 'rgba(168, 85, 247, 0.07)',
+    color2: 'rgba(99, 102, 241, 0)'
+  });
+  spaceDecorations.push({
+    type: 'nebula',
+    x: 720,
+    y: 530,
+    radius: 75,
+    color1: 'rgba(6, 182, 212, 0.07)',
+    color2: 'rgba(16, 185, 129, 0)'
+  });
+
+  // Constellations nodes
+  spaceDecorations.push({
+    type: 'constellation',
+    stars: [
+      { x: 50, y: 80 }, { x: 90, y: 60 }, { x: 130, y: 90 }, { x: 90, y: 120 }
+    ],
+    connections: [[0, 1], [1, 2], [2, 3], [3, 0], [1, 3]],
+    color: 'rgba(56, 189, 248, 0.12)'
+  });
+  spaceDecorations.push({
+    type: 'constellation',
+    stars: [
+      { x: 670, y: 530 }, { x: 730, y: 500 }, { x: 700, y: 570 }, { x: 750, y: 550 }
+    ],
+    connections: [[0, 1], [1, 3], [3, 2], [2, 0]],
+    color: 'rgba(244, 63, 94, 0.12)'
+  });
+}
+
+function initSpacePatrols() {
+  spacePatrols = [];
+  spacePatrols.push({
+    x: 70,
+    y: 300,
+    startX: 70,
+    startY: 300,
+    endX: 730,
+    endY: 300,
+    progress: 0,
+    dir: 1,
+    speed: 0.0014,
+    size: 15
+  });
+  spacePatrols.push({
+    x: 325,
+    y: 500,
+    startX: 325,
+    startY: 500,
+    endX: 325,
+    endY: 130,
+    progress: 0.5,
+    dir: 1,
+    speed: 0.0018,
+    size: 13
+  });
+}
+
+function drawSpaceDecorations(ctx) {
+  spaceDecorations.forEach((dec, index) => {
+    if (dec.type === 'nebula') {
+      ctx.save();
+      const grad = ctx.createRadialGradient(dec.x, dec.y, 2, dec.x, dec.y, dec.radius);
+      grad.addColorStop(0, dec.color1);
+      grad.addColorStop(1, dec.color2);
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(dec.x, dec.y, dec.radius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    } else if (dec.type === 'constellation') {
+      ctx.save();
+      ctx.strokeStyle = dec.color;
+      ctx.lineWidth = 0.5;
+
+      // Lines
+      dec.connections.forEach(([i, j]) => {
+        ctx.beginPath();
+        ctx.moveTo(dec.stars[i].x, dec.stars[i].y);
+        ctx.lineTo(dec.stars[j].x, dec.stars[j].y);
+        ctx.stroke();
+      });
+
+      // Twinkling stars
+      dec.stars.forEach((star, sIdx) => {
+        const pulse = 1.0 + Math.sin(localFrame * 0.05 + sIdx) * 0.5;
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+        ctx.shadowBlur = 4;
+        ctx.shadowColor = '#60a5fa';
+        ctx.beginPath();
+        ctx.arc(star.x, star.y, pulse, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      ctx.restore();
+    } else if (dec.type === 'asteroid') {
+      ctx.save();
+      const bobY = Math.sin(localFrame * dec.bobSpeed + dec.bobOffset) * dec.bobRange;
+      ctx.translate(dec.x, dec.y + bobY);
+      dec.angle += dec.rotSpeed;
+      ctx.rotate(dec.angle);
+
+      ctx.fillStyle = dec.color;
+      ctx.strokeStyle = dec.borderColor;
+      ctx.lineWidth = 0.8;
+      ctx.beginPath();
+      ctx.moveTo(dec.points[0].x, dec.points[0].y);
+      for (let pIdx = 1; pIdx < dec.points.length; pIdx++) {
+        ctx.lineTo(dec.points[pIdx].x, dec.points[pIdx].y);
+      }
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // Inner cracks/craters detail
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+      ctx.lineWidth = 0.5;
+      ctx.beginPath();
+      ctx.moveTo(dec.points[0].x * 0.4, dec.points[0].y * 0.4);
+      for (let pIdx = 2; pIdx < dec.points.length - 1; pIdx += 2) {
+        ctx.lineTo(dec.points[pIdx].x * 0.35, dec.points[pIdx].y * 0.35);
+      }
+      ctx.stroke();
+
+      ctx.restore();
+    }
+  });
+}
+
+function drawSpacePatrols(ctx) {
+  spacePatrols.forEach((p, pIdx) => {
+    ctx.save();
+
+    let angle = 0;
+    if (p.endX !== p.startX) {
+      angle = p.dir === 1 ? 0 : Math.PI;
+    } else {
+      angle = p.dir === 1 ? -Math.PI / 2 : Math.PI / 2;
+    }
+
+    ctx.translate(p.x, p.y);
+    ctx.rotate(angle);
+
+    // Thrust flame
+    ctx.beginPath();
+    ctx.moveTo(-p.size * 0.1, p.size * 0.15);
+    ctx.lineTo(0, p.size * (0.35 + Math.random() * 0.2));
+    ctx.lineTo(p.size * 0.1, p.size * 0.15);
+    ctx.closePath();
+    ctx.fillStyle = pIdx === 0 ? '#ec4899' : '#06b6d4';
+    ctx.fill();
+
+    // Body
+    ctx.beginPath();
+    ctx.moveTo(p.size * 0.45, 0);
+    ctx.lineTo(-p.size * 0.25, -p.size * 0.15);
+    ctx.lineTo(-p.size * 0.15, 0);
+    ctx.lineTo(-p.size * 0.25, p.size * 0.15);
+    ctx.closePath();
+
+    ctx.fillStyle = '#09090b';
+    ctx.strokeStyle = pIdx === 0 ? '#f43f5e' : '#38bdf8';
+    ctx.lineWidth = 1.0;
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.restore();
+  });
+}
+
 function drawScene() {
   if (!ctx) return;
 
   // Clean Screen
-  ctx.fillStyle = '#09090b'; 
+  ctx.fillStyle = '#09090b';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   // Draw Grid Floors
@@ -615,7 +861,7 @@ function drawScene() {
   for (let x = gridSize; x < canvas.width; x += gridSize) {
     for (let y = gridSize; y < canvas.height; y += gridSize) {
       ctx.fillRect(x - 1, y - 1, 2, 2);
-      
+
       // Cyber scan line pulses
       if ((x + y + localFrame * 1.5) % 400 === 0) {
         ctx.save();
@@ -643,6 +889,10 @@ function drawScene() {
   });
   ctx.restore();
 
+  // Draw Space Decorations and Patrols
+  drawSpaceDecorations(ctx);
+  drawSpacePatrols(ctx);
+
   // Neon Pathways (Triple Layered Glowing paths)
   // Layer 1: Dark base path
   ctx.strokeStyle = '#18181b';
@@ -652,9 +902,9 @@ function drawScene() {
   ctx.beginPath();
   const definePathways = () => {
     ctx.moveTo(210, 200);   // Home
-    ctx.lineTo(415, 200);   
+    ctx.lineTo(415, 200);
     ctx.lineTo(615, 200);   // Academy
-    ctx.moveTo(415, 200);   
+    ctx.moveTo(415, 200);
     ctx.lineTo(415, 350);   // Library Intersect
     ctx.lineTo(210, 450);   // Lab
     ctx.moveTo(415, 350);
@@ -739,13 +989,13 @@ function drawScene() {
       const zoneCenterX = zone.coords.x + zone.size.w / 2;
       const zoneCenterY = zone.coords.y + zone.size.h / 2;
       const auraRadius = Math.max(zone.size.w, zone.size.h) * 0.95 + Math.sin(localFrame * 0.08) * 8;
-      
+
       const auraGrad = ctx.createRadialGradient(
         zoneCenterX, zoneCenterY, 5,
         zoneCenterX, zoneCenterY, auraRadius
       );
 
-      const rString = zone.color === 'emerald' ? '16, 185, 129' : 
+      const rString = zone.color === 'emerald' ? '16, 185, 129' :
                       zone.color === 'blue' ? '59, 130, 246' :
                       zone.color === 'purple' ? '168, 85, 247' :
                       zone.color === 'amber' ? '245, 158, 11' :
@@ -765,7 +1015,7 @@ function drawScene() {
     // Shadow
     if (isActive) {
       ctx.shadowBlur = 24;
-      ctx.shadowColor = zone.color === 'emerald' ? '#10b981' : 
+      ctx.shadowColor = zone.color === 'emerald' ? '#10b981' :
                         zone.color === 'blue' ? '#3b82f6' :
                         zone.color === 'purple' ? '#a855f7' :
                         zone.color === 'amber' ? '#f59e0b' :
@@ -774,15 +1024,15 @@ function drawScene() {
 
     // Building Blocks
     ctx.fillStyle = '#18181b';
-    ctx.strokeStyle = isActive ? 
-      (zone.color === 'emerald' ? '#10b981' : 
+    ctx.strokeStyle = isActive ?
+      (zone.color === 'emerald' ? '#10b981' :
        zone.color === 'blue' ? '#3b82f6' :
        zone.color === 'purple' ? '#a855f7' :
        zone.color === 'amber' ? '#f59e0b' :
        zone.color === 'pink' ? '#ec4899' : '#6366f1') : '#27272a';
-    
+
     ctx.lineWidth = isActive ? 2 : 1.5;
-    
+
     // Roundrect draw
     const r = 12;
     ctx.beginPath();
@@ -811,22 +1061,22 @@ function drawScene() {
     const cx = zone.coords.x + zone.size.w / 2;
     const cy = zone.coords.y + 35;
     const padRadius = 22;
-    
-    ctx.fillStyle = isActive ? 
-      (zone.color === 'emerald' ? 'rgba(16, 185, 129, 0.15)' : 
+
+    ctx.fillStyle = isActive ?
+      (zone.color === 'emerald' ? 'rgba(16, 185, 129, 0.15)' :
        zone.color === 'blue' ? 'rgba(59, 130, 246, 0.15)' :
        zone.color === 'purple' ? 'rgba(168, 85, 247, 0.15)' :
        zone.color === 'amber' ? 'rgba(245, 158, 11, 0.15)' :
        zone.color === 'pink' ? 'rgba(236, 72, 153, 0.15)' : 'rgba(99, 102, 241, 0.15)') : 'rgba(39, 39, 42, 0.3)';
-       
-    ctx.strokeStyle = isActive ? 
-      (zone.color === 'emerald' ? '#10b981' : 
+
+    ctx.strokeStyle = isActive ?
+      (zone.color === 'emerald' ? '#10b981' :
        zone.color === 'blue' ? '#3b82f6' :
        zone.color === 'purple' ? '#a855f7' :
        zone.color === 'amber' ? '#f59e0b' :
        zone.color === 'pink' ? '#ec4899' : '#6366f1') : '#27272a';
     ctx.lineWidth = 1.5;
-    
+
     ctx.beginPath();
     ctx.arc(cx, cy, padRadius, 0, Math.PI * 2);
     ctx.fill();
@@ -887,22 +1137,22 @@ function drawScene() {
   const activeZone = state.zones.find(z => z.id === state.activeZoneId);
   if (activeZone) {
     const pulseSize = Math.sin(localFrame * 0.085) * 4;
-    const colorHex = activeZone.color === 'emerald' ? '#10b981' : 
+    const colorHex = activeZone.color === 'emerald' ? '#10b981' :
                      activeZone.color === 'blue' ? '#3b82f6' :
                      activeZone.color === 'purple' ? '#a855f7' :
                      activeZone.color === 'amber' ? '#f59e0b' :
                      activeZone.color === 'pink' ? '#ec4899' : '#6366f1';
-    
+
     ctx.strokeStyle = colorHex;
     ctx.lineWidth = 1.5;
     ctx.setLineDash([8, 6]);
     ctx.lineDashOffset = -localFrame * 0.6;
-    
+
     ctx.beginPath();
     ctx.roundRect(
-      activeZone.coords.x - 8 - pulseSize, 
-      activeZone.coords.y - 8 - pulseSize, 
-      activeZone.size.w + 16 + pulseSize * 2, 
+      activeZone.coords.x - 8 - pulseSize,
+      activeZone.coords.y - 8 - pulseSize,
+      activeZone.size.w + 16 + pulseSize * 2,
       activeZone.size.h + 16 + pulseSize * 2,
       16
     );
@@ -915,12 +1165,12 @@ function drawScene() {
   playerTrail.forEach((pos, idx) => {
     const ratio = (idx + 1) / playerTrail.length;
     const alpha = ratio * 0.22;
-    
+
     // Choose trail glow color based on the selected character
     let trailColor = '16, 185, 129'; // default emerald for astronaut
     if (state.selectedCharacter === 'spaceship') trailColor = '168, 85, 247'; // purple
     else if (state.selectedCharacter === 'ufo') trailColor = '6, 182, 212'; // cyan
-    
+
     ctx.fillStyle = `rgba(${trailColor}, ${alpha})`;
     ctx.beginPath();
     ctx.arc(pos.x, pos.y, 8 * ratio, 0, Math.PI * 2);
@@ -1036,7 +1286,7 @@ function drawScene() {
     const eggX = 750;
     const eggY = 50;
     const eggBob = Math.sin(localFrame * 0.1) * 3;
-    
+
     ctx.save();
     ctx.shadowBlur = 12 + Math.sin(localFrame * 0.15) * 4;
     ctx.shadowColor = '#f59e0b';
@@ -1044,7 +1294,7 @@ function drawScene() {
     ctx.beginPath();
     ctx.arc(eggX, eggY + eggBob, 10, 0, Math.PI * 2);
     ctx.fill();
-    
+
     ctx.fillStyle = '#f59e0b';
     ctx.strokeStyle = '#fff';
     ctx.lineWidth = 1.5;
@@ -1052,13 +1302,13 @@ function drawScene() {
     ctx.roundRect(eggX - 6, eggY - 8 + eggBob, 12, 16, 2);
     ctx.fill();
     ctx.stroke();
-    
+
     ctx.fillStyle = '#f59e0b';
     ctx.font = 'bold 8px monospace';
     ctx.textAlign = 'center';
     ctx.fillText("SECRET DATA", eggX, eggY - 14 + eggBob);
     ctx.restore();
-    
+
     // Kiểm tra va chạm với người chơi (bán kính 22px)
     const dist = Math.hypot(player.x - eggX, player.y - eggY);
     if (dist < 22) {

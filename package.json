@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node server.ts",
     "build": "echo \"No build step needed for Node type stripping\"",
-    "lint": "echo \"Linting complete: No issues found\""
+    "lint": "node --check server.ts && node --check js/app.js && node --check js/chatbot-manager.js && node --check js/game2d-manager.js && node --check js/engine-3d.js",
+    "check": "npm run lint"
   },
   "dependencies": {
     "@google/genai": "latest",
