@@ -4,8 +4,10 @@
  */
 
 // Hàm tải danh sách các tin nhắn đã duyệt trong Guestbook
-async function loadPublicGuestbook() {
-  const listEl = document.getElementById('portal_gb_messages_list');
+async function loadPublicGuestbook(root = document) {
+  const listEl = root.querySelector
+    ? root.querySelector('#portal_gb_messages_list')
+    : document.getElementById('portal_gb_messages_list');
   if (!listEl) return;
 
   listEl.innerHTML = `

@@ -89,6 +89,9 @@ window.open2DZoneModal = function() {
   if (modal && modalBody && zoneDetail) {
     // Copy content
     modalBody.innerHTML = zoneDetail.innerHTML;
+    if (state.activeZoneId === 'portal') {
+      bindPortalPanelInteractions(modalBody);
+    }
     
     // Copy title & icon
     if (modalTitle && bannerTitle) {
@@ -118,6 +121,79 @@ window.open2DZoneModal = function() {
     }
   }
 };
+
+function bindPortalPanelInteractions(root = document) {
+  const tabContact = root.querySelector('#portal_tab_contact');
+  const tabGuestbook = root.querySelector('#portal_tab_guestbook');
+  const contentContact = root.querySelector('#portal_tab_content_contact');
+  const contentGuestbook = root.querySelector('#portal_tab_content_guestbook');
+
+  if (tabContact && tabGuestbook && contentContact && contentGuestbook) {
+    tabContact.addEventListener('click', () => {
+      playClickSound();
+      tabContact.className = 'pb-2 border-b-2 border-pink-500 text-pink-400 font-semibold focus:outline-none cursor-pointer';
+      tabGuestbook.className = 'pb-2 border-b-2 border-transparent text-zinc-500 hover:text-zinc-350 focus:outline-none cursor-pointer';
+      contentContact.classList.remove('hidden');
+      contentGuestbook.classList.add('hidden');
+    });
+
+    tabGuestbook.addEventListener('click', () => {
+      playClickSound();
+      tabGuestbook.className = 'pb-2 border-b-2 border-pink-500 text-pink-400 font-semibold focus:outline-none cursor-pointer';
+      tabContact.className = 'pb-2 border-b-2 border-transparent text-zinc-500 hover:text-zinc-350 focus:outline-none cursor-pointer';
+      contentContact.classList.add('hidden');
+      contentGuestbook.classList.remove('hidden');
+      loadPublicGuestbook(root);
+    });
+  }
+
+  const formGb = root.querySelector('#portal_gb_form');
+  if (formGb) {
+    formGb.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const nameInput = root.querySelector('#portal_gb_name');
+      const emailInput = root.querySelector('#portal_gb_email');
+      const messageInput = root.querySelector('#portal_gb_message');
+      const statusEl = root.querySelector('#portal_gb_status');
+      const submitBtn = root.querySelector('#btn_submit_guestbook');
+
+      if (!nameInput || !emailInput || !messageInput || !statusEl || !submitBtn) return;
+
+      const name = nameInput.value.trim();
+      const email = emailInput.value.trim();
+      const message = messageInput.value.trim();
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = state.language === 'vi' ? 'ĐANG GỬI...' : 'SENDING...';
+      statusEl.classList.add('hidden');
+
+      try {
+        const res = await fetch('api/guestbook.php', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, email, message })
+        });
+        const data = await res.json();
+
+        statusEl.classList.remove('hidden');
+        if (data.status === 'success') {
+          statusEl.className = 'text-[10px] font-mono text-emerald-400';
+          statusEl.textContent = state.language === 'vi' ? 'Đã gửi! Đang chờ duyệt.' : 'Sent! Waiting for approval.';
+          formGb.reset();
+        } else {
+          throw new Error(data.message || 'Submit failed');
+        }
+      } catch (err) {
+        statusEl.classList.remove('hidden');
+        statusEl.className = 'text-[10px] font-mono text-rose-400';
+        statusEl.textContent = state.language === 'vi' ? 'Lỗi gửi lời nhắn.' : 'Failed to send.';
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = state.language === 'vi' ? 'GỬI LỜI NHẮN' : 'SEND MESSAGE';
+      }
+    });
+  }
+}
 
 window.close2DZoneModal = function() {
   const modal = document.getElementById('zone_info_modal_2d');
