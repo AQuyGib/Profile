@@ -1,6 +1,13 @@
 # Project Memory
 
 - Current updates & fixes:
+  - **[VIẾT README.MD CHUYÊN NGHIỆP & MERGE MAIN]**:
+    - **Yêu cầu**: Viết file `README.md` mới chi tiết, hấp dẫn dành riêng cho nhà tuyển dụng và tiến hành merge toàn bộ thay đổi vào nhánh `main`.
+    - **Thực hiện**:
+      - Viết lại toàn bộ `README.md` phô diễn các điểm nhấn kỹ thuật: WebGL 3D Engine (Three.js/GSAP) tối ưu hiệu năng (Pixel Ratio Capping, Lazy Loading, Eco Mode FPS Throttling, Shadow Map Optimization), Gameplay 2D Canvas & Vector Sprites vẽ thủ tục, AI Chatbot (Gemini 3.5 Flash, RAG thông minh, Speech-to-Text & Text-to-Speech), Backend PHP (MVC, Service-Repository, PDO, OTP Email PHPMailer SMTP, Bcrypt) và DevOps (Docker, Nginx Proxy Manager, CI/CD GitHub Actions).
+      - Commit file `README.md` trên nhánh `profile-3d-nangcap`.
+      - Chuyển sang nhánh `main`, thực hiện merge nhánh `profile-3d-nangcap` vào `main` thành công không xung đột.
+      - Thực hiện push nhánh `main` lên remote GitHub thành công.
   - **[SỬA LỖI CAMERA 3D BỊ KHÓA CỨNG (CAMERA LOCKOUT FIX)]**:
     - **Yêu cầu**: Khắc phục tình trạng camera 3D bị cố định góc nhìn, không thể kéo xoay tự do bằng chuột/tay sau khi nhấn nút chuyển góc hoặc chuyển phân cảnh.
     - **Thực hiện**:
