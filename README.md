@@ -1,174 +1,197 @@
-# Cyber-Oasis Portfolio
+# 🌌 Cyber-Oasis Portfolio: Gamified Interactive 2D/3D WebGL Portfolio
 
-Portfolio cá nhân tương tác của **Nguyễn Anh Quý**, kết hợp giao diện cyberpunk, bản đồ khám phá 2D/3D, chatbot AI dùng Google Gemini, guestbook và trang quản trị nội dung.
+> **Hồ sơ năng lực cá nhân tương tác đột phá của Nguyễn Anh Quý**
+> Một dự án Full-Stack kết hợp công nghệ **WebGL 3D (Three.js)**, **2D Canvas Game engine**, **Trí tuệ nhân tạo (Gemini AI Chatbot + RAG + Voice)**, kiến trúc **PHP (MVC / Service-Repository)** bảo mật cao, và quy trình triển khai hiện đại **Docker Multi-Container + CI/CD**.
 
-Dự án hiện có hai hướng chạy:
+---
 
-- **Backend chính: Apache/PHP** để dùng chatbot, guestbook và admin console.
-- **Backend tùy chọn: Node.js/Express** qua `server.ts` để phục vụ frontend và endpoint chatbot tương thích khi chạy Docker/Node.
+## 🚀 Điểm Nhấn Dự Án (Nổi Bật Với Nhà Tuyển Dụng)
 
-## Tính năng chính
+Dự án này được xây dựng không chỉ để làm một trang CV giới thiệu thông tin, mà là một **sân chơi công nghệ thực thụ** nhằm phô diễn toàn bộ năng lực tối ưu hiệu năng Frontend, xử lý backend chuyên sâu, tích hợp AI thông minh, và tư duy DevOps thực chiến.
 
-- **Portfolio tương tác 2D/3D**: người xem khám phá các khu vực thông tin như giới thiệu, học vấn, kỹ năng, dự án, triết lý làm việc và liên hệ.
-- **Dữ liệu động từ `data.json`**: nội dung portfolio được tách khỏi giao diện để dễ chỉnh sửa và nạp lại.
-- **Chatbot AI Gemini**: trả lời câu hỏi về hồ sơ, kỹ năng và dự án của Nguyễn Anh Quý thông qua `api/chat.php` hoặc endpoint Node `/api/chat`.
-- **Guestbook**: khách truy cập có thể gửi lời nhắn, admin duyệt trước khi hiển thị công khai.
-- **Admin console**: quản lý guestbook và chỉnh sửa dữ liệu portfolio tại `admin/index.html`.
-- **Hiệu ứng giao diện**: Tailwind CDN, Three.js, GSAP, Lucide icons, Web Audio API, theme và cấu hình hiệu năng lưu bằng `localStorage`.
-- **Triển khai linh hoạt**: hỗ trợ chạy với PHP/Apache truyền thống, Node.js hoặc Docker/Nginx Proxy Manager.
+### 1. WebGL 3D Engine (Three.js & GSAP)
+*   **Môi trường Sci-Fi 3D**: Thiết lập không gian vũ trụ với đảo trung tâm, hệ thống thiên thạch xoay trôi dạt tự sinh (Procedural Space Asteroids), bụi vũ trụ bay lơ lửng và tinh thể phát sáng Neon (Glowing Cyber Crystals) rực rỡ.
+*   **Hiệu ứng Hậu kỳ Cao cấp**: Tích hợp `EffectComposer` với bộ lọc phát sáng `UnrealBloomPass` mang phong cách Cyberpunk huyền ảo nhưng được tinh chỉnh cân bằng tránh cháy sáng.
+*   **Tối ưu hóa Hiệu năng Vượt trội (WebGL Performance)**:
+    *   **Thắt chặt tỷ lệ điểm ảnh (Pixel Ratio Capping)**: Giới hạn độ phân giải ở mức `1.35` cho màn hình Retina/High-DPI giúp giảm >50% số pixel cần vẽ mà không làm giảm trải nghiệm nhìn.
+    *   **Lazy Loading hàng đợi (Asset Loading Queue)**: Chỉ nạp trước các mô hình nền tảng cấu trúc, trì hoãn tải các mô hình trang trí phụ mỗi 80ms sau khi mở màn hình, giúp tăng tốc độ tải trang ban đầu.
+    *   **Eco Mode & FPS Throttling**: Khóa khung hình ở 60 FPS (hoặc 30 FPS ở Eco Mode), tự động bypass toàn bộ post-processing (UnrealBloom) để render trực tiếp bằng WebGLRenderer gốc, giúp máy cấu hình yếu hoặc điện thoại chạy mượt mà.
+    *   **Tối ưu bóng đổ**: Giảm kích thước Shadow Map từ `2048` xuống `1024` và gom hẹp tầm quét ánh sáng (`OrthographicCamera` shadow frustum) vừa khít vùng di chuyển của nhân vật.
+*   **Giao diện Camera Cinematic**: Tách biệt chuyển động lerp góc nhìn tĩnh và hiệu ứng sóng nhấp nhô không trọng lực (`hoverWave`), giải phóng hoàn toàn góc camera tự do của người chơi (`OrbitControls`) không bị giật hay khóa cứng khi chuyển khu vực (Zone).
+*   **Mobile Navigation**: Joystick ảo glassmorphism mượt mà hỗ trợ lực kéo di chuyển đa hướng trên thiết bị cảm ứng, kết hợp tính năng Click-to-Move thông minh.
 
-## Công nghệ sử dụng
+### 2. Gameplay 2D Canvas & Vector Sprites
+*   **Đổi nhân vật thời gian thực**: Cho phép lựa chọn giữa 3 thực thể: **Phi Hành Gia**, **Phi Thuyền**, và **Đĩa Bay (UFO)** kèm theo hiệu ứng chuyển động nhấp nhô/xoay tròn đặc trưng vẽ bằng 2D Canvas phụ trên modal.
+*   **Đồ họa vẽ thủ tục (Procedural Vector Drawing)**: Không sử dụng ảnh tĩnh, toàn bộ nhân vật và bệ Hologram tại các Zone đều được vẽ trực tiếp bằng mã nguồn Canvas API (như ngọn lửa phản lực thay đổi kích thước ngẫu nhiên, UFO chớp đèn neon màu sắc chuyển đổi liên tục, lỗ đen vũ trụ xoáy ốc).
+*   **Vệt di chuyển sinh động (Player Trail)**: Vẽ vệt sáng trôi dạt thay đổi màu sắc linh hoạt tương ứng theo từng loại nhân vật được chọn (Lửa xanh lục cho Astronaut, Plasma tím cho Spaceship, và Cyan cho UFO).
 
-- Frontend: HTML, CSS, JavaScript thuần, Tailwind CSS CDN, Three.js, GSAP, Lucide.
-- Backend PHP: PHP, PDO, MySQL, PHPMailer, mô hình Controller-Service-Repository cho guestbook/admin.
-- Backend Node: Node.js, Express, TypeScript runtime, Google GenAI SDK.
-- Dữ liệu: `data.json`, MySQL schema trong `api/database.sql`.
-- DevOps: Dockerfile và `docker-compose.yml`.
+### 3. Trí Tuệ Nhân Tạo (Gemini AI RAG & Voice Chat)
+*   **Mô hình Gemini 3.5 Flash**: Cập nhật mô hình ngôn ngữ mới nhất để tối ưu tốc độ phản hồi và độ chính xác của chatbot.
+*   **Cơ chế RAG (Retrieval-Augmented Generation) thông minh**: Chatbot tự động đọc dữ liệu `data.json` ở phía Server, lọc thông tin phân khu (Zones) phù hợp với từ khóa của người dùng trước khi gửi làm ngữ cảnh (context), giúp AI trả lời cực kỳ chuẩn xác các câu hỏi về thông tin cá nhân, dự án, kỹ năng của ứng viên mà không bị ảo giác (hallucination).
+*   **Tích hợp Giọng nói (Speech-to-Text & Text-to-Speech)**:
+    *   Sử dụng Web Speech API để người dùng có thể nói chuyện trực tiếp với AI qua micro.
+    *   AI tự động đọc câu trả lời bằng giọng nói tự nhiên, hỗ trợ chọn lựa nhiều giọng đọc hệ thống (Nam/Nữ, Anh/Việt) qua thẻ chọn động và lưu cấu hình vào `localStorage`.
+    *   Tự động phát hiện và đồng bộ hóa ngôn ngữ nghiêm ngặt (chỉ phát giọng đọc tiếng Việt khi ở giao diện tiếng Việt và có giọng phù hợp, tránh tình trạng lỗi âm do phát giọng tiếng Anh cho chữ tiếng Việt).
+*   **Persistence & UX**: Lưu lịch sử trò chuyện trong `localStorage` giúp khôi phục hội thoại khi người dùng reload trang (F5).
 
-## Cấu trúc thư mục
+### 4. Backend PHP vững chắc (MVC & Service-Repository Pattern)
+*   **Cấu trúc thư mục chuẩn Laravel**: Backend PHP (`api/`) được module hóa rõ ràng gồm `Controllers`, `Services`, `Repositories` và `Utils`.
+*   **An toàn & Bảo mật**:
+    *   Xác thực 2 lớp Admin Dashboard bằng **Mã OTP gửi qua Email thật** qua thư viện PHPMailer SMTP.
+    *   Lưu trữ mật khẩu mã hóa bằng thuật toán `Bcrypt`.
+    *   Ngăn chặn hoàn toàn các lỗ hổng bảo mật phổ biến như **SQL Injection (SQLi)** nhờ sử dụng PDO Prepared Statements và **Cross-Site Request Forgery (CSRF)** bằng Tokens.
+*   **Hệ thống Guestbook (Sổ lưu niệm)**: AJAX dynamic loading, cho phép khách gửi lời nhắn, admin duyệt/xóa tin nhắn trước khi hiển thị công khai. Form nhập liệu glassmorphic cao cấp, không bị co cụm dữ liệu, tự động chặn phím tắt di chuyển game khi người dùng đang gõ chữ.
+
+### 5. DevOps & Môi Trường Vận Hành Hiện Đại
+*   **Dockerization**: Cung cấp `Dockerfile` (Node.js v24 Alpine) và cấu hình `docker-compose.yml` kiến trúc đa container (Multi-Container Architecture).
+*   **Nginx Proxy Manager**: Tích hợp reverse proxy quản lý cổng `80/443`, tự động gia hạn SSL HTTPS miễn phí Let's Encrypt.
+*   **Tự động hóa CI/CD**: Cấu hình GitHub Actions (`.github/workflows/deploy.yml`) tự động hóa quy trình build và deploy trực tiếp lên VPS cá nhân qua SSH/SCP khi push mã nguồn.
+
+---
+
+## 🛠️ Công Nghệ Sử Dụng
+
+*   **Frontend**: HTML5, CSS3 (Vanilla + Tailwind CSS CDN), JavaScript (ES6+), **Three.js** (WebGL), **GSAP** (GreenSock Animation Platform), Lucide Icons.
+*   **Backend PHP**: PHP 8.x, PDO MySQL, PHPMailer, Composer.
+*   **Backend Node**: Node.js, TypeScript runtime, Express, `@google/genai` SDK.
+*   **Database**: MySQL.
+*   **DevOps / Tools**: Docker, Docker Compose, Nginx Proxy Manager, Git, GitHub Actions.
+
+---
+
+## 📂 Cấu Trúc Thư Mục Dự Án
 
 ```text
 .
-├── admin/                 # Giao diện quản trị portfolio và guestbook
-├── api/
-│   ├── chat.php           # API chatbot Gemini bản PHP
+├── admin/                 # Giao diện quản trị Admin Dashboard (Form chỉnh sửa dữ liệu, quản lý Guestbook)
+├── api/                   # Backend PHP theo mô hình MVC / Service-Repository
+│   ├── config/            # Kết nối cơ sở dữ liệu MySQL (PDO Connection)
+│   ├── controllers/       # Điều phối các API endpoints (AdminController, GuestbookController)
+│   ├── repositories/      # Trực tiếp tương tác truy vấn CSDL
+│   ├── services/          # Xử lý logic nghiệp vụ chính (Duyệt tin nhắn, kiểm tra OTP)
+│   ├── utils/             # Các công cụ hỗ trợ (Mailer gửi OTP SMTP, helper)
+│   ├── chat.php           # API chatbot Gemini RAG (PHP)
 │   ├── guestbook.php      # API guestbook công khai
-│   ├── admin.php          # API quản trị
-│   ├── database.sql       # Schema MySQL
-│   ├── config/            # Kết nối database
-│   ├── controllers/       # Controller API
-│   ├── repositories/      # Truy vấn dữ liệu
-│   ├── services/          # Logic nghiệp vụ
-│   └── utils/             # Mailer, TOTP
-├── css/                   # Style chính
-├── js/                    # Logic frontend, game 2D/3D, chatbot, guestbook
-├── 3d/                    # Tài nguyên 3D
-├── cyber-portfolio/       # Phiên bản/thử nghiệm portfolio 3D riêng
-├── data.json              # Nội dung portfolio
-├── index.html             # Trang portfolio chính
-├── 2d.html                # Trang thư viện/tài nguyên 2D
-├── 3d.html                # Trang tài nguyên 3D
-├── server.ts              # Server Node/Express
-├── Dockerfile
-├── docker-compose.yml
-├── composer.json
-└── package.json
+│   └── database.sql       # Schema cấu trúc database MySQL
+├── css/                   # Stylesheet chính, tùy biến animations Sci-Fi & Cyberpunk
+├── js/                    # Trực quan hóa logic Frontend
+│   ├── achievements-manager.js # Quản lý hệ thống thành tựu RPG (Gamification)
+│   ├── app.js             # Orchestrator khởi tạo, dịch đa ngôn ngữ, chọn nhân vật
+│   ├── control-panel-handler.js # Quản lý tương tác cài đặt đồ họa 3D (Eco Mode, Bloom, Shadow)
+│   ├── engine-3d.js       # Toàn bộ mã nguồn WebGL Engine Three.js (~3600 dòng code được tối ưu hóa)
+│   ├── game2d-manager.js  # Bộ dựng game 2D Canvas, vật thể vũ trụ tự vẽ, player physics
+│   ├── guestbook-manager.js # Xử lý tương tác AJAX gửi/nhận lời nhắn Sổ lưu niệm
+│   └── state-manager.js   # Quản lý trạng thái toàn cục & Theme màu 3D (Cyberpunk / Warm Studio)
+├── 3d/                    # Thư mục lưu trữ các file mô hình 3D (.glb) nén siêu nhẹ
+├── data.json              # File dữ liệu động lưu trữ toàn bộ nội dung Portfolio
+├── index.html             # Điểm truy cập chính (Main Page) tích hợp giao diện HUD
+├── server.ts              # Server Node/Express (TypeScript) chạy song hành
+├── Dockerfile             # Container hóa Node server
+├── docker-compose.yml     # Khởi tạo cụm ứng dụng (App Node + Nginx Proxy Manager)
+├── package.json           # Cấu hình dependency Node.js
+└── composer.json          # Cấu hình dependency PHP (PHPMailer)
 ```
 
-## Cấu hình môi trường
+---
 
-Tạo file `.env` từ `.env.example` và bổ sung các biến cần dùng:
+## ⚙️ Hướng Dẫn Cài Đặt Dưới Local
+
+Dự án hỗ trợ hai phương thức chạy chính: chạy trực tiếp bằng PHP/Apache truyền thống hoặc thông qua Docker.
+
+### 📋 Cấu Hình Môi Trường (.env)
+
+Sao chép file `.env.example` thành `.env` tại thư mục gốc và điền các thông tin:
 
 ```env
+# Google Gemini API Key (Bắt buộc để chạy Chatbot)
 GEMINI_API_KEY="your_gemini_api_key"
+
+# URL truy cập ứng dụng (Dùng cho gửi mail OTP)
 APP_URL="http://localhost/FE2CV/Profile"
 
+# Cấu hình Kết Nối Database MySQL
 DB_HOST="localhost"
 DB_NAME="cyber_portfolio"
 DB_USER="root"
 DB_PASS=""
 
+# Cấu hình SMTP để gửi Mail OTP (Dưới đây là ví dụ dùng Gmail)
 MAIL_HOST="smtp.gmail.com"
 MAIL_PORT="465"
 MAIL_ENCRYPTION="ssl"
 MAIL_USERNAME="your_email@gmail.com"
-MAIL_PASSWORD="your_app_password"
+MAIL_PASSWORD="your_gmail_app_password" # Mật khẩu ứng dụng Gmail
 MAIL_FROM_ADDRESS="your_email@gmail.com"
 MAIL_FROM_NAME="Cyber-Oasis Portfolio"
+
+# Địa chỉ Email nhận OTP của Admin
 ADMIN_EMAIL="your_email@gmail.com"
 ```
 
-Ghi chú:
+---
 
-- `GEMINI_API_KEY` là bắt buộc nếu dùng chatbot.
-- Các biến `DB_*` cần thiết cho guestbook và admin console.
-- Các biến `MAIL_*`/`ADMIN_EMAIL` dùng cho OTP đăng nhập admin.
-- Không commit file `.env` thật vì chứa khóa API và mật khẩu.
+### Cách 1: Chạy Bằng Máy Chủ Web PHP (Laragon / XAMPP / WAMP)
 
-## Chạy bằng PHP/Apache
+1.  Di chuyển toàn bộ thư mục dự án `Profile` vào thư mục gốc của máy chủ web (ví dụ `C:\xampp\htdocs\FE2CV\Profile` hoặc `C:\laragon\www\FE2CV\Profile`).
+2.  Mở terminal tại thư mục dự án và cài đặt các thư viện PHP:
+    ```bash
+    composer install
+    ```
+3.  Tạo một cơ sở dữ liệu MySQL mới có tên `cyber_portfolio` và nhập cấu trúc bảng từ file sql:
+    ```bash
+    mysql -u root -p cyber_portfolio < api/database.sql
+    ```
+4.  Cấu hình chính xác tệp `.env`.
+5.  Truy cập vào trình duyệt theo đường dẫn:
+    ```text
+    http://localhost/FE2CV/Profile/
+    ```
+    Trang quản trị (Admin Dashboard) nằm tại:
+    ```text
+    http://localhost/FE2CV/Profile/admin/
+    ```
 
-Phù hợp khi dùng Laragon, XAMPP, WAMP hoặc hosting PHP.
+---
 
-1. Đặt thư mục dự án vào thư mục web root, ví dụ `C:\laragon\www\FE2CV\Profile` hoặc `C:\xampp\htdocs\FE2CV\Profile`.
-2. Cài dependency PHP:
+### Cách 2: Chạy Bằng Docker (Nhanh & Đồng Bộ)
 
-   ```bash
-   composer install
-   ```
+Phương thức này sẽ khởi chạy máy chủ Node.js/Express tích hợp sẵn trên cổng `3000` kết nối qua mạng cầu ảo cùng Nginx Proxy Manager.
 
-3. Tạo database MySQL và import schema:
+1.  Đảm bảo máy của bạn đã cài đặt **Docker** và **Docker Compose**.
+2.  Khởi chạy các containers ở chế độ chạy nền:
+    ```bash
+    docker compose up -d --build
+    ```
+3.  Các dịch vụ được tạo ra:
+    *   **App (Node/Express Server)**: Lắng nghe cục bộ tại cổng `3000`.
+    *   **Nginx Proxy Manager**: Mở cổng `80` (HTTP), `443` (HTTPS) và cổng dashboard quản trị `81`.
+4.  Truy cập trang cấu hình Nginx Proxy Manager tại `http://localhost:81` (Tài khoản mặc định: `admin@example.com` / `changeme`) và trỏ tên miền (Proxy Host) của bạn về địa chỉ container `app:3000`.
 
-   ```bash
-   mysql -u root -p < api/database.sql
-   ```
+---
 
-4. Cấu hình `.env`.
-5. Mở trình duyệt tại URL tương ứng, ví dụ:
+## 🎮 Hệ Thống Thành Tựu (Gamification)
 
-   ```text
-   http://localhost/FE2CV/Profile/
-   ```
+Để tăng tính tương tác và thú vị cho nhà tuyển dụng khi duyệt hồ sơ, dự án được tích hợp hệ thống thành tựu RPG nhỏ phát ra âm thanh chúc mừng sinh động dựng từ Web Audio API:
 
-Trang quản trị nằm tại:
+1.  **Nhà Khám Phá (Explorer)**: Đạt được khi người chơi di chuyển qua đầy đủ 5 vùng phân khu chính trong game 2D.
+2.  **Du Hành Không Gian (Cosmonaut)**: Đạt được khi kích hoạt chuyển đổi chiều không gian và bước vào chế độ WebGL 3D lần đầu tiên.
+3.  **Hỏi Đáp Cùng AI (AI Communicator)**: Đạt được khi gửi tin nhắn trò chuyện cùng Chatbot AI Gemini.
+4.  **Trứng Phục Sinh (Easter Egg)**: Được mở khóa khi người chơi tìm thấy đĩa mềm cổ màu vàng phát sáng bí ẩn tại tọa độ ẩn `(x: 750, y: 50)` trên bản đồ 2D. Khi nhặt được sẽ kích hoạt lời cảm ơn đặc biệt từ tác giả gửi tới nhà tuyển dụng.
 
-```text
-http://localhost/FE2CV/Profile/admin/
-```
+---
 
-`api/database.sql` chỉ tạo bảng, không seed tài khoản admin mặc định. Hãy tạo admin riêng cho từng môi trường bằng mật khẩu đã hash Bcrypt và `two_fa_secret` riêng, tránh dùng tài khoản mẫu trong production.
+## 🔒 Cơ Chế Bảo Mật Của Trang Admin
 
-## Chạy bằng Node.js
+Trang quản trị `/admin` được xây dựng bảo mật nghiêm ngặt để bảo vệ tệp dữ liệu cốt lõi `data.json` và cơ sở dữ liệu:
+*   **Xác thực 2 bước (2FA OTP Email)**: Khi admin nhập đúng Username & Password, hệ thống sẽ tự sinh mã OTP 6 số ngẫu nhiên có hiệu lực trong 5 phút và gửi thẳng về email cấu hình của Admin (`ADMIN_EMAIL`). Admin bắt buộc phải nhập đúng OTP mới được cấp quyền phiên làm việc (Session).
+*   **Form Editor Trực Quan Đa Ngôn Ngữ**: Thay vì phải sửa tệp JSON thô dễ sai cú pháp, Admin được cung cấp form chỉnh sửa 2 cột ngôn ngữ song song (Tiếng Việt & Tiếng Anh), có tính năng thêm/xóa phần tử động và tự động kiểm tra lỗi trước khi đồng bộ. Hệ thống cũng cung cấp chế độ "Chỉnh sửa JSON thô" cho nhà phát triển có kinh nghiệm.
 
-Phù hợp khi muốn dùng server Express trong `server.ts`.
+---
 
-```bash
-npm install
-npm start
-```
+## 📄 Bản Quyền & Giấy Phép
 
-Server mặc định lắng nghe cổng `3000`:
+Dự án được phân phối dưới giấy phép mã nguồn mở. Xem chi tiết tại tệp [LICENSE](file:///d:/Sever/htdocs/FE2CV/Profile/LICENSE).
 
-```text
-http://localhost:3000
-```
-
-Node server phục vụ static assets, `assets/`, `data.json`, trang `index.html` và endpoint chatbot `/api/chat` hoặc `/api/chat.php`. Guestbook và admin console vẫn thuộc backend PHP/MySQL.
-
-## Chạy bằng Docker
-
-```bash
-docker compose up -d --build
-```
-
-`docker-compose.yml` gồm:
-
-- `app`: container Node/Express, expose nội bộ cổng `3000`.
-- `nginx-proxy-manager`: reverse proxy, mở cổng `80`, `443` và dashboard quản trị `81`.
-
-Cần cấu hình domain/proxy host trong Nginx Proxy Manager để trỏ về service `app:3000`.
-
-## Quản lý nội dung
-
-- Nội dung hiển thị chính nằm trong `data.json`.
-- Admin console có thể đọc và ghi lại `data.json` qua `api/admin.php?action=portfolio` và `api/admin.php?action=portfolio_save`.
-- Guestbook lưu trong bảng `guestbook`, mặc định tin nhắn mới ở trạng thái `pending`.
-- Chỉ tin nhắn `approved` mới được API công khai trả về.
-
-## Triển khai hosting PHP
-
-1. Upload các file/thư mục cần thiết lên `public_html` hoặc thư mục public của hosting.
-2. Chạy `composer install` trước khi upload hoặc upload kèm thư mục `vendor/`.
-3. Import `api/database.sql` vào MySQL hosting.
-4. Cấu hình `.env` trên hosting với API key, database và mail SMTP.
-5. Đảm bảo web server có quyền ghi `data.json` nếu muốn chỉnh nội dung qua admin console.
-
-## Lưu ý bảo mật
-
-- Không public `.env`, backup database hoặc file chứa khóa API.
-- Không dùng tài khoản admin mặc định hoặc mật khẩu mẫu trong production.
-- Với môi trường production, nên hạn chế truy cập trực tiếp file nhạy cảm bằng cấu hình web server.
-- Nếu dùng OTP email cho admin, cần cấu hình SMTP bằng app password hoặc cơ chế xác thực phù hợp của nhà cung cấp mail.
-
-## License
-
-Dự án sử dụng giấy phép trong file `LICENSE`.
+---
+*Cảm ơn Quý nhà tuyển dụng đã dành thời gian trải nghiệm dự án Cyber-Oasis Portfolio!*
+*Mọi ý kiến đóng góp hoặc cơ hội hợp tác xin vui lòng liên hệ qua phần **Portal (Liên hệ & Guestbook)** trực tiếp trong ứng dụng.*
