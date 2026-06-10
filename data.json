@@ -183,8 +183,8 @@
         "w": 130,
         "h": 100
       },
-      "description_vi": "Nơi trưng bày các dự án thực chiến tiêu biểu: Website Điện Máy PRO & Hệ thống E-commerce & Mini-ERP Điện Máy Nâng Cao.",
-      "description_en": "Showcase of key production projects: Điện Máy PRO Website & Advanced E-commerce & Mini-ERP Platform.",
+      "description_vi": "Nơi trưng bày các dự án thực chiến tiêu biểu: Website Điện Máy PRO, Hệ thống E-commerce & Mini-ERP Điện Máy Nâng Cao, và Cyber-Oasis Portfolio.",
+      "description_en": "Showcase of key production projects: Điện Máy PRO Website, Advanced E-commerce & Mini-ERP Platform, and Cyber-Oasis Portfolio.",
       "details_vi": {
         "projects": [
           {
@@ -246,6 +246,35 @@
             ],
             "resultTitle": "KẾT QUẢ ĐẠT ĐƯỢC",
             "resultDesc": "Hệ thống vận hành trơn tru, không xảy ra lỗi logic (bug-free) dưới áp lực tải lớn, đáp ứng toàn bộ các tiêu chuẩn kiểm thử khắt khe."
+          },
+          {
+            "title": "Cyber-Oasis Portfolio",
+            "period": "05/2026 — 06/2026",
+            "highlight": "Không gian Portfolio tương tác đa chiều (3D/2D Retro Space) tích hợp Gemini AI và trình quản trị Admin Dashboard bảo mật mã OTP.",
+            "link": "https://nguyenanhquy.id.vn/",
+            "githubLink": "https://github.com/AQuyGib/Profile",
+            "biggestChallenge": "Tối ưu hiệu năng render hàng ngàn đa giác 3D, hệ thống hạt phản lực bay lơ lửng và hiệu ứng hậu kỳ Bloom trên thiết bị di động bằng các kỹ thuật giới hạn pixel ratio, Eco Mode và trì hoãn tải (Lazy Loading).",
+            "techStack": "Three.js (WebGL), Canvas 2D API, PHP (PHPMailer), MySQL, Gemini API (RAG & Audio), GSAP.",
+            "accomplishments": [
+              {
+                "title": "Tương tác Đồ họa Không gian Đa chiều",
+                "desc": "Xây dựng song hành 2 chế độ: Bản đồ 2D Retro vẽ thủ công qua Canvas API (có chòm sao nhấp nháy, tàu tuần tra tự động) và Đảo nổi 3D WebGL (Three.js) toàn màn hình phong cách viễn tưởng với các vật thể tương tác giải mã RPG."
+              },
+              {
+                "title": "Vật lý & Hoạt ảnh Nhân vật",
+                "desc": "Lập trình hoạt ảnh phi hành gia bay lơ lửng, tự xoay hướng 360 độ và phun hạt lửa phản lực phản hồi động theo vận tốc. Tích hợp camera chuyển cảnh điện ảnh (Cinematic Transitions) điều hướng mượt mà."
+              },
+              {
+                "title": "Quản trị & Bảo mật 2 lớp",
+                "desc": "Xây dựng bảng quản trị Admin Dashboard quản lý thông điệp lời nhắn (Guestbook) với chức năng duyệt/spam/xóa. Bảo mật đăng nhập bằng OTP gửi qua SMTP (PHPMailer) và quản lý cấu hình qua form CRUD hai chiều."
+              },
+              {
+                "title": "Chatbot Trí tuệ Nhân tạo Đa phương tiện",
+                "desc": "Tích hợp Gemini AI Chatbot hỗ trợ RAG lọc tri thức theo ngữ cảnh, trang bị đàm thoại giọng nói hai chiều (Speech-to-Text & Text-to-Speech) và lưu giữ lịch sử trò chuyện cục bộ."
+              }
+            ],
+            "resultTitle": "KẾT QUẢ ĐẠT ĐƯỢC",
+            "resultDesc": "Kiến tạo thành công một CV/Portfolio tương tác độc bản, đạt hiệu năng 60 FPS mượt mà trên cả máy tính lẫn thiết bị di động, tối ưu hóa SEO và mang lại trải nghiệm ấn tượng."
           }
         ]
       },
@@ -310,6 +339,35 @@
             ],
             "resultTitle": "PROJECT DELIVERABLES",
             "resultDesc": "System operates flawlessly and bug-free under heavy load stress-testing, satisfying all rigorous QA benchmarks."
+          },
+          {
+            "title": "Cyber-Oasis Portfolio",
+            "period": "05/2026 — 06/2026",
+            "highlight": "Interactive multi-dimensional portfolio (3D/2D Retro Space) integrated with Gemini AI and an OTP-secured Admin Dashboard.",
+            "link": "https://nguyenanhquy.id.vn/",
+            "githubLink": "https://github.com/AQuyGib/Profile",
+            "biggestChallenge": "Optimizing rendering performance for thousands of 3D polygons, Jetpack thruster particle systems, and Bloom post-processing effects on mobile devices using pixel ratio capping, Eco Mode, and dynamic resource lazy loading.",
+            "techStack": "Three.js (WebGL), Canvas 2D API, PHP (PHPMailer), MySQL, Gemini API (RAG & Audio), GSAP.",
+            "accomplishments": [
+              {
+                "title": "Multi-dimensional Graphic Interaction",
+                "desc": "Built dual-mode environments: A hand-crafted 2D Retro map via Canvas API (with twinkling constellations, patrol ships) and a full-screen 3D WebGL (Three.js) island with interactive RPG decryption objects."
+              },
+              {
+                "title": "Character Physics & Animations",
+                "desc": "Programmed hovering/flying astronaut animations with 360-degree rotation and thruster particles responding dynamically to movement velocity. Integrated smooth cinematic camera transitions."
+              },
+              {
+                "title": "Administration & 2FA Security",
+                "desc": "Created a secure Admin Dashboard to manage guestbook entries with approve/spam/delete actions. Enhanced login security via SMTP OTP codes (PHPMailer) and supported two-way form editing configuration."
+              },
+              {
+                "title": "Multimodal AI Chatbot",
+                "desc": "Integrated Gemini AI Chatbot supporting context-aware RAG pipelines, fitted with two-way voice chat (Speech-to-Text & Text-to-Speech) and persistent local conversation history."
+              }
+            ],
+            "resultTitle": "PROJECT DELIVERABLES",
+            "resultDesc": "Successfully constructed a unique interactive CV/Portfolio website, achieving 60 FPS performance across desktop and mobile, optimized SEO, and delivered an immersive user experience."
           }
         ]
       }

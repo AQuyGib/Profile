@@ -1,6 +1,11 @@
 # Project Memory
 
 - Current updates & fixes:
+  - **[THÊM DỰ ÁN CYBER-OASIS PORTFOLIO VÀO BẢO TÀNG DỰ ÁN]**:
+    - **Yêu cầu**: Thêm dự án Portfolio hiện tại (link repo `https://github.com/AQuyGib/Profile` và link demo `https://nguyenanhquy.id.vn/`) vào Bảo Tàng Dự Án (Museum) để người xem dễ dàng tìm thấy mã nguồn của ứng dụng này.
+    - **Thực hiện**:
+      - Cập nhật tệp `data.json`: Thêm đối tượng dự án `"Cyber-Oasis Portfolio"` vào cả hai mảng dịch `details_vi.projects` và `details_en.projects`. Điền đầy đủ thông tin về highlight, thách thức kỹ thuật lớn nhất (tối ưu hóa 3D/di động, Eco Mode, Lazy Load), bộ công nghệ (Three.js, Canvas 2D, PHP, MySQL, Gemini API, GSAP) và các thành tựu chính.
+      - Đồng bộ hoá các trường `"description_vi"` và `"description_en"` của zone `museum` để giới thiệu cả 3 dự án tiêu biểu.
   - **[GẮN LIÊN KẾT GITHUB CHO CÁC DỰ ÁN TRONG BẢO TÀNG DỰ ÁN (MUSEUM)]**:
     - **Yêu cầu**: Gắn liên kết mã nguồn GitHub cho hai dự án thực chiến trong Bảo Tàng Dự Án (Museum):
       - Website Điện Máy PRO: `https://github.com/eHin-cloud/TrienKhaiPM`
@@ -193,7 +198,7 @@
     - **Procedural Warp Gate**: Xây dựng mô hình 3D cổng dịch chuyển không gian tự động bằng code bằng cách kết hợp Torus, Cylinders phát sáng LED hồng, và vòng tròn Ring hố sâu chân không ảo (Warp Event Horizon).
     - **Tối ưu hóa vị trí thoát 3D về 2D**: Di dời tọa độ nhận diện va chạm (exit trigger) từ `z: 24` (tâm hòn đảo cũ) sang `z: 29` để khớp 100% với vị trí đặt cổng Warp Gate mới, khắc phục lỗi người chơi bị văng về 2D từ xa trước khi chạm vào cổng. Đồng thời điều chỉnh bán kính va chạm lên `1.8` để người chơi đi qua tâm cổng mượt mà hơn.
 - Edited files:
-  - `data.json` (Cập nhật githubLink cho 2 dự án thực chiến ở Museum)
+  - `data.json` (Cập nhật githubLink cho 2 dự án thực chiến và thêm mới dự án Cyber-Oasis Portfolio)
   - `js/app.js` (Thêm render nút liên kết GitHub cho các dự án Museum)
   - `js/state-manager.js`
   - `js/control-panel-handler.js`
