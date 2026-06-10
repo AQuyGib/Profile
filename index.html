@@ -259,6 +259,16 @@
           <span id="lbl_download_cv">T&#7842;I CV</span>
         </a>
 
+        <!-- Quick Contact Button -->
+        <button id="btn_header_contact"
+          class="flex items-center gap-1.5 bg-pink-500/10 hover:bg-pink-500 px-3 py-1 rounded-lg border border-pink-500/30 text-pink-400 hover:text-zinc-950 transition-all cursor-pointer font-semibold"
+          title="Liên hệ với tôi">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+          </svg>
+          <span id="lbl_header_contact">LIÊN HỆ</span>
+        </button>
+
         <!-- Ambient Music Toggle -->
         <button id="btn_ambient_music"
           class="flex items-center gap-1.5 bg-zinc-900 hover:bg-zinc-850 px-3 py-1 rounded-lg border border-zinc-800 text-zinc-500 hover:text-emerald-400 transition-all cursor-pointer"
@@ -1014,6 +1024,23 @@
             </div>
             <p id="lbl_help_mouse_desc" class="text-[10px] text-zinc-400 leading-normal">Nhấp chuột trực tiếp lên bản đồ để di chuyển</p>
           </div>
+
+          <!-- Mobile Controls -->
+          <div class="col-span-1 sm:col-span-2 p-3 bg-zinc-950/60 border border-emerald-500/20 rounded-2xl flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left">
+            <div class="flex-shrink-0 w-8 h-8 rounded-full border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+              <svg class="w-4 h-4 animate-pulse" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <div class="flex-grow space-y-1">
+              <span id="lbl_help_mobile_title" class="text-xs font-bold text-emerald-400 block uppercase tracking-wider">THIẾT BỊ DI ĐỘNG (MOBILE)</span>
+              <ul class="text-[10px] text-zinc-400 space-y-1 list-disc list-inside">
+                <li id="lbl_help_mobile_joystick">Sử dụng <strong class="text-zinc-200">Joystick ảo</strong> (góc trái) để di chuyển trong không gian 3D.</li>
+                <li id="lbl_help_mobile_touch">Chạm đất (<strong class="text-zinc-200">Touch-to-Move</strong>) để tự động chạy tới điểm chạm.</li>
+                <li id="lbl_help_mobile_swipe">Vuốt màn hình để xoay camera 3D tự do.</li>
+              </ul>
+            </div>
+          </div>
         </div>
 
         <!-- Quick Teleport -->
@@ -1031,6 +1058,15 @@
         </button>
       </div>
     </div>
+  </div>
+
+  <!-- Portrait Orientation Warning Overlay for Mobile -->
+  <div id="orientation_warning_overlay">
+    <div class="phone-rotate-icon"></div>
+    <h3 id="lbl_orientation_title" class="text-lg font-bold font-display text-emerald-400 mb-2">VUI LÒNG XOAY NGANG THIẾT BỊ</h3>
+    <p id="lbl_orientation_desc" class="text-xs text-zinc-400 max-w-xs leading-relaxed">
+      Trải nghiệm Cyber-Oasis Portfolio tốt nhất ở chế độ xoay ngang. Hãy bật tính năng tự động xoay trên thiết bị của bạn.
+    </p>
   </div>
 </body>
 

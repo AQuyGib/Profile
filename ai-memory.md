@@ -1,6 +1,17 @@
 # Project Memory
 
 - Current updates & fixes:
+  - **[TỐI ƯU HÓA TRẢI NGHIỆM MOBILE: CẢNH BÁO XOAY MÀN HÌNH VÀ HƯỚNG DẪN DI CHUYỂN 3D]**:
+    - **Yêu cầu**: Tối ưu hóa giao diện di động bằng cách bắt buộc xoay ngang điện thoại (landscape) khi mới vào để hiển thị tốt nhất, và bổ sung hướng dẫn chi tiết cách di chuyển 3D trên di động (Virtual Joystick, Touch-to-Move, vuốt xoay camera).
+    - **Thực hiện**:
+      - Thiết lập Portrait Orientation Warning Overlay (`#orientation_warning_overlay` và `.phone-rotate-icon`) ở cuối `index.html` và định dạng CSS với `@media (max-width: 1024px) and (orientation: portrait)` trong `css/style.css`, tự động ẩn/hiển thị với hoạt ảnh điện thoại xoay mượt mà.
+      - Bổ sung khối hướng dẫn điều khiển di động (Mobile Controls) vào trong Gameplay Instructions Modal của `index.html`.
+      - Cập nhật hàm `switchLanguage` trong `js/app.js` để hỗ trợ đa ngôn ngữ cho toàn bộ nhãn cảnh báo xoay màn hình và hướng dẫn di chuyển mobile.
+  - **[BỔ SUNG NÚT LIÊN HỆ NHANH TRÊN HEADER]**:
+    - **Yêu cầu**: Cải thiện khả năng tiếp cận thông tin liên hệ trong Portal zone bằng cách thêm nút Liên Hệ trực tiếp và nổi bật hơn.
+    - **Thực hiện**:
+      - Thêm nút Quick Contact (`#btn_header_contact`) màu hồng Cyberpunk kế bên nút Tải CV trên thanh Header trong `index.html`.
+      - Định nghĩa hàm `window.triggerContactSection()` trong `js/app.js` để tự động dịch chuyển nhân vật về vị trí Portal zone (2D và 3D), kích hoạt modal giải mã thông tin (2D modal/3D modal), tự động chuyển sang tab LIÊN HỆ mặc định và cuộn màn hình mượt mà xuống khu vực bản đồ game.
   - **[THÊM DỰ ÁN CYBER-OASIS PORTFOLIO VÀO BẢO TÀNG DỰ ÁN]**:
     - **Yêu cầu**: Thêm dự án Portfolio hiện tại (link repo `https://github.com/AQuyGib/Profile` và link demo `https://nguyenanhquy.id.vn/`) vào Bảo Tàng Dự Án (Museum) để người xem dễ dàng tìm thấy mã nguồn của ứng dụng này.
     - **Thực hiện**:

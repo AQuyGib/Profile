@@ -723,6 +723,14 @@ function switchLanguage(lang) {
     if (btnMic) btnMic.title = 'Nói để đặt câu hỏi';
     if (selectVoice) selectVoice.title = 'Chọn giọng đọc AI';
 
+    // Header Contact Button
+    const lblHeaderContact = document.getElementById('lbl_header_contact');
+    const btnHeaderContact = document.getElementById('btn_header_contact');
+    if (btnHeaderContact && lblHeaderContact) {
+      btnHeaderContact.title = 'Liên hệ với tôi';
+      lblHeaderContact.textContent = 'LIÊN HỆ';
+    }
+
     // Help Button & Modal
     if (lblHelpBtnText) lblHelpBtnText.textContent = 'HƯỚNG DẪN';
     if (lblHelpModalBadge) lblHelpModalBadge.textContent = 'HƯỚNG DẪN TRẢI NGHIỆM';
@@ -734,6 +742,21 @@ function switchLanguage(lang) {
     if (lblHelpMouseDesc) lblHelpMouseDesc.textContent = 'Nhấp chuột trực tiếp lên bản đồ để di chuyển';
     if (lblHelpTeleportDesc) lblHelpTeleportDesc.innerHTML = '<strong class="text-zinc-200">Dịch chuyển nhanh:</strong> Click các nút bên dưới bản đồ để di chuyển tức thời qua lại giữa các khu vực.';
     if (btnHelpModalClose) btnHelpModalClose.textContent = 'Bắt Đầu Khám Phá';
+
+    // Portrait Warning & Mobile Controls translations
+    const lblOrientationTitle = document.getElementById('lbl_orientation_title');
+    const lblOrientationDesc = document.getElementById('lbl_orientation_desc');
+    if (lblOrientationTitle) lblOrientationTitle.textContent = 'VUI LÒNG XOAY NGANG THIẾT BỊ';
+    if (lblOrientationDesc) lblOrientationDesc.textContent = 'Trải nghiệm Cyber-Oasis Portfolio tốt nhất ở chế độ xoay ngang. Hãy bật tính năng tự động xoay trên thiết bị của bạn.';
+
+    const lblHelpMobileTitle = document.getElementById('lbl_help_mobile_title');
+    const lblHelpMobileJoystick = document.getElementById('lbl_help_mobile_joystick');
+    const lblHelpMobileTouch = document.getElementById('lbl_help_mobile_touch');
+    const lblHelpMobileSwipe = document.getElementById('lbl_help_mobile_swipe');
+    if (lblHelpMobileTitle) lblHelpMobileTitle.textContent = 'THIẾT BỊ DI ĐỘNG (MOBILE)';
+    if (lblHelpMobileJoystick) lblHelpMobileJoystick.innerHTML = 'Sử dụng <strong class="text-zinc-200">Joystick ảo</strong> (góc trái) để di chuyển trong không gian 3D.';
+    if (lblHelpMobileTouch) lblHelpMobileTouch.innerHTML = 'Chạm đất (<strong class="text-zinc-200">Touch-to-Move</strong>) để tự động chạy tới điểm chạm.';
+    if (lblHelpMobileSwipe) lblHelpMobileSwipe.innerHTML = 'Vuốt màn hình để xoay camera 3D tự do.';
   } else {
     btnVi.className = 'px-2.5 py-1 rounded-md text-[10px] font-bold transition-all cursor-pointer text-zinc-500 hover:text-zinc-300';
     btnEn.className = 'px-2.5 py-1 rounded-md text-[10px] font-bold transition-all cursor-pointer bg-emerald-500 text-zinc-950 font-extrabold shadow-md';
@@ -758,6 +781,14 @@ function switchLanguage(lang) {
     if (btnMic) btnMic.title = 'Speak to ask question';
     if (selectVoice) selectVoice.title = 'Select AI Voice';
 
+    // Header Contact Button
+    const lblHeaderContact = document.getElementById('lbl_header_contact');
+    const btnHeaderContact = document.getElementById('btn_header_contact');
+    if (btnHeaderContact && lblHeaderContact) {
+      btnHeaderContact.title = 'Contact me';
+      lblHeaderContact.textContent = 'CONTACT';
+    }
+
     // Help Button & Modal
     if (lblHelpBtnText) lblHelpBtnText.textContent = 'GUIDE';
     if (lblHelpModalBadge) lblHelpModalBadge.textContent = 'GAMEPLAY GUIDE';
@@ -769,6 +800,21 @@ function switchLanguage(lang) {
     if (lblHelpMouseDesc) lblHelpMouseDesc.textContent = 'Click anywhere on the map to navigate to that point';
     if (lblHelpTeleportDesc) lblHelpTeleportDesc.innerHTML = '<strong class="text-zinc-200">Quick Teleport:</strong> Click the shortcut buttons under the map to travel instantly between zones.';
     if (btnHelpModalClose) btnHelpModalClose.textContent = 'Start Exploration';
+
+    // Portrait Warning & Mobile Controls translations
+    const lblOrientationTitle = document.getElementById('lbl_orientation_title');
+    const lblOrientationDesc = document.getElementById('lbl_orientation_desc');
+    if (lblOrientationTitle) lblOrientationTitle.textContent = 'PLEASE ROTATE YOUR DEVICE';
+    if (lblOrientationDesc) lblOrientationDesc.textContent = 'Cyber-Oasis Portfolio is best experienced in landscape mode. Please enable auto-rotate on your device.';
+
+    const lblHelpMobileTitle = document.getElementById('lbl_help_mobile_title');
+    const lblHelpMobileJoystick = document.getElementById('lbl_help_mobile_joystick');
+    const lblHelpMobileTouch = document.getElementById('lbl_help_mobile_touch');
+    const lblHelpMobileSwipe = document.getElementById('lbl_help_mobile_swipe');
+    if (lblHelpMobileTitle) lblHelpMobileTitle.textContent = 'MOBILE DEVICES';
+    if (lblHelpMobileJoystick) lblHelpMobileJoystick.innerHTML = 'Use the <strong class="text-zinc-200">virtual joystick</strong> (bottom-left) to navigate in 3D space.';
+    if (lblHelpMobileTouch) lblHelpMobileTouch.innerHTML = 'Tap the ground (<strong class="text-zinc-200">Touch-to-Move</strong>) to automatically run to that location.';
+    if (lblHelpMobileSwipe) lblHelpMobileSwipe.innerHTML = 'Swipe on screen to freely rotate the 3D camera view.';
   }
 
   // Update dynamic elements
@@ -1242,6 +1288,61 @@ function initCharacterSwitcherButton() {
   });
 }
 
+window.triggerContactSection = function() {
+  playClickSound();
+
+  const portalZone = state.zones.find(z => z.id === 'portal');
+  if (portalZone) {
+    // 1. Dịch chuyển nhân vật
+    if (state.is3DActive && typeof threePlayerMesh !== 'undefined' && threePlayerMesh) {
+      // Chế độ 3D
+      threePlayerMesh.position.set(0, 0.5, 21.2);
+      if (typeof roverPhysics !== 'undefined') {
+        roverPhysics.speed = 0;
+        roverPhysics.velocityY = 0;
+      }
+      playTeleportSound();
+      state.activeZoneId = 'portal';
+      updateUIForActiveZone();
+      
+      // Mở modal giải mã thông tin 3D của Portal
+      if (typeof show3DInfoModal === 'function') {
+        show3DInfoModal('portal');
+      }
+    } else {
+      // Chế độ 2D
+      const buffer = 15;
+      player.x = portalZone.coords.x + buffer;
+      player.y = portalZone.coords.y + buffer;
+      player.vx = 0;
+      player.vy = 0;
+      if (typeof mouseTarget !== 'undefined') {
+        mouseTarget = null;
+      }
+      playTeleportSound();
+      state.activeZoneId = 'portal';
+      updateUIForActiveZone();
+      if (typeof window.open2DZoneModal === 'function') {
+        window.open2DZoneModal();
+      }
+    }
+
+    // 2. Cuộn mượt xuống khu vực bản đồ/canvas để người dùng nhìn thấy rõ modal/details card đang mở
+    const mapSection = document.getElementById('retro_game_map_canvas');
+    if (mapSection) {
+      mapSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    // 3. Tự động chuyển sang tab LIÊN HỆ của Zone Portal
+    setTimeout(() => {
+      const tabContact = document.getElementById('portal_tab_contact');
+      if (tabContact) {
+        tabContact.click();
+      }
+    }, 100);
+  }
+};
+
 document.addEventListener('DOMContentLoaded', () => {
   // Khởi tạo Lucide Icons
   if (window.lucide) {
@@ -1283,6 +1384,14 @@ document.addEventListener('DOMContentLoaded', () => {
   if (btnDownloadCv) {
     btnDownloadCv.addEventListener('click', () => {
       playClickSound();
+    });
+  }
+
+  // Bind Header Contact Button Click Event
+  const btnHeaderContact = document.getElementById('btn_header_contact');
+  if (btnHeaderContact) {
+    btnHeaderContact.addEventListener('click', () => {
+      window.triggerContactSection();
     });
   }
 
