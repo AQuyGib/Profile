@@ -1,6 +1,18 @@
 # Project Memory
 
 - Current updates & fixes:
+  - **[THÊM DỰ ÁN CYBER-OASIS PORTFOLIO VÀO BẢO TÀNG DỰ ÁN]**:
+    - **Yêu cầu**: Thêm dự án Portfolio hiện tại (link repo `https://github.com/AQuyGib/Profile` và link demo `https://nguyenanhquy.id.vn/`) vào Bảo Tàng Dự Án (Museum) để người xem dễ dàng tìm thấy mã nguồn của ứng dụng này.
+    - **Thực hiện**:
+      - Cập nhật tệp `data.json`: Thêm đối tượng dự án `"Cyber-Oasis Portfolio"` vào cả hai mảng dịch `details_vi.projects` và `details_en.projects`. Điền đầy đủ thông tin về highlight, thách thức kỹ thuật lớn nhất (tối ưu hóa 3D/di động, Eco Mode, Lazy Load), bộ công nghệ (Three.js, Canvas 2D, PHP, MySQL, Gemini API, GSAP) và các thành tựu chính.
+      - Đồng bộ hoá các trường `"description_vi"` và `"description_en"` của zone `museum` để giới thiệu cả 3 dự án tiêu biểu.
+  - **[GẮN LIÊN KẾT GITHUB CHO CÁC DỰ ÁN TRONG BẢO TÀNG DỰ ÁN (MUSEUM)]**:
+    - **Yêu cầu**: Gắn liên kết mã nguồn GitHub cho hai dự án thực chiến trong Bảo Tàng Dự Án (Museum):
+      - Website Điện Máy PRO: `https://github.com/eHin-cloud/TrienKhaiPM`
+      - Hệ thống E-commerce & Mini-ERP Điện Máy Nâng Cao: `https://github.com/AQuyGib/ThuongMaiDienTu`
+    - **Thực hiện**:
+      - Cập nhật tệp `data.json`: Thêm thuộc tính `"githubLink"` tương ứng cho cả hai dự án ở cả hai bản dịch `details_vi` và `details_en`.
+      - Cập nhật tệp `js/app.js`: Thêm logic kiểm tra sự tồn tại của `githubLink` trong đối tượng dự án hiện tại và render nút bấm liên kết GitHub có kèm logo SVG GitHub chính chủ, được thiết kế bo góc, phối màu xám tối glassmorphic (`bg-zinc-800/40 hover:bg-zinc-700/60 border border-zinc-700`) đồng nhất với phong cách Cyberpunk của hệ thống.
   - **[SỬA LỖI CAMERA 3D BỊ KHÓA CỨNG (CAMERA LOCKOUT FIX)]**:
     - **Yêu cầu**: Khắc phục tình trạng camera 3D bị cố định góc nhìn, không thể kéo xoay tự do bằng chuột/tay sau khi nhấn nút chuyển góc hoặc chuyển phân cảnh.
     - **Thực hiện**:
