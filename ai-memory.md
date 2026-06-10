@@ -1,13 +1,6 @@
 # Project Memory
 
 - Current updates & fixes:
-  - **[VIẾT README.MD CHUYÊN NGHIỆP & MERGE MAIN]**:
-    - **Yêu cầu**: Viết file `README.md` mới chi tiết, hấp dẫn dành riêng cho nhà tuyển dụng và tiến hành merge toàn bộ thay đổi vào nhánh `main`.
-    - **Thực hiện**:
-      - Viết lại toàn bộ `README.md` phô diễn các điểm nhấn kỹ thuật: WebGL 3D Engine (Three.js/GSAP) tối ưu hiệu năng (Pixel Ratio Capping, Lazy Loading, Eco Mode FPS Throttling, Shadow Map Optimization), Gameplay 2D Canvas & Vector Sprites vẽ thủ tục, AI Chatbot (Gemini 3.5 Flash, RAG thông minh, Speech-to-Text & Text-to-Speech), Backend PHP (MVC, Service-Repository, PDO, OTP Email PHPMailer SMTP, Bcrypt) và DevOps (Docker, Nginx Proxy Manager, CI/CD GitHub Actions).
-      - Commit file `README.md` trên nhánh `profile-3d-nangcap`.
-      - Chuyển sang nhánh `main`, thực hiện merge nhánh `profile-3d-nangcap` vào `main` thành công không xung đột.
-      - Thực hiện push nhánh `main` lên remote GitHub thành công.
   - **[SỬA LỖI CAMERA 3D BỊ KHÓA CỨNG (CAMERA LOCKOUT FIX)]**:
     - **Yêu cầu**: Khắc phục tình trạng camera 3D bị cố định góc nhìn, không thể kéo xoay tự do bằng chuột/tay sau khi nhấn nút chuyển góc hoặc chuyển phân cảnh.
     - **Thực hiện**:
@@ -193,12 +186,13 @@
     - **Procedural Warp Gate**: Xây dựng mô hình 3D cổng dịch chuyển không gian tự động bằng code bằng cách kết hợp Torus, Cylinders phát sáng LED hồng, và vòng tròn Ring hố sâu chân không ảo (Warp Event Horizon).
     - **Tối ưu hóa vị trí thoát 3D về 2D**: Di dời tọa độ nhận diện va chạm (exit trigger) từ `z: 24` (tâm hòn đảo cũ) sang `z: 29` để khớp 100% với vị trí đặt cổng Warp Gate mới, khắc phục lỗi người chơi bị văng về 2D từ xa trước khi chạm vào cổng. Đồng thời điều chỉnh bán kính va chạm lên `1.8` để người chơi đi qua tâm cổng mượt mà hơn.
 - Edited files:
+  - `data.json` (Cập nhật githubLink cho 2 dự án thực chiến và thêm mới dự án Cyber-Oasis Portfolio)
+  - `js/app.js` (Thêm render nút liên kết GitHub cho các dự án Museum)
   - `js/state-manager.js`
   - `js/control-panel-handler.js`
   - `js/achievements-manager.js` (NEW)
   - `js/engine-3d.js` (NEW)
   - `index.html` (import `achievements-manager.js` và `engine-3d.js`)
-  - `js/app.js` (rút gọn và tối giản logic điều hướng)
   - `ai-memory.md`
 - TODO:
   - Tái cấu trúc 4 bối cảnh 3D (Desk Setup, Studio Phim, Timeline Quy trình, Portal).
