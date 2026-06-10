@@ -192,6 +192,7 @@
             "period": "03/2026 — 05/2026",
             "highlight": "Website E-commerce tích hợp Gemini AI và cổng thanh toán tự động qua Webhook PayOS/VietQR.",
             "link": "https://dienmaypro.nguyenanhquy.id.vn",
+            "githubLink": "https://github.com/eHin-cloud/TrienKhaiPM",
             "oldPortfolioTitle": "Ứng dụng Android (APK)",
             "oldPortfolioLink": "https://dienmaypro.nguyenanhquy.id.vn/app.apk",
             "biggestChallenge": "Xử lý đồng bộ webhook thanh toán từ PayOS đảm bảo tính chính xác của đơn hàng và bảo mật chống giả mạo chữ ký (signature verification), kết hợp đồng bộ trạng thái đơn hàng thời gian thực sang giao diện client.",
@@ -222,6 +223,7 @@
             "period": "02/2026 — 06/2026",
             "highlight": "Nền tảng bán lẻ và quản trị doanh nghiệp tích hợp AI, được thiết kế để xử lý lượng lớn dữ liệu, tự động hóa nghiệp vụ và tối ưu tỷ lệ chuyển đổi.",
             "link": "https://tmdtgroupg.nthanhhien.id.vn/Home",
+            "githubLink": "https://github.com/AQuyGib/ThuongMaiDienTu",
             "biggestChallenge": "Giải quyết tranh chấp dữ liệu (Race Condition) và hiện tượng Overselling khi có hàng ngàn lượt truy cập đồng thời vào cổng Flash Sale bằng cách áp dụng Pessimistic Locking kết hợp với hàng đợi Redis (Laravel Queue) để xử lý bất đồng bộ các luồng thông báo và giao dịch.",
             "techStack": "Laravel 11, MySQL, TailwindCSS, Gemini AI (Vision & RAG), Pusher WebSockets, React.",
             "accomplishments": [
@@ -254,6 +256,7 @@
             "period": "03/2026 — 05/2026",
             "highlight": "E-commerce platform integrated with Gemini AI and automated PayOS/VietQR Webhook gateway.",
             "link": "https://dienmaypro.nguyenanhquy.id.vn",
+            "githubLink": "https://github.com/eHin-cloud/TrienKhaiPM",
             "oldPortfolioTitle": "Android Application (APK)",
             "oldPortfolioLink": "https://dienmaypro.nguyenanhquy.id.vn/app.apk",
             "biggestChallenge": "Synchronizing payment webhooks from PayOS ensuring transaction integrity and signature verification, combined with real-time order status updates to the client interface.",
@@ -284,6 +287,7 @@
             "period": "02/2026 — 06/2026",
             "highlight": "Retail and enterprise management platform integrated with GenAI, designed to handle heavy data, automate workflows, and optimize conversions.",
             "link": "https://tmdtgroupg.nthanhhien.id.vn/Home",
+            "githubLink": "https://github.com/AQuyGib/ThuongMaiDienTu",
             "biggestChallenge": "Resolving race conditions and overselling issues under heavy traffic spikes in Flash Sale events by implementing Pessimistic Locking and Redis queues (Laravel Queue) for asynchronous transaction handling.",
             "techStack": "Laravel 11, MySQL, TailwindCSS, Gemini AI (Vision & RAG), Pusher WebSockets, React.",
             "accomplishments": [
