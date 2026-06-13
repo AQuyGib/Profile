@@ -6,6 +6,7 @@
     - **Thực hiện**:
       - Tạo và chuyển sang nhánh trung gian mới: `AnhQuy/ThemQuanLyNhaTro` (từ nhánh `main` của Profile).
       - Cập nhật tệp `data.json`: Thêm đối tượng dự án `"Renty - Hệ Thống Quản Lý Nhà Trọ Toàn Diện & Tích Hợp AI"` và bản dịch tiếng Anh `"Renty - Smart Rental Management & AI Platform"` vào mảng dự án của zone `museum` (Bảo tàng Dự án), đồng thời đặt liên kết live demo của dự án thành `https://cutruthongminh.nguyenanhquy.id.vn/`.
+      - Cập nhật tệp `js/app.js`: Tại hàm `updateUIForActiveZone()`, bổ sung logic động tự động lấy độ dài mảng các dự án từ `data.json` và nối vào sau tiêu đề khu vực (cả `bannerTitle` và `mapSectorName`) dưới dạng `(4)` nếu khu vực hoạt động là `museum` nhằm giúp người dùng nhận biết tổng số đồ án dễ dàng.
       - Điền đầy đủ các thông tin chi tiết: Highlight, thử thách lớn nhất (tính hóa đơn, hợp đồng điện tử DomPDF, thông báo khẩn cấp, Gemini AI RAG), bộ công nghệ sử dụng (Laravel 11, PHP 8.2+, MySQL, TailwindCSS, Gemini API, DomPDF, Chart.js, Vite) và các thành tựu cốt lõi.
   - **[THÊM DỰ ÁN CYBER-OASIS PORTFOLIO VÀO BẢO TÀNG DỰ ÁN]**:
     - **Yêu cầu**: Thêm dự án Portfolio hiện tại (link repo `https://github.com/AQuyGib/Profile` và link demo `https://nguyenanhquy.id.vn/`) vào Bảo Tàng Dự Án (Museum) để người xem dễ dàng tìm thấy mã nguồn của ứng dụng này.

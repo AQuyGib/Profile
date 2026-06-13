@@ -175,9 +175,18 @@ function updateUIForActiveZone() {
     const bannerTitle = document.getElementById('zone_banner_title');
     const bannerIconHolder = document.getElementById('zone_banner_icon_holder');
     const mapSectorName = document.getElementById('game_map_sector_name');
-    if (bannerTitle) bannerTitle.textContent = state.language === 'vi' ? zone.vietnameseName : zone.name;
+    
+    let zoneTitleText = state.language === 'vi' ? zone.vietnameseName : zone.name;
+    if (zone.id === 'museum') {
+      const details = state.language === 'vi' ? zone.details_vi : (zone.details_en || zone.details_vi);
+      if (details && details.projects && details.projects.length) {
+        zoneTitleText += ` (${details.projects.length})`;
+      }
+    }
+    
+    if (bannerTitle) bannerTitle.textContent = zoneTitleText;
     if (bannerIconHolder) bannerIconHolder.innerHTML = getHeaderIconHtml(zone.icon);
-    if (mapSectorName) mapSectorName.textContent = state.language === 'vi' ? zone.vietnameseName : zone.name;
+    if (mapSectorName) mapSectorName.textContent = zoneTitleText;
 
     const details = state.language === 'vi' ? zone.details_vi : (zone.details_en || zone.details_vi);
 
