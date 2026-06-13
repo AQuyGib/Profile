@@ -1,6 +1,14 @@
 # Project Memory
 
 - Current updates & fixes:
+  - **[THÊM DÒNG TẢI NHIỀU PHIÊN BẢN CV (WEB DEV & BA)]**:
+    - **Yêu cầu**: Thêm CV Business Analyst (`Nguyen-Anh-Quy-BA.pdf`) vào Profile. Khi nhà tuyển dụng bấm nút "Tải CV", hệ thống sẽ hiển thị menu lựa chọn danh sách các phiên bản CV (Web Developer Tiếng Việt, Web Developer Tiếng Anh, Business Analyst BA) để chọn bản mong muốn tải xuống.
+    - **Thực hiện**:
+      - Copy file `Nguyen-Anh-Quy-BA.pdf` từ thư mục Downloads vào thư mục lưu trữ CV của dự án: `assets/cv/`.
+      - Chỉnh sửa `index.html`: Chuyển nút tải CV dạng link `<a>` đơn lẻ thành một dropdown bọc ngoài bằng `relative inline-block` chứa nút Trigger `<button id="btn_download_cv">` và Dropdown menu ẩn `<div id="download_cv_menu">` với các liên kết tải xuống cụ thể cho 3 loại CV.
+      - Chỉnh sửa `js/app.js`:
+        - Cập nhật hàm `updateDownloadCvButton(lang)` để dịch văn bản tiếng Anh/tiếng Việt của nút trigger cũng như các tùy chọn bên trong dropdown.
+        - Viết logic bắt sự kiện click cho nút trigger để toggle class ẩn/hiện, hiệu ứng mượt mà (opacity, scale), tự động đóng dropdown khi nhấn ra ngoài hoặc khi chọn xong một option.
   - **[THÊM DỰ ÁN QUẢN LÝ NHÀ TRỌ (RENTY) VÀO BẢO TÀNG DỰ ÁN]**:
     - **Yêu cầu**: Thêm dự án Quản Lý Nhà Trọ (Renty) từ thư mục `d:\repogist\QuanLyNhaTro` vào Bảo Tàng Dự Án trong Profile mà không commit trực tiếp vào nhánh `main` (thực hiện qua branch trung gian).
     - **Thực hiện**:

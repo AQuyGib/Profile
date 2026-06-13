@@ -674,11 +674,16 @@ function updateDownloadCvButton(lang) {
   if (!btnDownloadCv || !lblDownloadCv) return;
 
   const isVi = lang === 'vi';
-  const fileName = isVi ? 'Nguyen-Anh-Quy-VN.pdf' : 'Nguyen-Anh-Quy-EN.pdf';
-  btnDownloadCv.href = `assets/cv/${fileName}`;
-  btnDownloadCv.download = fileName;
-  btnDownloadCv.title = isVi ? 'Tai CV ban tieng Viet' : 'Download English CV';
   lblDownloadCv.innerHTML = isVi ? 'T&#7842;I CV' : 'DOWNLOAD CV';
+  btnDownloadCv.title = isVi ? 'Chọn phiên bản CV để tải' : 'Select CV version to download';
+
+  const lblWebVn = document.querySelector('.lbl-cv-web-vn');
+  const lblWebEn = document.querySelector('.lbl-cv-web-en');
+  const lblBa = document.querySelector('.lbl-cv-ba');
+
+  if (lblWebVn) lblWebVn.textContent = isVi ? 'CV Web Developer (Tiếng Việt)' : 'CV Web Developer (Vietnamese)';
+  if (lblWebEn) lblWebEn.textContent = isVi ? 'CV Web Developer (Tiếng Anh)' : 'CV Web Developer (English)';
+  if (lblBa) lblBa.textContent = isVi ? 'CV Business Analyst (BA)' : 'CV Business Analyst (BA)';
 }
 
 function switchLanguage(lang) {
@@ -1390,9 +1395,54 @@ document.addEventListener('DOMContentLoaded', () => {
   updateDownloadCvButton(state.language);
 
   const btnDownloadCv = document.getElementById('btn_download_cv');
-  if (btnDownloadCv) {
-    btnDownloadCv.addEventListener('click', () => {
+  const downloadMenu = document.getElementById('download_cv_menu');
+  if (btnDownloadCv && downloadMenu) {
+    btnDownloadCv.addEventListener('click', (e) => {
+      e.stopPropagation();
       playClickSound();
+      const isHidden = downloadMenu.classList.contains('hidden');
+      if (isHidden) {
+        downloadMenu.classList.remove('hidden');
+        downloadMenu.offsetHeight; // force reflow
+        downloadMenu.classList.remove('opacity-0', 'scale-95');
+        downloadMenu.classList.add('opacity-100', 'scale-100');
+      } else {
+        downloadMenu.classList.remove('opacity-100', 'scale-100');
+        downloadMenu.classList.add('opacity-0', 'scale-95');
+        setTimeout(() => {
+          if (downloadMenu.classList.contains('opacity-0')) {
+            downloadMenu.classList.add('hidden');
+          }
+        }, 200);
+      }
+    });
+
+    // Close menu when clicking outside
+    document.addEventListener('click', (e) => {
+      if (!btnDownloadCv.contains(e.target) && !downloadMenu.contains(e.target)) {
+        if (!downloadMenu.classList.contains('hidden')) {
+          downloadMenu.classList.remove('opacity-100', 'scale-100');
+          downloadMenu.classList.add('opacity-0', 'scale-95');
+          setTimeout(() => {
+            if (downloadMenu.classList.contains('opacity-0')) {
+              downloadMenu.classList.add('hidden');
+            }
+          }, 200);
+        }
+      }
+    });
+
+    // Close menu when clicking any option
+    document.querySelectorAll('.cv-option-item').forEach(item => {
+      item.addEventListener('click', () => {
+        downloadMenu.classList.remove('opacity-100', 'scale-100');
+        downloadMenu.classList.add('opacity-0', 'scale-95');
+        setTimeout(() => {
+          if (downloadMenu.classList.contains('opacity-0')) {
+            downloadMenu.classList.add('hidden');
+          }
+        }, 200);
+      });
     });
   }
 
