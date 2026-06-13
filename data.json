@@ -248,6 +248,35 @@
             "resultDesc": "Hệ thống vận hành trơn tru, không xảy ra lỗi logic (bug-free) dưới áp lực tải lớn, đáp ứng toàn bộ các tiêu chuẩn kiểm thử khắt khe."
           },
           {
+            "title": "Renty - Hệ Thống Quản Lý Nhà Trọ Toàn Diện & Tích Hợp AI",
+            "period": "05/2026 — 06/2026",
+            "highlight": "Hệ thống quản lý vận hành nhà trọ toàn diện (Mini-ERP) tích hợp Cổng cư dân, Hợp đồng điện tử và RAG AI Chatbot tư vấn phòng trọ thời gian thực.",
+            "link": "http://127.0.0.1:8000/renty",
+            "githubLink": "https://github.com/eHin-cloud/QuanLyNhaTro",
+            "biggestChallenge": "Giải quyết bài toán quản lý chỉ số điện nước, tính toán hóa đơn hàng tháng và gửi thông báo khẩn cấp diện rộng tới cư dân bất đồng bộ, kết hợp xây dựng chatbot AI tư vấn thông minh dựa trên dữ liệu phòng trọ thực tế.",
+            "techStack": "PHP 8.2+, Laravel 11, MySQL, TailwindCSS, Google Gemini API (RAG), DomPDF, Chart.js, Vite.",
+            "accomplishments": [
+              {
+                "title": "Quản Lý Vận Hành & Hóa Đơn Tự Động",
+                "desc": "Xây dựng các thuật toán tự động tính toán hóa đơn dịch vụ (điện, nước, vệ sinh) dựa trên chỉ số công tơ. Thiết kế phân hệ quản lý tài sản, trang thiết bị trong từng phòng và thống kê hao mòn trực quan bằng Chart.js."
+              },
+              {
+                "title": "Cổng Cư Dân & Hợp Đồng Điện Tử (E-Contract)",
+                "desc": "Phát triển Cổng thông tin cư dân (Resident Portal) phục vụ báo sự cố, ký số hợp đồng điện tử và xuất bản tệp PDF chuyên nghiệp qua DomPDF. Tích hợp hệ thống cảnh báo khẩn cấp diện rộng đến cư dân."
+              },
+              {
+                "title": "Tư Vấn Thông Minh Renty AI Chatbot",
+                "desc": "Tích hợp Google Gemini API với luồng dữ liệu RAG động, cho phép chatbot tự động gợi ý phòng trống, giá cả, tiện ích theo thời gian thực và tự động đưa ra cảnh báo khu vực khi không tìm thấy phòng phù hợp."
+              },
+              {
+                "title": "Phân Quyền RBAC & Kiểm Thử Tự Động",
+                "desc": "Phân quyền truy cập đa vai trò (Admin, Landlord, Resident, Guest). Sử dụng Laravel Sanctum bảo mật API, ngăn chặn tấn công SQLi/CSRF và viết các ca kiểm thử tự động (tests) bảo toàn tính ổn định."
+              }
+            ],
+            "resultTitle": "KẾT QUẢ ĐẠT ĐƯỢC",
+            "resultDesc": "Xây dựng thành công hệ thống vận hành nhà trọ toàn diện, đạt điểm tuyệt đối về tính thực tiễn, hỗ trợ đắc lực cho cả chủ nhà và người đi thuê."
+          },
+          {
             "title": "Cyber-Oasis Portfolio",
             "period": "05/2026 — 06/2026",
             "highlight": "Không gian Portfolio tương tác đa chiều (3D/2D Retro Space) tích hợp Gemini AI và trình quản trị Admin Dashboard bảo mật mã OTP.",
@@ -339,6 +368,35 @@
             ],
             "resultTitle": "PROJECT DELIVERABLES",
             "resultDesc": "System operates flawlessly and bug-free under heavy load stress-testing, satisfying all rigorous QA benchmarks."
+          },
+          {
+            "title": "Renty - Smart Rental Management & AI Platform",
+            "period": "05/2026 — 06/2026",
+            "highlight": "Immersive accommodation management system (Mini-ERP) integrated with resident portal, digital E-Contracts, dynamic notifications, and a smart RAG Chatbot.",
+            "link": "http://127.0.0.1:8000/renty",
+            "githubLink": "https://github.com/eHin-cloud/QuanLyNhaTro",
+            "biggestChallenge": "Handling automated utility billing calculations, digital E-Contracts with PDF generation, and dispatching wide-scale emergency notifications to residents without blocking UI, combined with context-aware Gemini AI chatbot consulting.",
+            "techStack": "PHP 8.2+, Laravel 11, MySQL, TailwindCSS, Google Gemini API, DomPDF, Chart.js, Vite.",
+            "accomplishments": [
+              {
+                "title": "Automated Utility Billing & Operations",
+                "desc": "Engineered algorithms for automatic utility billing calculations (electricity, water, services). Designed asset tracking pipelines for room inventory and wear-and-tear analytics visualized with Chart.js."
+              },
+              {
+                "title": "Resident Portal & Digital E-Contract",
+                "desc": "Developed a Resident Portal for raising maintenance requests, executing digital E-signatures, and exporting PDF lease agreements via DomPDF. Integrated system-wide priority-based emergency alerts."
+              },
+              {
+                "title": "Renty AI Smart Chatbot Consulting",
+                "desc": "Integrated Google Gemini API using dynamic RAG workflows to consult users on vacancies, pricing, and amenities in real-time, delivering professional fallback advice when criteria aren't met."
+              },
+              {
+                "title": "RBAC Security & Automated Testing",
+                "desc": "Implemented strict Role-Based Access Control (Admin, Landlord, Resident, Guest). Secured API endpoints using Laravel Sanctum, blocked SQLi/CSRF, and wrote automated test suites."
+              }
+            ],
+            "resultTitle": "PROJECT DELIVERABLES",
+            "resultDesc": "Successfully built a complete smart accommodation management platform, achieving high marks in feature utility and enhancing landlord-resident coordination."
           },
           {
             "title": "Cyber-Oasis Portfolio",
